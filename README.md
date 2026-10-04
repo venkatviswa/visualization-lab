@@ -1,8 +1,8 @@
 # Visualization Lab
 
-A browser workbench for building interactive teaching visuals with JavaScript, and comparing how different libraries explain the same idea.
+A browser workbench for building interactive visuals with JavaScript, and comparing how different libraries explain the same idea.
 
-It's built for educators and L&D designers who know **what** they want to explain but not necessarily **which library** to use. Describe a concept, and Claude writes a teaching spec: the objective, a small model of the system, the learner controls and a correctness check. Then you generate up to six versions with different libraries, explore them side by side and refine them.
+Two kinds of people use it. Educators and L&D designers who know **what** they want to explain but not necessarily **which library** to use. And architects and technology leaders who have to show how something works, not only that it exists: how one customer's data moves through a platform, where a safeguard sits in a data flow, what an agent does between the question and the answer. The flow is the same for both. Describe the idea, let Claude write a teaching spec (the objective, a small model of the system, the controls and a correctness check), generate it with two to six libraries, explore the versions side by side, and take the one that works into a course, a deck or a workshop.
 
 ---
 
@@ -27,6 +27,28 @@ On narrow screens the panels stack.
 4. Open **Edit code** on a version, change something, and press **Ctrl+Enter** (⌘+Enter on Mac).
 
 To build your own lesson, click **New lab** and follow steps 1–4 below.
+
+---
+
+## A story for your next deck
+
+Say you have to explain to a steering committee how a customer's data moves through Data 360, or any customer data platform: five source systems feed it, identity resolution decides which records are the same person, a segment is built on the unified profile, and an agent acts on the segment. A box-and-arrow slide shows the parts. It cannot show the decisions: what happens when two records almost match, which hop a consent flag stops, why the agent calls a tool twice before it answers. Those decisions are the story, and they are what the room will ask about.
+
+Here is how the lab tells it.
+
+**Describe the flow in plain words.** Name the stages in order, the one thing that can go wrong at each, and the choice you want the audience to see. The gallery's *Who is Maria? Identity resolution* started from this prompt: *"Tell the story of a health plan trying to build one view of a member from four systems (member portal, contact centre, claims, marketing). Show how the strictness of the match rules decides whether we get the right profiles, wrongly merge two different people, or leave duplicates. Let me switch the match rule and switch between generic and Salesforce system names."* Claude drafts the spec: a one-sentence objective, a model that walks one record through the stages, two controls (the match rule; generic or Salesforce names) and a check that the outcome is right at every setting. Read the spec before generating anything. It is the script, and the model's numbers are the only numbers any version will ever show, so if the script is wrong every picture is wrong the same way.
+
+**Generate it in two or three forms.** For architecture stories the default trio is **Story** (a 2D animated explainer with people, systems, documents and a narration line), **3D story** (the same stages laid out as a journey through a scene, with camera moves) and **React Flow** (a clickable diagram with a details strip). They share the spec, so what differs is the form, not three interpretations. In practice the 2D story carries an executive briefing, the diagram suits architects who want to click on a node, and 3D earns its place in a workshop room where the camera move holds attention; the comparison banner says what each pair teaches, and the rubric under it lets you score them before you choose.
+
+**Match the look to the deck.** Studio is white for corporate templates; Night sky and Blueprint for dark decks and architecture topics; Slate, Graphite, Forest and Paper for the rest. The enterprise architecture lessons also have a **System names** switch: generic names (API gateway, master data, integration layer) for any audience, Salesforce product names for a Salesforce one. Only the labels change, so one lesson serves both rooms.
+
+**Present it live.** Full screen on the version you chose. Space plays and pauses, ← and → step from stage to stage, so you narrate at your own pace and stop on the hop that matters. When the question comes ("what if the match rule were looser?"), move the slider: the whole story re-plays with the new outcome, and the check line under the visual says in one sentence what the model confirms. That sentence is your answer, and it was computed, not drawn.
+
+**Ship it.** **Download HTML** gives one file with its own controls, to link from a slide or host beside the deck; **Export for course** adds the objective, the predict and explain prompts and the check, for an enablement page; and when it has to be a static slide after all, the toolkit's verify step leaves screenshots at the key moments (`t35`, `t70`, `t100`) and with each control at its extremes, which are the frames worth pasting.
+
+Lessons to start from, each with **Open in lab** and **Use this prompt** in the gallery: *One address change, eight systems* (one change propagating through CRM, master data, the integration layer, claims, billing and analytics, with point-to-point versus event-driven as the switch); *Who is Maria?* (identity resolution with the match rule as the switch); *Where does PHI travel?* (a data flow where each of three safeguards can be turned off); *From spaghetti to hub* (why an integration layer). For the agentic side, *Watch an agent resolve a billing dispute* shows the think, call a tool, read the result loop, including a failing tool and a human approval gate, and *Agentic delivery pipeline* walks one story through the nine stages of an AI-driven delivery harness, with review findings, governance mode and the human gate as the controls.
+
+Two things to check before the meeting: the page loads its library from jsDelivr, so the room needs internet (or host the files yourself, see the course section), and 3D needs a machine with WebGL, so keep the 2D version one click away.
 
 ---
 
