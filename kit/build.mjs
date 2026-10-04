@@ -28,11 +28,12 @@ if (!HEADS[lib]) { console.error('Unknown lib ' + lib + '. Use one of: ' + Objec
 if (lib === 'story3d' && !opt('--kit')) { console.error('story3d needs --kit <path to story3d_kit.js>'); process.exit(1); }
 const [head, isModule] = HEADS[lib];
 const specLite = Object.assign({}, spec); delete specLite.modelCode; delete specLite.checkCode;
+const look2d = (lib === 'story' && theme !== 'studio') ? (() => { new Function(fs.readFileSync(path.join(here, 'look2d.js'), 'utf8'))(); return '<style id="look2d">' + globalThis.look2dCss(code, theme) + '</style>'; })() : '';
 const html = tpl
   .replace('{{TITLE}}', String(spec.title || 'Lesson visual').replace(/[<&]/g, ''))
   .replace('{{THEME}}', theme)
-  .replace('{{ROOT_BG}}', lib === 'story3d' ? 'var(--bg)' : '#ffffff')
-  .replace('{{HEAD}}', () => head)
+  .replace('{{ROOT_BG}}', (lib === 'story3d' || (lib === 'story' && theme !== 'studio')) ? 'var(--bg)' : '#ffffff')
+  .replace('{{HEAD}}', () => head + look2d)
   .replace('{{SPEC_JSON}}', () => esc(JSON.stringify(specLite)))
   .replace('{{MODEL}}', () => esc(spec.modelCode))
   .replace('{{CHECK}}', () => esc(spec.checkCode || ''))

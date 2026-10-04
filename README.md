@@ -115,7 +115,7 @@ When the suggested library starts one of these pairs, the comparison is set auto
 **Explore panel** (shared by all versions)
 - **Sliders** update every version at once, without regenerating any code.
 - **Replay** restarts the animations. **Reset values** puts the sliders back to their defaults.
-- **Look** sets the theme for 3D story versions: Night sky, Studio or Blueprint.
+- **Look** sets the theme for story versions, 2D and 3D: Night sky, Studio or Blueprint. 3D stories change their lighting and props; 2D stories are re-coloured from their palette (Studio is the plain white look).
 - **Timeline:** ‹ Step, Play/Pause, Step ›, scrub bar and speed (0.25× to 4×). Steps jump between the lesson's key moments when the version defines them.
 - **Keep versions in sync** makes play, pause and scrub drive all versions together. Turn it off to control each one separately.
 - **Keyboard:** Space plays or pauses, ← and → step.
@@ -224,7 +224,7 @@ All libraries load from jsDelivr at fixed versions.
 - **3D needs WebGL.** On machines without a capable graphics card (some virtual desktops), 3D versions can be slow or blank. Keep a 2D version as a fallback.
 - **"Reduce motion" changes playback.** With the operating system's reduce-motion setting on, animations open at their final state instead of playing. Press Play to watch them.
 - **Word clouds drop terms that don't fit.** The example cloud shrinks its fonts and says on screen if any terms are still missing; check that generated clouds do the same. Long words also look more important than they are, which is why the ranked chart is the default comparison.
-- **The Look picker only affects 3D story versions.** Other versions use their own colours.
+- **The Look picker only affects story versions** (2D story and 3D story). Charts, diagrams and sketches keep their own colours. A 2D story that uses colours outside the lab's palette may not re-colour fully.
 
 ---
 

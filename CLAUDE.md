@@ -15,7 +15,7 @@ The one idea everything rests on: **one spec, many renderers**. The model owns e
 | `src/vislab.html` | the page, with `/*@…@*/` and `@@…@@` build placeholders | yes |
 | `kit/libraries.json` | **single source** for libraries (versions, load order, generator notes) and default comparisons | yes |
 | `AUTHORING.md` | lesson rules; the `<!-- lab:… -->` blocks become the generator prompts; also the human guide | yes |
-| `kit/` | `template.html`, `build.mjs`, `verify.mjs`, `check_spec.mjs`, `story3d_kit.js`, `reactflow.css` | yes |
+| `kit/` | `template.html`, `build.mjs`, `verify.mjs`, `check_spec.mjs`, `story3d_kit.js`, `look2d.js` (2D story looks), `reactflow.css` | yes |
 | `examples/<name>/` | the 4 built-in lessons (`lesson.json`, `model.js`, `check.js`, `a.js`…) | yes |
 | `gallery/items/<slug>/` + `gallery/gallery.json` | gallery lessons and their order | yes |
 | `scripts/` | `build.mjs`, `build_gallery.mjs`, `serve.mjs`, `mirror.mjs` | yes |

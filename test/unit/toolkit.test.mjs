@@ -50,6 +50,19 @@ test('build + verify: one page per library family passes', async () => {
   for (const x of results) assert.ok(!x.overflow, `${x.page} overflows on a phone`);
 });
 
+test('build.mjs applies the 2D look to story pages: night and blueprint build and pass, studio has no look stylesheet', () => {
+  const spec = path.join(root, 'dist/examples/pipeline.spec.json'), code = path.join(root, 'examples/pipeline/a.js'), pages = [];
+  for (const theme of ['studio', 'night', 'blueprint']) {
+    const out = path.join(work, `pipeline_story_${theme}.html`);
+    assert.equal(run('build.mjs', [spec, code, 'story', theme, out, '--cdn', server.cdn]).status, 0);
+    const html = fs.readFileSync(out, 'utf8');
+    assert.equal(html.includes('id="look2d"'), theme !== 'studio', theme);
+    pages.push(out);
+  }
+  const r = run('verify.mjs', [path.join(work, 'shots'), ...pages]);
+  for (const l of r.stdout.split('\n').filter(l => l.startsWith('{'))) { const x = JSON.parse(l); assert.ok(x.pass && !x.blank, x.page); }
+});
+
 test('verify.mjs reports a broken renderer as failing', () => {
   const out = path.join(work, 'broken.html');
   fs.writeFileSync(path.join(work, 'broken.js'), 'window.lab = { mount() { throw new Error("boom"); }, update() {}, destroy() {} };');

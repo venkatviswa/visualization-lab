@@ -315,3 +315,23 @@ test('export and import: a lesson round-trips through a JSON file; bad files are
   assert.match(await page.$eval('#specBox .banner.bad', n => n.textContent), /nosuchlib/);
   await ctx.close();
 });
+
+test('look: switching Night sky / Studio / Blueprint re-colours 2D story versions', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('#btnPipeline'); await sleep(4000);
+  const inkFill = async () => {
+    const h = await page.$('.pane[data-vid="A"] iframe'); const f = await h.contentFrame();
+    return f.evaluate(() => { const el = document.querySelector('#root svg [fill="#1d2433"], #root svg [fill="rgb(29, 36, 51)"]'); return el ? getComputedStyle(el).fill : 'none'; });
+  };
+  const rootBg = async () => { const h = await page.$('.pane[data-vid="A"] iframe'); const f = await h.contentFrame(); return f.evaluate(() => getComputedStyle(document.body).backgroundColor); };
+  assert.equal(await page.$eval('#themeSel', s => s.value), 'night');
+  assert.equal(await rootBg(), 'rgb(12, 17, 48)', 'night background on a 2D story');
+  assert.equal(await inkFill(), 'rgb(238, 240, 250)', 'ink remapped to the night palette');
+  await page.selectOption('#themeSel', 'studio'); await sleep(3500);
+  assert.equal(await rootBg(), 'rgb(255, 255, 255)', 'studio keeps the white look');
+  assert.equal(await inkFill(), 'rgb(29, 36, 51)');
+  await page.selectOption('#themeSel', 'blueprint'); await sleep(3500);
+  assert.equal(await rootBg(), 'rgb(11, 37, 69)');
+  assert.ok(allPass(await statuses(page)), 'stories still pass their check after re-theming');
+  await ctx.close();
+});

@@ -5,7 +5,7 @@
 ```
 src/vislab.html        the page, with build placeholders (/*@LIBS@*/, @@SPEC_RULES@@ …)
 src/starters.json      the starter chips in step 1
-kit/                   the toolkit: template.html, build.mjs, verify.mjs, check_spec.mjs, story3d_kit.js, reactflow.css, libraries.json
+kit/                   the toolkit: template.html, build.mjs, verify.mjs, check_spec.mjs, story3d_kit.js, look2d.js, reactflow.css, libraries.json
 examples/<name>/       the four built-in lessons: lesson.json + model.js + check.js + a.js, b.js, c.js
 gallery/items/<slug>/  the Get inspired lessons: spec.json + meta.json + a.js, b.js, c.js
 gallery/gallery.json   gallery order and the two cards that point at built-in lessons

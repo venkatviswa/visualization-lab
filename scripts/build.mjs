@@ -69,6 +69,7 @@ const fill = (ph, val) => { if (!page.includes(ph)) throw new Error('src/vislab.
 fill('/*@RFCSS@*/', read('kit/reactflow.css').replace(/<\/script/gi, '<\\/script'));
 fill('/*@LIBS@*/\n', LIBS);
 fill('/*@STORY3D_KIT@*/\n', KIT + '\n');
+fill('/*@LOOK2D@*/\n', '// kit/look2d.js (inlined by scripts/build.mjs)\n' + read('kit/look2d.js') + '\n');
 fill('/*@LIBS_STORY3D_AND_RUNTIME@*/\n', STORY3D);
 fill('/*@STARTERS@*/\n', STARTERS);
 fill('/*@EXAMPLES@*/\n', EXAMPLES);
@@ -82,7 +83,7 @@ fs.mkdirSync(path.join(dist, 'vendor'), { recursive: true });
 fs.mkdirSync(path.join(dist, 'kit'), { recursive: true });
 fs.writeFileSync(path.join(dist, 'vislab.html'), page);
 fs.copyFileSync(path.join(root, 'vendor/codemirror.min.js'), path.join(dist, 'vendor/codemirror.min.js'));
-for (const f of ['template.html', 'build.mjs', 'verify.mjs', 'check_spec.mjs', 'story3d_kit.js', 'reactflow.css', 'libraries.json']) fs.copyFileSync(path.join(root, 'kit', f), path.join(dist, 'kit', f));
+for (const f of ['template.html', 'build.mjs', 'verify.mjs', 'check_spec.mjs', 'story3d_kit.js', 'reactflow.css', 'libraries.json', 'look2d.js']) fs.copyFileSync(path.join(root, 'kit', f), path.join(dist, 'kit', f));
 for (const f of ['README.md', 'AUTHORING.md']) fs.copyFileSync(path.join(root, f), path.join(dist, f));
 // examples for the published toolkit
 const exd = path.join(dist, 'examples'); fs.mkdirSync(exd, { recursive: true });
