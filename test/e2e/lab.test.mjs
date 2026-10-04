@@ -1,6 +1,6 @@
 // End-to-end tests of the lab page in headless Chromium, against the built dist/vislab.html and the local package mirror.
 // Covers: examples load and pass their checks; shared sliders; host-owned playback and keyboard; the view/library mismatch flag;
-// comparison lines; the code editor (run, errors with line jumps, undo, discard); the console; full screen; download availability;
+// comparison lines; the scoring rubric; the code editor (run, errors with line jumps, undo, discard); the console; full screen; download availability;
 // the gallery tab (load on demand, filters, surprise me, open, use this prompt, the replace guard); dark mode and phone width.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -313,6 +313,49 @@ test('export and import: a lesson round-trips through a JSON file; bad files are
   fs.writeFileSync(unknownLib, JSON.stringify({ visualizationLab: 1, lesson: { ...data.lesson, versions: [{ id: 'A', lib: 'nosuchlib', code: 'window.lab = {}' }] } }));
   await page.click('#btnImport'); await page.setInputFiles('#importFile', unknownLib); await sleep(500);
   assert.match(await page.$eval('#specBox .banner.bad', n => n.textContent), /nosuchlib/);
+  await ctx.close();
+});
+
+test('scoring rubric: score versions 1-5, weighted totals and the winner, stale scores drop on a code change, scores export and import', async () => {
+  const fs = await import('fs'); const os = await import('os'); const path = await import('path');
+  const { ctx, page } = await fresh({ acceptDownloads: true });
+  await page.click('#btnRocket'); await sleep(4000);
+  assert.equal(await page.$('#rubric'), null, 'rubric is closed by default');
+  await page.click('#btnRubric'); await sleep(200);
+  assert.equal(await page.$$eval('table.rubric select', n => n.length), 12, '6 criteria x 2 versions');
+  assert.equal(await page.$eval('#btnRubricClaude', b => b.disabled), true, 'Claude pass needs the Claude connection, which tests do not have');
+  assert.deepEqual(await page.$$eval('[data-total]', n => n.map(x => x.textContent)), ['–', '–']);
+  const keys = await page.$$eval('table.rubric select', ns => ns.map(n => n.dataset.score));
+  for (const k of keys) await page.selectOption(`[data-score="${k}"]`, k.startsWith('A') ? '4' : '3');
+  await sleep(200);
+  assert.deepEqual(await page.$$eval('[data-total]', n => n.map(x => x.textContent)), ['80 ✓', '60']);
+  assert.match(await page.$eval('#rubricVerdict', n => n.textContent), /Winner so far: A/);
+  // a partial column has no total; a tie says so
+  await page.selectOption('[data-score="B:teach"]', '5'); await page.selectOption('[data-score="B:faithful"]', '5'); await page.selectOption('[data-score="B:clarity"]', '5'); await page.selectOption('[data-score="B:interaction"]', '5');
+  await page.selectOption('[data-score="B:visual"]', '4'); await page.selectOption('[data-score="B:robustness"]', '1'); await sleep(200);
+  // B = (5*30+5*20+5*15+5*15+4*10+1*10)/5 = 90
+  assert.deepEqual(await page.$$eval('[data-total]', n => n.map(x => x.textContent)), ['80', '90 ✓']);
+  for (const k of ['A:robustness']) await page.selectOption(`[data-score="${k}"]`, '5');
+  await sleep(200); assert.deepEqual(await page.$$eval('[data-total]', n => n.map(x => x.textContent)), ['82', '90 ✓']);
+  // scores survive a reload with the rubric still open
+  await page.reload(); await sleep(4000);
+  assert.deepEqual(await page.$$eval('[data-total]', n => n.map(x => x.textContent)), ['82', '90 ✓']);
+  // export carries the scores; a fresh import restores them
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#btnExport')]);
+  const file = path.join(os.tmpdir(), 'vl-scored.json'); await dl.saveAs(file);
+  const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+  assert.equal(data.lesson.scores.A.robustness, 5); assert.equal(data.lesson.scores.B.teach, 5); assert.equal(data.lesson.scores.A.by, 'designer');
+  // editing a version's code drops its scores (they were about the old code), the other column stays
+  const A = '.pane[data-vid="A"]';
+  await page.click(`${A} [data-tab="source"]`); await sleep(1500);
+  await page.evaluate(() => { const ed = CM.EditorView.findFromDOM(document.querySelector('.pane[data-vid="A"] .cm-editor')); ed.dispatch({ changes: { from: 0, insert: '// reviewed\n' } }); });
+  await page.click(`${A} .cm-content`); await page.keyboard.press('Control+Enter'); await sleep(3000);
+  assert.deepEqual(await page.$$eval('[data-total]', n => n.map(x => x.textContent)), ['–', '90 ✓']);
+  await page.click('#btnNew'); await sleep(200); await page.click('#btnNew'); await sleep(300);
+  await page.click('#btnImport'); await page.setInputFiles('#importFile', file); await sleep(7000);
+  assert.deepEqual(await page.$$eval('[data-total]', n => n.map(x => x.textContent)), ['82', '90 ✓'], 'imported scores shown, rubric opened');
+  await page.click('#btnRubricClear'); await sleep(200);
+  assert.deepEqual(await page.$$eval('[data-total]', n => n.map(x => x.textContent)), ['–', '–']);
   await ctx.close();
 });
 

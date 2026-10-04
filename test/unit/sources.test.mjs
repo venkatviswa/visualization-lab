@@ -82,3 +82,14 @@ test('docs/SKILL.lesson-visual-bakeoff.md: every library is a contender with a n
   for (const f of fs.readdirSync(path.join(root, 'kit'))) assert.ok(setup.includes(f), `kit/${f} is not listed in the skill's setup section`);
   for (const f of fs.readdirSync(path.join(root, 'dist/examples'))) assert.ok(setup.includes(f), `examples/${f} is not listed in the skill's setup section`);
 });
+
+test('the page\'s scoring rubric is the bake-off skill\'s judge rubric (same criteria, weights summing to 100)', () => {
+  const src = read('src/vislab.html');
+  const m = src.match(/const RUBRIC = (\[[\s\S]*?\]);\n/); assert.ok(m, 'RUBRIC constant');
+  const rubric = new Function('return ' + m[1])();
+  assert.equal(rubric.reduce((t, r) => t + r.weight, 0), 100);
+  const skill = read('docs/SKILL.lesson-visual-bakeoff.md');
+  const rows = [...skill.matchAll(/^\| ([^|]+?) \| (\d+)% \| ([^|]+?) \|$/gm)].map(r => ({ label: r[1], weight: Number(r[2]), q: r[3] }));
+  assert.equal(rows.length, rubric.length, 'judge table rows');
+  rows.forEach((row, i) => { assert.equal(rubric[i].label, row.label); assert.equal(rubric[i].weight, row.weight); assert.equal(rubric[i].q, row.q); });
+});

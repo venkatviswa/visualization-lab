@@ -217,6 +217,16 @@ body.guide-open{overflow:hidden}
 table.pairs{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
 table.pairs th,table.pairs td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--line);vertical-align:top}
 table.pairs th{color:var(--muted);font-weight:500}
+table.rubric{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+table.rubric th,table.rubric td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.rubric th{color:var(--muted);font-weight:500}
+table.rubric th.n,table.rubric td.n{text-align:center;width:64px}
+table.rubric td.crit small{display:block;color:var(--muted);font-size:11px}
+table.rubric select{font:inherit;font-size:12px;padding:2px 4px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:inherit}
+table.rubric tr.total td{font-weight:600;border-bottom:0}
+table.rubric td.win{color:var(--good)}
+.rubric-why{margin:6px 0 0;padding:0;list-style:none;font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:3px}
+.rubric-why li .tag{width:18px;height:18px;font-size:11px;margin-right:4px}
 .flag b{color:var(--warn)}
 .flag .foot-actions{display:flex;flex-wrap:wrap;gap:6px}
 .json{font:12px/1.5 var(--mono);min-height:220px}
@@ -966,7 +976,7 @@ function runEdit(id) {
   const pn = panes[id], v = state.versions.find(x => x.id === id); if (!v) return;
   if (isEdited(id)) {
     v.history = (v.history || []).concat([{ lib: v.lib, code: v.code, explanation: v.explanation, caveats: v.caveats }]).slice(-5);
-    v.code = pn.draft; v.handEdited = true; state.source = null;
+    v.code = pn.draft; v.handEdited = true; state.source = null; dropScore(id);
     save();
   }
   pn.draft = null; pn.tab = "preview";
@@ -1114,11 +1124,84 @@ function renderCompare() {
     el("button", { class: "btn small", type: "button", text: "Ask which teaches better", onclick: () => askChat("Compare versions " + names + " against the learning objective. Which teaches it best, what does each do better, and does the extra dimension or library add real information?") })),
     el("div", { class: "learn" }, el("b", { text: "What this comparison teaches" }),
       vs.slice(1).map(v => el("div", {}, el("span", { class: "tag " + vs[0].id, text: vs[0].id }), " vs ", el("span", { class: "tag " + v.id, text: v.id }), " " + lessonFor(vs[0].lib, v.lib)))),
-    el("p", { class: "note", style: "margin-top:6px", text: "Same spec, model, controls and check in every version, so the differences come from the library alone. Keyboard: Space plays or pauses, \u2190 and \u2192 step." }));
+    el("p", { class: "note", style: "margin-top:6px", text: "Same spec, model, controls and check in every version, so the differences come from the library alone. Keyboard: Space plays or pauses, \u2190 and \u2192 step." }),
+    el("div", { style: "margin-top:8px" }, el("button", { class: "btn small", type: "button", id: "btnRubric", text: state.showRubric ? "Hide scores" : "Score the versions", onclick: () => { state.showRubric = !state.showRubric; save(); renderCompare(); } })),
+    state.showRubric ? renderRubric(vs) : null);
+}
+
+/* ---------- Scoring rubric (the bake-off skill's judge rubric) ---------- */
+const RUBRIC = [
+  { id: "teach", label: "Teaches the objective", weight: 30, q: "Could a learner answer the predict and explain prompts from what they see?" },
+  { id: "faithful", label: "Faithful to the model", weight: 20, q: "Are the numbers and states visibly from model()? Are units and assumptions shown? Is nothing invented?" },
+  { id: "clarity", label: "Clear at a glance", weight: 15, q: "Clear hierarchy, readable labels, no overlaps or clipping, obvious focus" },
+  { id: "interaction", label: "Interaction value", weight: 15, q: "Do the sliders change something meaningful? Does stepping land on meaningful states?" },
+  { id: "visual", label: "Visual quality", weight: 10, q: "Polished and consistent with the theme, not cluttered" },
+  { id: "robustness", label: "Robustness", weight: 10, q: "Works at phone width, small file, no GPU needed (3D loses points here)" }
+];
+function weightedScore(sc) {
+  let t = 0;
+  for (const r of RUBRIC) { const v = Number(sc && sc[r.id]); if (!(v >= 1 && v <= 5)) return null; t += v * r.weight; }
+  return Math.round(t / 5);                       // 1..5 per criterion, weights sum to 100 → 20..100
+}
+function dropScore(id) { if (state.scores && state.scores[id]) { delete state.scores[id]; if (!Object.keys(state.scores).length) delete state.scores; } }
+function cleanScores(raw, ids) {
+  const out = {};
+  for (const id of ids) {
+    const sc = raw && raw[id]; if (!sc || typeof sc !== "object") continue;
+    const o = {}; let any = false;
+    for (const r of RUBRIC) { const v = Math.round(Number(sc[r.id])); if (v >= 1 && v <= 5) { o[r.id] = v; any = true; } }
+    if (typeof sc.why === "string" && sc.why.trim()) o.why = sc.why.trim().slice(0, 300);
+    if (sc.by === "claude" || sc.by === "designer") o.by = sc.by;
+    if (any || o.why) out[id] = o;
+  }
+  return Object.keys(out).length ? out : null;
+}
+function refreshRubric(vs) { const old = $("rubric"); if (old) old.replaceWith(renderRubric(vs)); else renderCompare(); }
+function renderRubric(vs) {
+  const sc = state.scores || {};
+  const totals = vs.map(v => weightedScore(sc[v.id]));
+  const best = Math.max(...totals.map(t => t == null ? -1 : t));
+  const winners = vs.filter((v, i) => totals[i] != null && totals[i] === best);
+  const table = el("table", { class: "rubric", "aria-label": "Scoring rubric" },
+    el("thead", {}, el("tr", {}, el("th", { text: "Criterion (weight)" }), vs.map(v => el("th", { class: "n" }, el("span", { class: "tag " + v.id, text: v.id }))))),
+    el("tbody", {},
+      RUBRIC.map(r => el("tr", {}, el("td", { class: "crit" }, r.label + " (" + r.weight + "%)", el("small", { text: r.q })),
+        vs.map(v => el("td", { class: "n" }, el("select", { "aria-label": r.label + " for version " + v.id, "data-score": v.id + ":" + r.id,
+          onchange: e => { state.scores = state.scores || {}; state.scores[v.id] = Object.assign({}, state.scores[v.id], { [r.id]: Number(e.target.value), by: "designer" }); save(); refreshRubric(vs); } },
+          el("option", { value: "", text: "\u2013" }), [1, 2, 3, 4, 5].map(n => el("option", { value: String(n), text: String(n), selected: sc[v.id] && sc[v.id][r.id] === n ? "selected" : null }))))))),
+      el("tr", { class: "total" }, el("td", { text: "Weighted score (of 100)" }),
+        vs.map((v, i) => el("td", { class: "n" + (totals[i] != null && totals[i] === best && winners.length === 1 ? " win" : ""), "data-total": v.id, text: totals[i] == null ? "\u2013" : String(totals[i]) + (totals[i] === best && winners.length === 1 ? " \u2713" : "") })))));
+  const bar = el("div", { class: "row", style: "margin-top:8px;align-items:center;gap:8px;flex-wrap:wrap" },
+    el("button", { class: "btn small", type: "button", id: "btnRubricClaude", text: "Ask Claude for a first pass", disabled: sample ? null : "disabled", onclick: scoreWithClaude }),
+    Object.keys(sc).length ? el("button", { class: "btn small", type: "button", id: "btnRubricClear", text: "Clear scores", onclick: () => { delete state.scores; save(); refreshRubric(vs); } }) : null,
+    el("span", { class: "note", id: "rubricVerdict", text: winners.length === 1 ? "Winner so far: " + winners[0].id + " (" + libName(winners[0].lib) + ")." : winners.length > 1 ? "Tie between " + winners.map(w => w.id).join(" and ") + "; the rubric prefers the simpler or 2D version." : "Score each version 1 to 5, or let Claude fill a first pass and adjust it." }));
+  const why = vs.filter(v => sc[v.id] && sc[v.id].why);
+  return el("div", { id: "rubric" }, table, bar, why.length ? el("ul", { class: "rubric-why" }, why.map(v => el("li", {}, el("span", { class: "tag " + v.id, text: v.id }), sc[v.id].why + (sc[v.id].by === "claude" ? " (Claude's first pass)" : "")))) : null);
+}
+async function scoreWithClaude() {
+  if (!sample) return;
+  const vs = ["A", "B", "C"].map(i => state.versions.find(v => v.id === i)).filter(Boolean);
+  if (vs.length < 2) return;
+  const btn = $("btnRubricClaude"); btn.disabled = true; btn.textContent = "Scoring\u2026";
+  const prompt = `You are the judge in a lesson visual bake-off. Score each version of the same lesson on this rubric, 1 (poor) to 5 (excellent) per criterion. You cannot see the pixels: judge from the code, the errors, the console, the check results and what the code evidently draws. Be strict and discriminating; identical scores for every version are a failure.
+Rubric: ${RUBRIC.map(r => r.id + " (" + r.weight + "%): " + r.label + ". " + r.q).join(" | ")}
+Return JSON only, no prose: {${vs.map(v => '"' + v.id + '": {' + RUBRIC.map(r => '"' + r.id + '": n').join(", ") + ', "why": "one sentence on this version\'s main strength and weakness"}').join(", ")}}
+
+${chatContext()}`;
+  try {
+    const raw = await sample.json(prompt, { cache: false });
+    const clean = cleanScores(raw, vs.map(v => v.id));
+    if (!clean) throw new Error("The reply held no scores.");
+    for (const id in clean) clean[id].by = "claude";
+    state.scores = Object.assign({}, state.scores, clean); save(); refreshRubric(vs);
+  } catch (e) {
+    btn.disabled = false; btn.textContent = "Ask Claude for a first pass";
+    $("rubricVerdict").textContent = "Scoring failed: " + (e && e.code ? errText(e) : (e.message || String(e)));
+  }
 }
 
 function removeVersion(id) {
-  state.versions = state.versions.filter(v => v.id !== id);
+  state.versions = state.versions.filter(v => v.id !== id); dropScore(id);
   if (panes[id]) { panes[id].node?.remove(); delete panes[id]; }
   save(); renderAll();
 }
@@ -1227,7 +1310,7 @@ async function callRenderer(id, lib, mode, extra, busyText) {
     const v = { id, lib, code: out.code, explanation: String(out.explanation || ""), caveats: Array.isArray(out.caveats) ? out.caveats.map(String) : [], history: [] };
     if (prev && mode !== "fresh") v.history = (prev.history || []).concat([{ lib: prev.lib, code: prev.code, explanation: prev.explanation, caveats: prev.caveats }]).slice(-5);
     state.versions = state.versions.filter(x => x.id !== id).concat(v).sort((a, b) => a.id.localeCompare(b.id));
-    pn.draft = null; state.source = null;
+    pn.draft = null; state.source = null; dropScore(id);
     save();
     pn.busy = false;
     loadPreview(id);
@@ -1251,7 +1334,7 @@ function repair(id) {
 }
 function undo(id) {
   const v = state.versions.find(x => x.id === id); if (!v || !v.history?.length) return;
-  const last = v.history.pop();
+  const last = v.history.pop(); dropScore(id);
   Object.assign(v, last); if (panes[id]) panes[id].draft = null; save(); loadPreview(id); renderAll();
 }
 
@@ -1320,6 +1403,7 @@ function chatContext() {
     const pn = panes[v.id] || {};
     parts.push(`Version ${v.id} (${libName(v.lib)}, ${LIBS[v.lib].dim}). How it is loaded: ${RUNTIME[v.lib]} Timeline: ${pn.timeline ? "uses host playback (duration/seek)" : "no duration/seek, so no host playback controls"}. Errors: ${JSON.stringify((pn.errors || []).map(m => pn.errLine && pn.errLine[m] ? m + " (code line " + pn.errLine[m] + ")" : m))}. Console (last 10): ${JSON.stringify((pn.logs || []).slice(-10).map(l => l.level + ": " + l.message))}.${v.handEdited ? " The designer has edited this code by hand; keep their edits." : ""} Check: ${JSON.stringify(pn.check || null)}. Visible content: ${pn.hasContent === false ? "none detected" : "yes or unknown"}.\nCode:\n${v.code.slice(0, 9000)}`);
   }
+  if (state.scores) parts.push("Rubric scores so far (1-5; by = who scored): " + JSON.stringify(state.scores));
   return parts.join("\n\n");
 }
 const CHAT_RULES = `You are Claude inside Visualization Lab, helping an educator or L&D designer build and compare interactive lessons. Be concise and specific: under 170 words unless asked for more, short paragraphs or a few bullets, no headings. Ground answers in the spec, code, errors and check results below. Speak about learning impact as well as code.
@@ -1483,9 +1567,9 @@ $("pageSeg").addEventListener("click", e => { const b = e.target.closest("button
 /* ---------- Export and import a lesson as JSON ---------- */
 const LESSON_FORMAT = 1;
 function lessonExport() {
-  const { goal, view, libChoice, spec, versions, chat, theme, sync } = state;
+  const { goal, view, libChoice, spec, versions, chat, theme, sync, scores } = state;
   return { visualizationLab: LESSON_FORMAT, exportedAt: new Date().toISOString(), title: spec ? spec.title : (goal || "Untitled lesson"),
-    lesson: { goal: goal || "", view: view || "Auto", libChoice: libChoice || "recommend", spec: spec || null, versions: (versions || []).map(v => ({ id: v.id, lib: v.lib, code: v.code, explanation: v.explanation || "", caveats: v.caveats || [], handEdited: !!v.handEdited })), chat: chat || [], theme: theme || "night", sync: sync !== false } };
+    lesson: { goal: goal || "", view: view || "Auto", libChoice: libChoice || "recommend", spec: spec || null, versions: (versions || []).map(v => ({ id: v.id, lib: v.lib, code: v.code, explanation: v.explanation || "", caveats: v.caveats || [], handEdited: !!v.handEdited })), chat: chat || [], theme: theme || "night", sync: sync !== false, scores: scores || null } };
 }
 async function saveTextFile(name, text, mime) {
   if (downloads) { try { const r = await downloads.save({ filename: name, data: text }); return r && r.status === "saved" ? "saved" : "done"; } catch (e) { if (!(e && e.code === "unavailable")) throw e; } }
@@ -1516,6 +1600,8 @@ function parseLesson(text) {
   }
   if (out.versions.length && !out.spec) throw new Error("The file has versions but no spec; the versions need the spec's model to run.");
   out.versions.sort((a, b) => a.id.localeCompare(b.id));
+  const scores = cleanScores(L.scores, out.versions.map(v => v.id));
+  if (scores) { out.scores = scores; out.showRubric = true; }
   return out;
 }
 function importLessonFile(file) {

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Scoring rubric in the compare step: the bake-off judge's six criteria and weights, 1–5 per version, weighted score out of 100 and the winner; Claude fills a first pass on request; scores clear when a version's code changes and travel with Export / Import lesson.
 - Bake-off skill (`docs/SKILL.lesson-visual-bakeoff.md`): D3 and the word cloud join the contender table (data stories, vocabulary) with library notes; a note on when to pick D3 over Chart.js; the seven looks; the `--course` page in the hand-over; the bundled kit and examples refreshed to match the repository. A unit test keeps the skill in step with `kit/libraries.json`.
 - Export for course: one self-contained lesson page per version (objective, predict prompt, the visual with controls and play bar, a live check line, explain prompt, assumptions), `kit/build.mjs --course` produces the same page. Download HTML now uses the kit template too (play bar and Look included).
 - 2D story versions follow the Look: a display-time re-colouring of the palette literals (`kit/look2d.js`), in the lab and in pages built by the toolkit. Seven looks for 2D: Night sky, Studio, Blueprint, Slate, Graphite, Forest, Paper; 3D stories map the new ones to their nearest scene.

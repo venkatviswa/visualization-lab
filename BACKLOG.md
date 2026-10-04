@@ -16,7 +16,7 @@ Open items, roughly in the order we plan to take them. Tick items here in the sa
 - [ ] **User test of the generation flow**: three people run Draft spec and Generate on new goals; collect where the spec or code came back wrong; tighten the prompts (edit the `AUTHORING.md` blocks). Everything in the gallery was built through the toolkit, so the in-lab prompts have only been exercised on the examples.
 - [ ] **Save to gallery** (a shared team store), so a team gallery grows beyond the built-in lessons.
 - [ ] **More than three versions** per lesson (A/B/C is pinned in the compare banner and chat, not in the pane code).
-- [ ] **Scoring rubric in the compare step** (teach, faithful, clarity, interaction, visual, robustness: the bake-off skill's rubric), Claude fills a first pass, the designer adjusts.
+- [x] **Scoring rubric in the compare step** (teach, faithful, clarity, interaction, visual, robustness: the bake-off skill's rubric), Claude fills a first pass, the designer adjusts.
 - [ ] **Phone layout pass** over existing lessons against the guide's phone rules (hover-only details, 11 px text, dropped panels).
 - [ ] **Verify lab-built lessons** in headless Chromium the way gallery lessons are (from Ask Claude, or documented as a step before publishing).
 - [ ] **Architecture note** with one diagram: sandbox + harness protocol, host-owned timeline, spec probe, gallery assembly, toolkit and skill.

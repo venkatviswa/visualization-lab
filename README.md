@@ -123,6 +123,8 @@ When the suggested library starts one of these pairs, the comparison is set auto
 
 **Comparison banner:** appears when you have two or more versions. It lists their libraries and what each comparison teaches. **Ask which teaches better** sends the question to the chat.
 
+**Score the versions** opens a rubric under the banner, the same one the bake-off skill's judge uses: Teaches the objective (30%), Faithful to the model (20%), Clear at a glance (15%), Interaction value (15%), Visual quality (10%) and Robustness (10%). Give each version 1 to 5 per criterion; the weighted score (out of 100) and the winner update as you go. **Ask Claude for a first pass** fills every cell from the code, errors, console and check results (Claude cannot see the pixels, so treat it as a starting point and adjust). Scores belong to the code they were given to: regenerating, refining, editing or undoing a version clears that version's column. They are saved with the lesson, included in Export lesson, and restored by Import lesson.
+
 ---
 
 ## Each version pane
@@ -149,7 +151,7 @@ When the suggested library starts one of these pairs, the comparison is set auto
 
 ## Export and import
 
-- **Export lesson** (top right) saves the whole lesson as one JSON file: goal, spec (model and check included), every version's code and notes, the chat, and the 3D look. The file is named after the lesson, for example `rocket-liftoff-and-escape.lesson.json`.
+- **Export lesson** (top right) saves the whole lesson as one JSON file: goal, spec (model and check included), every version's code and notes, the chat, the look, and any rubric scores. The file is named after the lesson, for example `rocket-liftoff-and-escape.lesson.json`.
 - **Import lesson** opens such a file. You can also drop a `.lesson.json` file anywhere on the page. An imported lesson counts as your own work, so New lab, Draft spec and the gallery ask before replacing it.
 - Files from an older or newer lab load as long as the libraries they use exist here; a version that uses an unknown library is refused with its name.
 - This is the way to move a lesson between browsers or hand it to a colleague. It needs no account and no server.
