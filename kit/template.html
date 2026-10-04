@@ -27,7 +27,7 @@ addEventListener('unhandledrejection', e => __errors.push('Unhandled rejection: 
   .bar input[type=range] { accent-color:var(--accent); }
   #params input[type=range] { flex:1 1 60px; min-width:60px; width:60px; }
   #params output { flex:0 0 auto; }
-  #params label { flex:1 1 260px; min-width:fit-content; max-width:100%; }
+  #params label { flex:1 1 260px; min-width:fit-content; max-width:100%; flex-wrap:wrap; }   /* a very long option label drops to its own line instead of overflowing */
   .sr { position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
   .bar #scrub { flex:1 1 160px; min-width:0; }
   .bar button, .bar select { background:transparent; color:var(--ink); border:1px solid var(--line); border-radius:7px; padding:4px 10px; font:inherit; cursor:pointer; }

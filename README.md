@@ -68,18 +68,18 @@ The lab's unit of work fits that shape: one concept, one visual, one check. A co
 
 **Ship and hand over.** Export for course per lesson, one iframe per visual (the snippet is under Putting a lesson in a course). Nothing is tracked and nothing phones home; completion lives in the LMS. **Export lesson** gives co-authors the whole lesson as one JSON file to open with **Import lesson**, review, score and send back, with no server between you.
 
-Start from: *Agentic delivery pipeline* for the method overview, *Watch an agent resolve a billing dispute* for what an agent does inside a stage, *Branches: a safe place to try ideas* for a tool concept told as a story, *Key terms of agentic AI* for the glossary, and the four enterprise architecture stories for the pattern of character, conflict and decision.
+Start from: *Agentic delivery pipeline* for the method overview, *Watch an agent resolve a billing dispute* for what an agent does inside a stage, *Branches: a safe place to try ideas* and *One push, one workflow, one deploy* for tool concepts told as stories (the second follows a push through GitHub Actions to a deploy, with a timeline chart as its comparison), *Key terms of agentic AI* for the glossary, and the four enterprise architecture stories for the pattern of character, conflict and decision.
 
 ---
 
 ## Get inspired
 
-Switch to **Get inspired** (top right) to browse 23 finished lessons:
+Switch to **Get inspired** (top right) to browse 24 finished lessons:
 
 | Subject | Lessons |
 | --- | --- |
 | Vocabulary | Key terms of agentic AI · Data governance terms and how they connect · Data privacy terms in plain English |
-| Enterprise process | Health claim lifecycle · Agentic delivery pipeline · Lead to cash · Branches: a safe place to try ideas (Git) |
+| Enterprise process | Health claim lifecycle · Agentic delivery pipeline · Lead to cash · Branches: a safe place to try ideas (Git) · One push, one workflow, one deploy (GitHub Actions) |
 | Enterprise architecture | One address change, eight systems · From spaghetti to hub: why an integration layer · Who is Maria? Identity resolution · One member, five sources, one profile (data moving through a customer data platform) · Where does PHI travel? |
 | Data stories | Which region is hiring fastest? · Simpson’s paradox in win rates · Why a support backlog explodes |
 | ML and LLM | How a model learns: nudging two dials · Attention: what does "it" refer to? · The context window is the model's desk · Watch an agent resolve a billing dispute · Choosing a fraud threshold · How an LLM picks the next word · How RAG finds the right policy passages |
@@ -287,7 +287,7 @@ All libraries load from jsDelivr at fixed versions.
 - **The editor loads the first time you open Edit code.** If it can't load, you get a plain text box that still supports Run, Undo and line jumps.
 
 **Previews and delivery**
-- **The gallery loads separately.** The lab page is small; the 23 lessons and their thumbnails load the first time you open Get inspired, so that tab takes a moment on first use.
+- **The gallery loads separately.** The lab page is small; the 24 lessons and their thumbnails load the first time you open Get inspired, so that tab takes a moment on first use.
 - **Libraries come from jsDelivr.** On a restricted network, in a strict LMS iframe or offline, previews and downloaded pages may fail with *"Failed to load …"*. For those environments, host the libraries yourself.
 - **3D needs WebGL.** On machines without a capable graphics card (some virtual desktops), 3D versions can be slow or blank. Keep a 2D version as a fallback.
 - **"Reduce motion" changes playback.** With the operating system's reduce-motion setting on, animations open at their final state instead of playing. Press Play to watch them.

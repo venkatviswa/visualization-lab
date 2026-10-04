@@ -1,0 +1,16 @@
+{
+  "slug": "github-ci",
+  "category": "Enterprise process",
+  "title": "One push, one workflow, one deploy",
+  "goal": "Tell the story of what happens after a developer runs git push: GitHub receives the event, matches it against the workflow file, starts a fresh runner, and the job installs, builds, runs unit tests and Playwright browser tests, then deploys only on main. Show how a failing step stops the job, how the pull-request check and branch protection gate the merge, and what a warm dependency cache saves. Let me switch between pushing a branch with a pull request and pushing straight to main.",
+  "a": {
+    "lib": "story",
+    "explanation": "A narrated SVG story: the developer and a terminal on the left, GitHub, the pull request and the server across the top, and the Actions runner as a panel with the eight steps as rows that fill in as they run (a spinner while running, a green tick, a red cross with 'the job stops here', or 'skipped'). GSAP moves the push to GitHub, the queued run to the runner, the check to the pull request and the deploy to the server; the clock in the corner shows real time since the push, a narrator caption per scene and three counters (elapsed, steps passed / failed / skipped, the server's build) carry the story. It is the version that explains the sequence to someone who has never opened a workflow file.",
+    "caveats": ["Durations are illustrative and the clock interpolates inside a running step", "The second run after a merge replays the same steps, so the story is longer on the pull-request path"]
+  },
+  "b": {
+    "lib": "chartjs",
+    "explanation": "A Chart.js timeline: one row per workflow step, a floating bar per run (the branch run and, after a merge, the main run drawn with a dark border) placed at the seconds after git push when it ran, coloured green, red or grey for passed, failed or skipped, and revealed only up to a dashed 'now' line that follows the playback clock. The header carries the elapsed time, the step counts, the install time with the cache state and the server's build. It is the version that shows where the minutes go: the long browser-test bar, the install bars that shrink from 143 s to 18 s with a warm cache, the four-minute gap waiting for a reviewer. It cannot show why a step exists or what the pull request looks like; the caption strip does that work.",
+    "caveats": ["Skipped steps leave an empty row rather than a marked one", "On a phone the step labels are small and the legend wraps"]
+  }
+}

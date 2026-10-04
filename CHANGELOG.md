@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Gallery: *One push, one workflow, one deploy*, an enterprise process story of a git push through a GitHub Actions workflow (fresh runner, install, build, unit and Playwright tests, conditional deploy) with the target branch, a failing test, the dependency cache and branch protection as the controls; a story and a Chart.js timeline of where the minutes go. Kit template: a very long option label wraps instead of overflowing a narrow frame.
 - Gallery: *One member, five sources, one profile*, an enterprise architecture story of data moving into and through a customer data platform (Data 360 with Salesforce names): ingest, harmonise, unify, calculate, activate, with the sources connected, the claims feed's speed and marketing consent as the controls; story, 3D story and React Flow versions. The README's deck story points at it.
 - README: *Building a course around a new way of working*, a section for leaders turning a new method into a course: outline as concepts, prompts and check as the questions and answer key, form per concept, consistency, the bake-off skill for scale, hand-over.
 - README: a second audience. The opening names architects and technology leaders alongside educators, and a new section, *A story for your next deck*, walks a data-flow story (identity resolution in a customer data platform, an agent loop) from prompt to live presentation to shipped file, pointing at the gallery lessons to start from.
