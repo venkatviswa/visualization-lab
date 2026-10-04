@@ -50,6 +50,26 @@ Lessons to start from, each with **Open in lab** and **Use this prompt** in the 
 
 Two things to check before the meeting: the page loads its library from jsDelivr, so the room needs internet (or host the files yourself, see the course section), and 3D needs a machine with WebGL, so keep the 2D version one click away.
 
+## Building a course around a new way of working
+
+Say you are rolling out a new method: an AI-assisted delivery pipeline, a governance model, a different way of running architecture reviews. The deck exists. The course is the harder part, because a method is a sequence of decisions, and a learner needs to see each decision play out, change its inputs, and be told whether they got it right. A recording can do the first; only something interactive does the other two.
+
+The lab's unit of work fits that shape: one concept, one visual, one check. A course is a list of them.
+
+**Outline the method as concepts.** One concept per thing a learner could get wrong, not one per slide. The gallery's *Agentic delivery pipeline* is a whole method in one visual: nine stages, three controls (how many review findings, governance in shadow or enforce mode, whether a human has approved) and a check that the guardrails hold at every setting: build runs once per finding, deployment reaches the sandbox only, the self-improvement fix never lands without a person. Most courses want that overview lesson, then one lesson per stage where a real decision lives. The five *ML and LLM* lessons in the gallery came out of a five-module masterclass the same way (one concept each: how a model learns, the context window, the ReAct loop, attention, branches), so that set is a worked example of a course outline turned into visuals.
+
+**Write the goal, then let the spec write the questions.** For each concept, describe what the learner should understand and the choice you want them to see. The spec Claude drafts carries a *predict* prompt (asked before the learner touches the controls) and an *explain* prompt (asked after), and **Export for course** places them above and below the visual with the live check line between. Those two prompts are the course's questions; the check is the course's answer key, computed from the model rather than written by hand.
+
+**Pick the form per concept, not per course.** Generate each concept as two or three versions and let the comparison banner and the rubric decide. A process is usually a story; a trade-off is usually a chart; vocabulary is a word cloud against a ranked list (the *Key terms* example, and a new way of working always comes with new words). Prefer the simpler version whenever it scores as well; the rubric is weighted toward whether a learner can answer the prompts, not toward spectacle.
+
+**Keep the course consistent.** One Look for every lesson (Studio for a light course site, Night sky for a dark one), the same character across the stories where it helps (the architecture lessons follow one member, Maria, through several systems), and the **System names** switch when the same course serves a generic audience and a product-specific one.
+
+**Produce at scale with the bake-off skill.** When the outline runs to twenty concepts, hand it to an agent: the *Lesson visual bake-off* skill (under Taking it further) writes the spec, builds three candidates in parallel, verifies them in a headless browser, has a fresh judge score them on the same rubric, polishes the winner and returns `visual.html`, a 2D fallback and a `lesson.json` with the prompts and the check. Every lesson in the gallery was built and verified through that toolkit, so the agent output and the hand-built output meet the same bar. A course-building agent then writes narration and quizzes from `lesson.json` and embeds `visual.html` unchanged.
+
+**Ship and hand over.** Export for course per lesson, one iframe per visual (the snippet is under Putting a lesson in a course). Nothing is tracked and nothing phones home; completion lives in the LMS. **Export lesson** gives co-authors the whole lesson as one JSON file to open with **Import lesson**, review, score and send back, with no server between you.
+
+Start from: *Agentic delivery pipeline* for the method overview, *Watch an agent resolve a billing dispute* for what an agent does inside a stage, *Branches: a safe place to try ideas* for a tool concept told as a story, *Key terms of agentic AI* for the glossary, and the four enterprise architecture stories for the pattern of character, conflict and decision.
+
 ---
 
 ## Get inspired
