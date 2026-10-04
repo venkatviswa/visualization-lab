@@ -20,6 +20,7 @@ The one idea everything rests on: **one spec, many renderers**. The model owns e
 | `gallery/items/<slug>/` + `gallery/gallery.json` | gallery lessons and their order | yes |
 | `scripts/` | `build.mjs`, `build_gallery.mjs`, `serve.mjs`, `mirror.mjs` | yes |
 | `test/` | `unit/`, `e2e/`, `gallery/` | yes |
+| `docs/SKILL.lesson-visual-bakeoff.md` | the bake-off skill (agent version of the lab); its kit is a copy of `kit/` | yes |
 | `dist/` | build output, published as the artifact | **never**: regenerate with `npm run build` |
 | `.cdn/`, `.work/` | package mirror and scratch | ignored |
 
@@ -52,7 +53,7 @@ Do not add a feature without a test, and do not change a prompt rule without upd
 
 - Plain modern JavaScript, no framework, no bundler for the page; ES modules for scripts and tests; `node --test` for tests; Playwright for the browser.
 - Lesson contract: see `AUTHORING.md` sections 2–6. Renderers never compute, never create inputs, never run their own clock; `seek(t)` is exact and cheap; `destroy()` leaves `root` empty.
-- Libraries load from jsDelivr at pinned versions; adding one means `kit/libraries.json` (+ a head), `scripts/mirror.mjs` picks it up, a toolkit test case in `test/unit/toolkit.test.mjs`, and a row appears in the guide automatically.
+- Libraries load from jsDelivr at pinned versions; adding one means `kit/libraries.json` (+ a head), `scripts/mirror.mjs` picks it up, a toolkit test case in `test/unit/toolkit.test.mjs`, a contender row and a notes row in `docs/SKILL.lesson-visual-bakeoff.md` (a unit test checks this), and a row appears in the guide automatically.
 - Colours and layout conventions are in the guide's `look` block; white preview background; phone width 420 px must not overflow.
 - Everything in the gallery is illustrative data; say so in each lesson's assumptions. No real customer names.
 - Commit messages: imperative one-liner, then the why. Small, focused commits. Branch for anything larger than a fix.

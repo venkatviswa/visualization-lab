@@ -9,7 +9,7 @@ Open items, roughly in the order we plan to take them. Tick items here in the sa
 - [x] **Export / import a lesson as JSON** (spec + versions + chat), so lessons move between browsers and people without a backend.
 - [x] **2D themes for story versions**: the Look now re-colours 2D stories too (`kit/look2d.js`).
 - [x] **"Export for course" button**: one standalone HTML with the chosen version, the learner prompts and the check, ready to embed in an LMS page.
-- [ ] **D3 in the bake-off skill's instructions**: the skill can build D3 pages but never picks D3 as a contender; add it to the trio table and the library notes in `SKILL.md`.
+- [x] **D3 in the bake-off skill's instructions**: D3 and the word cloud are contenders with library notes; the skill's kit refreshed (looks, `--course`).
 
 ## Then
 

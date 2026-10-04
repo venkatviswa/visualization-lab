@@ -69,3 +69,16 @@ test('gallery: gallery.json lists every item folder, and every item has the file
     assert.ok(meta.a && meta.b, `${slug}: a gallery lesson needs at least two versions`);
   }
 });
+
+test('docs/SKILL.lesson-visual-bakeoff.md: every library is a contender with a notes row, and the kit files it names exist', () => {
+  const skill = read('docs/SKILL.lesson-visual-bakeoff.md');
+  const table = skill.slice(skill.indexOf('## 2. Choose three contenders'), skill.indexOf('## 3.'));
+  const notes = skill.slice(skill.indexOf('Library notes (paste'), skill.indexOf('## 4.'));
+  for (const id of ids) {
+    assert.ok(table.includes('`' + id + '`'), `${id} is never offered as a contender`);
+    assert.ok(notes.includes(`- **${id}**:`), `${id} has no library notes row`);
+  }
+  const setup = skill.slice(skill.indexOf('## 0.'), skill.indexOf('## 1.'));
+  for (const f of fs.readdirSync(path.join(root, 'kit'))) assert.ok(setup.includes(f), `kit/${f} is not listed in the skill's setup section`);
+  for (const f of fs.readdirSync(path.join(root, 'dist/examples'))) assert.ok(setup.includes(f), `examples/${f} is not listed in the skill's setup section`);
+});
