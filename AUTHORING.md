@@ -208,11 +208,11 @@ node kit/verify.mjs shots/ a.html b.html
 
 **check_spec** compiles the model and check, runs them at the defaults and at every control's min and max, flags empty, single-entry or NaN data, evaluates `expectAtDefaults`, and exits 1 on any issue. Never hand a failing spec to a renderer, human or agent.
 
-**build** needs `--kit` for story3d and `--rfcss` for reactflow. `--cdn` points at a mirror for offline work.
+**build** needs `--kit` for story3d and `--rfcss` for reactflow. `--cdn` points at a mirror for offline work. `--course` wraps the visual as a lesson page (title, objective, predict prompt, check line, explain prompt, assumptions and units), the same page the lab's **Export for course** writes.
 
 **verify** opens each page in headless Chromium and prints one JSON line per page: `pass`, `errors`, `check`, `timeline`, `blank` (a screenshot with fewer than four colours), `overflow` (horizontal scroll at phone width), and the paths of five screenshots (`t00`, `t35`, `t70`, `t100`, `phone`). A lesson is done when every version passes at the defaults **and** with every control at its min and max, and someone has looked at the screenshots. Verify catches errors and blanks; it cannot see an overlapping label or a misleading picture.
 
-The standalone page has its own sliders and transport bar, so `a.html` can be embedded in a course as it is.
+The standalone page has its own sliders and transport bar, so `a.html` can be embedded as it is; with `--course` it is a complete lesson page.
 
 ---
 

@@ -63,6 +63,17 @@ test('build.mjs applies the 2D look to story pages: night and blueprint build an
   for (const l of r.stdout.split('\n').filter(l => l.startsWith('{'))) { const x = JSON.parse(l); assert.ok(x.pass && !x.blank, x.page); }
 });
 
+test('build.mjs --course wraps the visual as a lesson page and it passes verify', () => {
+  const out = path.join(work, 'rocket_course.html');
+  assert.equal(run('build.mjs', [path.join(root, 'dist/examples/rocket.spec.json'), path.join(root, 'examples/rocket/a.js'), 'p5', 'studio', out, '--cdn', server.cdn, '--course']).status, 0);
+  const html = fs.readFileSync(out, 'utf8');
+  assert.ok(html.includes('const COURSE = {"title":"Rocket liftoff and escape"'), 'course json embedded');
+  assert.ok(html.includes('"predict":'), 'predict prompt embedded');
+  const r = run('verify.mjs', [path.join(work, 'shots'), out]);
+  const x = JSON.parse(r.stdout.split('\n').find(l => l.startsWith('{')));
+  assert.ok(x.pass && x.timeline && !x.overflow, JSON.stringify(x));
+});
+
 test('verify.mjs reports a broken renderer as failing', () => {
   const out = path.join(work, 'broken.html');
   fs.writeFileSync(path.join(work, 'broken.js'), 'window.lab = { mount() { throw new Error("boom"); }, update() {}, destroy() {} };');

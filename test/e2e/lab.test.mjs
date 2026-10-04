@@ -338,3 +338,36 @@ test('look: switching Night sky / Studio / Blueprint re-colours 2D story version
   assert.ok(allPass(await statuses(page)), 'stories still pass their check after re-theming');
   await ctx.close();
 });
+
+test('Export for course and Download HTML produce standalone pages that run on their own', async () => {
+  const fs = await import('fs'); const os = await import('os'); const path = await import('path');
+  const { ctx, page } = await fresh({ acceptDownloads: true });
+  await page.click('#btnRocket'); await sleep(3500);
+  await page.selectOption('#themeSel', 'paper'); await sleep(500);
+  const sl = await page.$('#sliders input[type=range]'); await sl.evaluate(i => { i.value = 20; i.dispatchEvent(new Event('input', { bubbles: true })); }); await sleep(600);
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('.pane[data-vid="A"] [data-r=course]')]);
+  assert.equal(dl.suggestedFilename(), 'rocket-liftoff-and-escape.course.html');
+  const file = path.join(os.tmpdir(), 'vl-course.html'); await dl.saveAs(file);
+  const html = fs.readFileSync(file, 'utf8');
+  assert.ok(html.includes('const COURSE = {"title":"Rocket liftoff and escape"') && html.includes('"predict":"Lower the propellant share'), 'course wrapper with the learner prompts');
+  assert.ok(html.includes('window.LAB_THEME = "paper"'), 'current look carried over');
+  assert.ok(html.includes('"value":20') , 'current slider value carried over');
+  const [dl2] = await Promise.all([page.waitForEvent('download'), page.click('.pane[data-vid="B"] [data-r=dl]')]);
+  assert.equal(dl2.suggestedFilename(), 'rocket-liftoff-and-escape-B-chartjs.html');
+  const plain = path.join(os.tmpdir(), 'vl-plain.html'); await dl2.saveAs(plain);
+  assert.ok(fs.readFileSync(plain, 'utf8').includes('const COURSE = null;'), 'Download HTML has no course wrapper');
+  // the exported pages run on their own (served from the test server so libraries resolve via the mirror)
+  const dir = path.join(root, '.work/lab'); fs.copyFileSync(file, path.join(dir, 'course.html')); fs.copyFileSync(plain, path.join(dir, 'plain.html'));
+  for (const [name, course] of [['course.html', true], ['plain.html', false]]) {
+    const src = fs.readFileSync(path.join(dir, name), 'utf8').replaceAll('https://cdn.jsdelivr.net/npm/', server.cdn); fs.writeFileSync(path.join(dir, name), src);
+    const p2 = await ctx.newPage(); await p2.goto(url.replace('vislab.test.html', name)); await sleep(3500);
+    const st = await p2.evaluate(() => ({ ready: !!window.__ready, errors: window.__errors, check: window.__check, timeline: !document.getElementById('transport').hidden, course: document.body.classList.contains('course'), h1: document.querySelector('.course-head h1')?.textContent, checkLine: document.getElementById('checkLine')?.textContent }));
+    assert.ok(st.ready && !st.errors.length, name + ': ' + st.errors.join('; '));
+    assert.ok(st.check && st.check.pass, name + ' check');
+    assert.ok(st.timeline, name + ' has the transport bar');
+    assert.equal(st.course, course, name + ' course wrapper');
+    if (course) { assert.equal(st.h1, 'Rocket liftoff and escape'); assert.match(st.checkLine, /What the model confirms/); }
+    await p2.close();
+  }
+  await ctx.close();
+});

@@ -36,7 +36,7 @@ test('AUTHORING.md: every block the build reads is present and non-empty', () =>
 
 test('src/vislab.html: every build placeholder is present exactly once', () => {
   const src = read('src/vislab.html');
-  for (const ph of ['/*@RFCSS@*/', '/*@LIBS@*/', '/*@STORY3D_KIT@*/', '/*@LIBS_STORY3D_AND_RUNTIME@*/', '/*@STARTERS@*/', '/*@EXAMPLES@*/', '/*@PAIRS@*/', '@@SPEC_RULES@@', '@@RENDER_CONTRACT@@'])
+  for (const ph of ['/*@RFCSS@*/', '/*@LIBS@*/', '/*@STORY3D_KIT@*/', '/*@LOOK2D@*/', '/*@TEMPLATE@*/', '/*@LIBS_STORY3D_AND_RUNTIME@*/', '/*@STARTERS@*/', '/*@EXAMPLES@*/', '/*@PAIRS@*/', '@@SPEC_RULES@@', '@@RENDER_CONTRACT@@'])
     assert.equal(src.split(ph).length - 1, 1, ph);
 });
 

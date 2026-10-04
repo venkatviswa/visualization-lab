@@ -69,6 +69,7 @@ const fill = (ph, val) => { if (!page.includes(ph)) throw new Error('src/vislab.
 fill('/*@RFCSS@*/', read('kit/reactflow.css').replace(/<\/script/gi, '<\\/script'));
 fill('/*@LIBS@*/\n', LIBS);
 fill('/*@STORY3D_KIT@*/\n', KIT + '\n');
+fill('/*@TEMPLATE@*/\n', '// kit/template.html (inlined by scripts/build.mjs)\nconst KIT_TEMPLATE = ' + js(read('kit/template.html')) + ';\n');
 fill('/*@LOOK2D@*/\n', '// kit/look2d.js (inlined by scripts/build.mjs)\n' + read('kit/look2d.js') + '\n');
 fill('/*@LIBS_STORY3D_AND_RUNTIME@*/\n', STORY3D);
 fill('/*@STARTERS@*/\n', STARTERS);

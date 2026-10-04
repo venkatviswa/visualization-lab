@@ -354,6 +354,7 @@ const JSD = "https://cdn.jsdelivr.net/npm/";
 /*@LIBS@*/
 /*@STORY3D_KIT@*/
 /*@LOOK2D@*/
+/*@TEMPLATE@*/
 /*@LIBS_STORY3D_AND_RUNTIME@*/
 const LIB_IDS = Object.keys(LIBS);
 const RF_CSS = document.getElementById("rfcss").textContent;
@@ -465,19 +466,16 @@ const HARNESS = `(function(){
 
 function esc(code) { return String(code || "").replace(/<\/script/gi, "<\\/script"); }
 
-function buildDoc(lib, code, spec, p, standalone) {
+function buildDoc(lib, code, spec, p) {
   const L = LIBS[lib] || LIBS.svg;
   const type = L.module ? "module" : "text/javascript";
-  const ctrlCss = standalone ? "body{display:flex;flex-direction:column}.ctl{display:flex;flex-wrap:wrap;gap:8px 20px;padding:10px 14px;border-bottom:1px solid #dbe0e8;font:13px system-ui,sans-serif}.ctl label{display:flex;gap:8px;align-items:center}.ctl output{font-family:ui-monospace,monospace;color:#2b59c3;min-width:5ch}#root{flex:1}" : "";
-  const ctrls = standalone ? `<div class="ctl"><strong>${escHtml(spec.title)}</strong><button type="button" onclick="window.postMessage({__host:1,type:'replay'},'*')">Replay</button>${spec.params.map(q => `<label>${escHtml(q.label)} <input type="range" data-p="${escHtml(q.id)}" min="${q.min}" max="${q.max}" step="${q.step}" value="${p[q.id]}"><output>${escHtml(paramText(q, p[q.id]))}</output></label>`).join("")}</div>` : "";
-  const ctrlJs = standalone ? `<script>(function(){var P=${JSON.stringify(p)};document.querySelectorAll('[data-p]').forEach(function(i){i.addEventListener('input',function(){P[i.dataset.p]=Number(i.value);var q=(${JSON.stringify(Object.fromEntries(spec.params.map(q => [q.id, { min: q.min, step: q.step, unit: q.unit || "", labels: q.labels || null }])))})[i.dataset.p];var v=Number(i.value);i.nextElementSibling.textContent=q.labels&&q.labels[Math.round((v-q.min)/q.step)]!=null?q.labels[Math.round((v-q.min)/q.step)]:v+(q.unit?' '+q.unit:'');window.__labUpdate(Object.assign({},P))})})})();<\/script>` : "";
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escHtml(spec.title)} — ${L.name}</title>
-<style>html,body{margin:0;height:100%;background:#fff;color:#1d2433;font:13px/1.4 system-ui,sans-serif}#root{position:relative;width:100%;height:100%;overflow:hidden}${ctrlCss}</style>
+<style>html,body{margin:0;height:100%;background:#fff;color:#1d2433;font:13px/1.4 system-ui,sans-serif}#root{position:relative;width:100%;height:100%;overflow:hidden}</style>
 <script>window.LAB_THEME=${JSON.stringify(state.theme || "night")};<\/script><script>${HARNESS}<\/script>${L.head}${lib === "reactflow" ? "<style>" + RF_CSS + "</style>" : ""}${lib === "story" ? "<style id=\"look2d\">" + look2dCss(code, state.theme || "night") + "</style>" : ""}
-</head><body>${ctrls}<div id="root"></div>
+</head><body><div id="root"></div>
 <script>${esc(spec.modelCode)}\n${esc(spec.checkCode || "")}<\/script>
 <script type="${type}">${esc(code)}<\/script>
-<script type="${type}">window.__boot(${JSON.stringify(p)});<\/script>${ctrlJs}
+<script type="${type}">window.__boot(${JSON.stringify(p)});<\/script>
 </body></html>`;
 }
 function escHtml(s) { return String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
@@ -864,7 +862,8 @@ function buildPane(id) {
       el("div", { class: "foot-actions" },
         el("button", { class: "btn small", type: "button", "data-r": "repair", hidden: true, "data-gen": "1", text: "Fix errors", onclick: () => repair(id) }),
         el("button", { class: "btn small", type: "button", text: "Reload preview", onclick: () => loadPreview(id) }),
-        el("button", { class: "btn small", type: "button", "data-r": "dl", text: "Download HTML", onclick: () => download(id) }),
+        el("button", { class: "btn small", type: "button", "data-r": "dl", text: "Download HTML", title: "This version as a standalone page with its controls", onclick: () => download(id) }),
+        el("button", { class: "btn small", type: "button", "data-r": "course", text: "Export for course", title: "This version as a lesson page: objective, predict prompt, the visual, the check, explain prompt, assumptions", onclick: () => download(id, true) }),
         el("button", { class: "btn small", type: "button", "data-r": "undo", text: "Undo last change", onclick: () => undo(id) }),
         id !== "A" ? el("button", { class: "btn small", type: "button", text: "Remove " + id, onclick: () => removeVersion(id) }) : null))
   );
@@ -1258,15 +1257,35 @@ function undo(id) {
 
 /* ---------- Download a standalone file ---------- */
 let downloads = null;
-async function download(id) {
+// A standalone page from the kit template (the same page kit/build.mjs writes): sliders, transport bar, look, and
+// optionally the course wrapper (title, objective, predict, check line, explain, assumptions).
+function buildStandalone(v, course) {
+  const s = state.spec, L = LIBS[v.lib] || LIBS.svg, theme = state.theme || "night";
+  const specLite = Object.assign({}, s); delete specLite.modelCode; delete specLite.checkCode;
+  // the template's own controls use the spec's defaults; start from the current slider values instead
+  specLite.params = s.params.map(q => Object.assign({}, q, { value: params[q.id] != null ? params[q.id] : q.value }));
+  const head = L.head + (v.lib === "reactflow" ? "<style>" + RF_CSS + "</style>" : "") + (v.lib === "story" && theme !== "studio" ? '<style id="look2d">' + look2dCss(v.code, theme) + "</style>" : "");
+  const courseJson = course ? { title: s.title, objective: s.objective || "", predict: s.learnerPrompts && s.learnerPrompts.predict || "", explain: s.learnerPrompts && s.learnerPrompts.explain || "", assumptions: s.assumptions || [], units: s.units || [], library: L.name } : null;
+  return KIT_TEMPLATE
+    .replace("{{TITLE}}", escHtml(s.title || "Lesson visual"))
+    .replace("{{THEME}}", theme)
+    .replace("{{ROOT_BG}}", (v.lib === "story3d" || (v.lib === "story" && theme !== "studio")) ? "var(--bg)" : "#ffffff")
+    .replace("{{HEAD}}", () => head)
+    .replace("{{SPEC_JSON}}", () => esc(JSON.stringify(specLite)))
+    .replace("{{COURSE_JSON}}", () => esc(JSON.stringify(courseJson)))
+    .replace("{{MODEL}}", () => esc(s.modelCode))
+    .replace("{{CHECK}}", () => esc(s.checkCode || ""))
+    .replace("{{CODE}}", () => esc(v.code))
+    .replaceAll("{{CODE_TYPE}}", L.module ? "module" : "text/javascript");
+}
+async function download(id, course) {
   const v = state.versions.find(x => x.id === id); if (!v) return;
-  const html = buildDoc(v.lib, v.code, state.spec, Object.assign({}, params), true);
-  const name = slug(state.spec.title) + "-" + id + "-" + v.lib + ".html";
-  const btn = panes[id].node.querySelector("[data-r=dl]");
-  if (!downloads) { btn.textContent = "Download unavailable here"; return; }
-  try { const r = await downloads.save({ filename: name, data: html }); btn.textContent = r.status === "saved" ? "Saved" : "Download HTML"; }
-  catch (e) { btn.textContent = e && e.code === "unavailable" ? "Download unavailable here" : "Download HTML"; }
-  setTimeout(() => { btn.textContent = "Download HTML"; }, 2500);
+  const btn = panes[id].node.querySelector(course ? "[data-r=course]" : "[data-r=dl]"), label = btn.textContent;
+  const html = buildStandalone(v, !!course);
+  const name = slug(state.spec.title) + (course ? ".course.html" : "-" + id + "-" + v.lib + ".html");
+  try { const r = await saveTextFile(name, html, "text/html"); btn.textContent = r === "saved" ? "Saved" : "Exported"; }
+  catch (e) { btn.textContent = "Export failed"; }
+  setTimeout(() => { btn.textContent = label; }, 2500);
 }
 
 /* ---------- Chat ---------- */

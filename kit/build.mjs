@@ -1,5 +1,6 @@
 // Build one standalone visual page from the shared spec and one renderer.
-// Usage: node build.mjs <spec.json> <renderer.js> <lib> <theme> <out.html> [--kit story3d_kit.js] [--cdn https://cdn.jsdelivr.net/npm/]
+// Usage: node build.mjs <spec.json> <renderer.js> <lib> <theme> <out.html> [--kit story3d_kit.js] [--rfcss reactflow.css] [--cdn https://cdn.jsdelivr.net/npm/] [--course]
+//   --course wraps the visual as a lesson page: title, objective, predict prompt, check line, explain prompt, assumptions.
 // spec.json holds {title, params, modelCode, checkCode, ...}; lib is one of the keys in HEADS below.
 import fs from 'fs';
 import path from 'path';
@@ -7,6 +8,7 @@ import { fileURLToPath } from 'url';
 
 const [specPath, codePath, lib, theme = 'night', outPath, ...rest] = process.argv.slice(2);
 const opt = k => { const i = rest.indexOf(k); return i >= 0 ? rest[i + 1] : null; };
+const flag = k => rest.includes(k);
 const CDN = opt('--cdn') || 'https://cdn.jsdelivr.net/npm/';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const tpl = fs.readFileSync(path.join(here, 'template.html'), 'utf8');
@@ -35,6 +37,7 @@ const html = tpl
   .replace('{{ROOT_BG}}', (lib === 'story3d' || (lib === 'story' && theme !== 'studio')) ? 'var(--bg)' : '#ffffff')
   .replace('{{HEAD}}', () => head + look2d)
   .replace('{{SPEC_JSON}}', () => esc(JSON.stringify(specLite)))
+  .replace('{{COURSE_JSON}}', () => flag('--course') ? esc(JSON.stringify({ title: spec.title, objective: spec.objective || '', predict: spec.learnerPrompts && spec.learnerPrompts.predict || '', explain: spec.learnerPrompts && spec.learnerPrompts.explain || '', assumptions: spec.assumptions || [], units: spec.units || [], library: (LIBJ.find(l => l.id === lib) || {}).name || lib })) : 'null')
   .replace('{{MODEL}}', () => esc(spec.modelCode))
   .replace('{{CHECK}}', () => esc(spec.checkCode || ''))
   .replace('{{CODE}}', () => esc(code))

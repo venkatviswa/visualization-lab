@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Export for course: one self-contained lesson page per version (objective, predict prompt, the visual with controls and play bar, a live check line, explain prompt, assumptions), `kit/build.mjs --course` produces the same page. Download HTML now uses the kit template too (play bar and Look included).
 - 2D story versions follow the Look: a display-time re-colouring of the palette literals (`kit/look2d.js`), in the lab and in pages built by the toolkit. Seven looks for 2D: Night sky, Studio, Blueprint, Slate, Graphite, Forest, Paper; 3D stories map the new ones to their nearest scene.
 - Export lesson / Import lesson: the whole lesson as one JSON file (`<title>.lesson.json`), drag-and-drop import, validation with clear errors; imported lessons are protected by the replace guard.
 - Guide drawer in the app: the README and the authoring guide, with a `?` next to Draft spec that opens the spec rules; keyboard `?` toggles it.

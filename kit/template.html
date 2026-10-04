@@ -29,9 +29,25 @@ addEventListener('unhandledrejection', e => __errors.push('Unhandled rejection: 
   .bar button, .bar select { background:transparent; color:var(--ink); border:1px solid var(--line); border-radius:7px; padding:4px 10px; font:inherit; cursor:pointer; }
   .bar button.primary { background:var(--accent); color:#111; border-color:var(--accent); }
   #time { font-family:ui-monospace, monospace; color:var(--muted); font-size:12px; }
+  /* Course wrapper (only when COURSE is set): title, predict card, the visual, the check line, explain card, notes */
+  body.course { height:auto; min-height:100%; }
+  body.course #root { flex:none; height:min(62vh, 560px); min-height:320px; }
+  .course-head, .course-card, .course-notes, .course-foot { padding:12px 16px; background:var(--panel); border-top:1px solid var(--line); }
+  .course-head { border-top:0; border-bottom:1px solid var(--line); }
+  .course-head h1 { margin:0 0 4px; font-size:18px; font-weight:600; }
+  .course-head p { margin:0; color:var(--muted); font-size:13.5px; }
+  .course-card { display:grid; gap:6px; }
+  .course-card .k { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); font-weight:600; }
+  .course-card p { margin:0; font-size:14px; }
+  #checkLine { font-size:12.5px; color:var(--muted); }
+  #checkLine b { color:var(--ink); font-weight:600; }
+  .course-notes summary { cursor:pointer; color:var(--muted); font-size:13px; }
+  .course-notes ul { margin:6px 0 0; padding-left:18px; font-size:13px; }
+  .course-foot { font-size:11.5px; color:var(--muted); display:flex; flex-wrap:wrap; gap:4px 16px; }
 </style>
 </head>
 <body>
+<div id="courseTop"></div>
 <div id="root"></div>
 <div class="bar" id="params"></div>
 <div class="bar" id="transport" hidden>
@@ -42,8 +58,10 @@ addEventListener('unhandledrejection', e => __errors.push('Unhandled rejection: 
   <span id="time">0.0 / 0.0 s</span>
   <select id="speed" aria-label="Speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="4">4×</option></select>
 </div>
+<div id="courseBottom"></div>
 <script>
 const SPEC = {{SPEC_JSON}};
+const COURSE = {{COURSE_JSON}};
 {{MODEL}}
 {{CHECK}}
 document.documentElement.dataset.look = window.LAB_THEME;
@@ -56,7 +74,8 @@ document.documentElement.dataset.look = window.LAB_THEME;
   const $ = id => document.getElementById(id), root = $('root');
   const P = Object.fromEntries(SPEC.params.map(q => [q.id, q.value]));
   const text = (q, v) => (q.labels && q.labels[Math.round((v - q.min) / q.step)]) ?? (v + (q.unit ? ' ' + q.unit : ''));
-  const runCheck = () => { try { window.__check = typeof check === 'function' ? check(Object.assign({}, P)) : { pass: true, detail: 'no check' }; } catch (e) { window.__check = { pass: false, detail: 'check() threw: ' + e.message }; } };
+  const runCheck = () => { try { window.__check = typeof check === 'function' ? check(Object.assign({}, P)) : { pass: true, detail: 'no check' }; } catch (e) { window.__check = { pass: false, detail: 'check() threw: ' + e.message }; } const cl = $('checkLine'); if (cl && window.__check) { cl.innerHTML = ''; const b = document.createElement('b'); b.textContent = window.__check.pass ? 'What the model confirms: ' : 'Check failed: '; cl.append(b, window.__check.detail || ''); } };
+  if (COURSE) buildCourse();
   if (!window.lab || typeof lab.mount !== 'function') { __errors.push('window.lab.mount is missing'); return; }
   try { lab.mount(root, Object.assign({}, P)); } catch (e) { __errors.push('mount() failed: ' + e.message); return; }
   runCheck();
@@ -90,6 +109,19 @@ document.documentElement.dataset.look = window.LAB_THEME;
     requestAnimationFrame(tick);
   }
   window.__ready = true;
+  function buildCourse() {
+    document.body.classList.add('course');
+    document.title = COURSE.title || document.title;
+    const h = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+    const top = $('courseTop'), bottom = $('courseBottom');
+    const head = h('div', 'course-head'); head.append(h('h1', null, COURSE.title || SPEC.title)); if (COURSE.objective) head.append(h('p', null, COURSE.objective)); top.append(head);
+    if (COURSE.predict) { const c = h('div', 'course-card'); c.append(h('div', 'k', 'Predict first'), h('p', null, COURSE.predict)); top.append(c); }
+    const line = h('div', 'course-card'); line.append(h('div', 'k', 'Try the controls')); const cl = h('div', null, ''); cl.id = 'checkLine'; line.append(cl); bottom.append(line);
+    if (COURSE.explain) { const c = h('div', 'course-card'); c.append(h('div', 'k', 'Now explain'), h('p', null, COURSE.explain)); bottom.append(c); }
+    const notes = (COURSE.assumptions || []).concat(COURSE.units || []);
+    if (notes.length) { const d = h('details', 'course-notes'); d.append(h('summary', null, 'Assumptions and units')); const ul = h('ul'); for (const n of notes) ul.append(h('li', null, n)); d.append(ul); bottom.append(d); }
+    const foot = h('div', 'course-foot'); foot.append(h('span', null, 'Interactive lesson built with Visualization Lab'), h('span', null, COURSE.library ? 'Drawn with ' + COURSE.library : ''), h('span', null, 'Space plays or pauses; ← and → step')); bottom.append(foot);
+  }
 })();
 </script>
 </body>

@@ -140,7 +140,8 @@ When the suggested library starts one of these pairs, the comparison is set auto
 | **Refine** | Describe a change in plain words ("label the peak height") and Claude rewrites this version |
 | **Fix errors** | Asks Claude to fix the reported problems with the smallest change |
 | **Reload preview** | Restarts the preview without changing code |
-| **Download HTML** | Saves a standalone page with its own sliders, ready to open in a browser or embed |
+| **Download HTML** | Saves this version as a standalone page with its own sliders, play bar and the current Look |
+| **Export for course** | Saves this version as a lesson page: title, objective, the **Predict** prompt, the visual with its controls, a live "What the model confirms" line, the **Explain** prompt, assumptions and units. Ready to drop into a course. |
 | **Undo last change** | Steps back through the last 5 revisions (generations, refines, fixes and your own edits) |
 | **Remove B / C** | Deletes a comparison version |
 
@@ -152,6 +153,22 @@ When the suggested library starts one of these pairs, the comparison is set auto
 - **Import lesson** opens such a file. You can also drop a `.lesson.json` file anywhere on the page. An imported lesson counts as your own work, so New lab, Draft spec and the gallery ask before replacing it.
 - Files from an older or newer lab load as long as the libraries they use exist here; a version that uses an unknown library is refused with its name.
 - This is the way to move a lesson between browsers or hand it to a colleague. It needs no account and no server.
+
+## Putting a lesson in a course
+
+1. Pick the version that teaches best and click **Export for course** on it. The file is named `<title>.course.html` and carries the current Look and slider values as its starting state.
+2. Upload the file to your LMS or web server and embed it with an iframe:
+
+   ```html
+   <iframe src="rocket-liftoff-and-escape.course.html" width="100%" height="900" loading="lazy"
+           title="Rocket liftoff and escape" style="border:0"></iframe>
+   ```
+
+   Give it 800–1000 px of height so the predict prompt, the visual and the explain prompt all show; the page scrolls inside the frame if it's shorter.
+3. The page loads its library from jsDelivr, so the learner's device needs internet access. On a restricted network, host the library files yourself and change the `<script src>` URLs in the file.
+4. Nothing is tracked or sent anywhere: the page is self-contained. For completion tracking, wrap it in your LMS's own activity (SCORM/xAPI packaging is not built in).
+
+**Download HTML** gives the same page without the lesson wrapper, for a slide, a wiki or a demo.
 
 ## Ask Claude
 
