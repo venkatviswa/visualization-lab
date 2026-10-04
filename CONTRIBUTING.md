@@ -61,6 +61,10 @@ Tests run against the local mirror in `.cdn/`, never against jsDelivr. Plotly is
 
 The published artifact is `dist/vislab.html` plus `dist/vendor/`, `dist/gallery/`, `dist/kit/`, `dist/examples/`, `dist/README.md` and `dist/AUTHORING.md`. Publish all of them together; the page loads `vendor/codemirror.min.js` and `gallery/data.js` by relative path.
 
+## Before you start a change
+
+Read `CLAUDE.md`: it states the rule that every feature lands with its tests and its doc updates, and `BACKLOG.md` is the list of open items.
+
 ## Conventions
 
 - Plain modern JavaScript, no build step for the page beyond the placeholder fill; no framework.
