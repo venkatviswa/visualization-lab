@@ -1,11 +1,41 @@
 {
-  "order": ["key-terms", "vocab-network", "vocab-flashcards", "claims-lifecycle", "agent-pipeline", "lead-to-cash", "git-branches",
-            "ea-address-change", "ea-spaghetti-hub", "ea-identity-resolution", "ea-phi-flow",
-            "regional-hires", "simpsons-paradox", "ticket-backlog",
-            "ml-learning", "llm-attention", "next-token", "llm-context-window", "agent-react-loop", "classification-threshold", "rag-retrieval",
-            "regression-outlier"],
+  "order": [
+    "key-terms",
+    "vocab-network",
+    "vocab-flashcards",
+    "claims-lifecycle",
+    "agent-pipeline",
+    "lead-to-cash",
+    "git-branches",
+    "ea-address-change",
+    "ea-spaghetti-hub",
+    "ea-identity-resolution",
+    "ea-cdp-data-flow",
+    "ea-phi-flow",
+    "regional-hires",
+    "simpsons-paradox",
+    "ticket-backlog",
+    "ml-learning",
+    "llm-attention",
+    "next-token",
+    "llm-context-window",
+    "agent-react-loop",
+    "classification-threshold",
+    "rag-retrieval",
+    "regression-outlier"
+  ],
   "refs": {
-    "key-terms": { "category": "Vocabulary", "title": "Key terms of agentic AI", "constant": "TERMS", "example": "terms" },
-    "agent-pipeline": { "category": "Enterprise process", "title": "Agentic delivery pipeline", "constant": "PIPELINE", "example": "pipeline" }
+    "key-terms": {
+      "category": "Vocabulary",
+      "title": "Key terms of agentic AI",
+      "constant": "TERMS",
+      "example": "terms"
+    },
+    "agent-pipeline": {
+      "category": "Enterprise process",
+      "title": "Agentic delivery pipeline",
+      "constant": "PIPELINE",
+      "example": "pipeline"
+    }
   }
 }

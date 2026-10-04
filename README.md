@@ -46,7 +46,7 @@ Here is how the lab tells it.
 
 **Ship it.** **Download HTML** gives one file with its own controls, to link from a slide or host beside the deck; **Export for course** adds the objective, the predict and explain prompts and the check, for an enablement page; and when it has to be a static slide after all, the toolkit's verify step leaves screenshots at the key moments (`t35`, `t70`, `t100`) and with each control at its extremes, which are the frames worth pasting.
 
-Lessons to start from, each with **Open in lab** and **Use this prompt** in the gallery: *One address change, eight systems* (one change propagating through CRM, master data, the integration layer, claims, billing and analytics, with point-to-point versus event-driven as the switch); *Who is Maria?* (identity resolution with the match rule as the switch); *Where does PHI travel?* (a data flow where each of three safeguards can be turned off); *From spaghetti to hub* (why an integration layer). For the agentic side, *Watch an agent resolve a billing dispute* shows the think, call a tool, read the result loop, including a failing tool and a human approval gate, and *Agentic delivery pipeline* walks one story through the nine stages of an AI-driven delivery harness, with review findings, governance mode and the human gate as the controls.
+Lessons to start from, each with **Open in lab** and **Use this prompt** in the gallery: *One member, five sources, one profile* (the flow above, end to end: five sources, the platform's stages, an insight, two activations, with the sources connected, the claims feed's speed and the member's consent as the switches); *One address change, eight systems* (one change propagating through CRM, master data, the integration layer, claims, billing and analytics, with point-to-point versus event-driven as the switch); *Who is Maria?* (identity resolution with the match rule as the switch); *Where does PHI travel?* (a data flow where each of three safeguards can be turned off); *From spaghetti to hub* (why an integration layer). For the agentic side, *Watch an agent resolve a billing dispute* shows the think, call a tool, read the result loop, including a failing tool and a human approval gate, and *Agentic delivery pipeline* walks one story through the nine stages of an AI-driven delivery harness, with review findings, governance mode and the human gate as the controls.
 
 Two things to check before the meeting: the page loads its library from jsDelivr, so the room needs internet (or host the files yourself, see the course section), and 3D needs a machine with WebGL, so keep the 2D version one click away.
 
@@ -74,13 +74,13 @@ Start from: *Agentic delivery pipeline* for the method overview, *Watch an agent
 
 ## Get inspired
 
-Switch to **Get inspired** (top right) to browse 22 finished lessons:
+Switch to **Get inspired** (top right) to browse 23 finished lessons:
 
 | Subject | Lessons |
 | --- | --- |
 | Vocabulary | Key terms of agentic AI · Data governance terms and how they connect · Data privacy terms in plain English |
 | Enterprise process | Health claim lifecycle · Agentic delivery pipeline · Lead to cash · Branches: a safe place to try ideas (Git) |
-| Enterprise architecture | One address change, eight systems · From spaghetti to hub: why an integration layer · Who is Maria? Identity resolution · Where does PHI travel? |
+| Enterprise architecture | One address change, eight systems · From spaghetti to hub: why an integration layer · Who is Maria? Identity resolution · One member, five sources, one profile (data moving through a customer data platform) · Where does PHI travel? |
 | Data stories | Which region is hiring fastest? · Simpson’s paradox in win rates · Why a support backlog explodes |
 | ML and LLM | How a model learns: nudging two dials · Attention: what does "it" refer to? · The context window is the model's desk · Watch an agent resolve a billing dispute · Choosing a fraud threshold · How an LLM picks the next word · How RAG finds the right policy passages |
 | Math | How one outlier pulls a least-squares line |
@@ -287,7 +287,7 @@ All libraries load from jsDelivr at fixed versions.
 - **The editor loads the first time you open Edit code.** If it can't load, you get a plain text box that still supports Run, Undo and line jumps.
 
 **Previews and delivery**
-- **The gallery loads separately.** The lab page is small; the 22 lessons and their thumbnails load the first time you open Get inspired, so that tab takes a moment on first use.
+- **The gallery loads separately.** The lab page is small; the 23 lessons and their thumbnails load the first time you open Get inspired, so that tab takes a moment on first use.
 - **Libraries come from jsDelivr.** On a restricted network, in a strict LMS iframe or offline, previews and downloaded pages may fail with *"Failed to load …"*. For those environments, host the libraries yourself.
 - **3D needs WebGL.** On machines without a capable graphics card (some virtual desktops), 3D versions can be slow or blank. Keep a 2D version as a fallback.
 - **"Reduce motion" changes playback.** With the operating system's reduce-motion setting on, animations open at their final state instead of playing. Press Play to watch them.

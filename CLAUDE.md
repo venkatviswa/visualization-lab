@@ -4,7 +4,7 @@ Project context for Claude Code and other agents working in this repository. Kee
 
 ## What this is
 
-Visualization Lab: a single-page browser workbench where educators and L&D designers describe a teaching concept, let Claude draft a **spec** (objective, a pure `model(p)`, learner controls, a `check(p)`), then generate the same lesson with two to six different JavaScript libraries (versions A to F) and compare them side by side. A **Get inspired** gallery holds 22 finished lessons. A **toolkit** (`kit/`) builds and verifies standalone lesson pages, and a bake-off skill uses it from agents.
+Visualization Lab: a single-page browser workbench where educators and L&D designers describe a teaching concept, let Claude draft a **spec** (objective, a pure `model(p)`, learner controls, a `check(p)`), then generate the same lesson with two to six different JavaScript libraries (versions A to F) and compare them side by side. A **Get inspired** gallery holds 23 finished lessons. A **toolkit** (`kit/`) builds and verifies standalone lesson pages, and a bake-off skill uses it from agents.
 
 The one idea everything rests on: **one spec, many renderers**. The model owns every number; renderers only draw; the host page owns the controls and the playback clock. Comparing two versions compares libraries, not two AI interpretations.
 
