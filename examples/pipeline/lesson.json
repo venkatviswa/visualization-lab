@@ -71,7 +71,8 @@
     "learnerPrompts": {
       "predict": "Set review findings to 3. How many times will the story pass through Build, and can it ever reach the live org?",
       "explain": "Why does the Self-Improvement Agent stop at a human gate even when its proposed fix looks right?"
-    }
+    },
+    "expectAtDefaults": "m.improvement === \"applied\" && !m.liveOrgTouched && m.buildCycles === m.findings + 1"
   },
   "versions": [
     {

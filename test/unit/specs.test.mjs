@@ -21,13 +21,12 @@ const defaults = spec => Object.fromEntries(spec.params.map(q => [q.id, q.value]
 const work = path.join(root, '.work/specs'); fs.mkdirSync(work, { recursive: true });
 
 for (const dir of ['projectile', 'rocket', 'pipeline', 'terms']) {
-  test(`example ${dir}: check passes at defaults and extremes`, () => {
+  test(`example ${dir}: check_spec ok (defaults, extremes and expectAtDefaults)`, () => {
     const spec = exampleSpec(dir);
-    // built-in examples predate expectAtDefaults; the lab only needs the check
-    const { model, check } = load(spec), P = defaults(spec);
-    assert.ok(check(P).pass, check(P).detail);
-    for (const q of spec.params) for (const v of [q.min, q.max]) { const c = check({ ...P, [q.id]: v }); assert.ok(c.pass, `${q.id}=${v}: ${c.detail}`); }
-    assert.ok(model(P) && typeof model(P) === 'object');
+    assert.ok(spec.expectAtDefaults, `${dir} needs expectAtDefaults: the examples are what the skill tells builders to copy`);
+    const p = path.join(work, dir + '.spec.json'); fs.writeFileSync(p, JSON.stringify(spec));
+    const r = checkSpec(p);
+    assert.ok(r.ok, r.out.slice(0, 800));
   });
 }
 
@@ -46,6 +45,11 @@ test('check_spec rejects a spec whose defaults show nothing', () => {
   const r = checkSpec(p);
   assert.ok(!r.ok, 'a spec with empty data at defaults must fail');
   assert.match(r.out, /empty|expectAtDefaults/);
+  // empties at a slider's extreme are warnings, NaN there is still an issue
+  const edge = { ...bad, modelCode: 'function model(p) { return { points: p.n === 0 ? [] : [1, 2], v: p.n === 10 ? NaN : 1 }; }', params: [{ ...bad.params[0], value: 5 }] };
+  const pe = path.join(work, 'edge.spec.json'); fs.writeFileSync(pe, JSON.stringify(edge));
+  const re = checkSpec(pe);
+  assert.ok(!re.ok); assert.match(re.out, /n=10: result.v contains NaN/); assert.match(re.out, /"warnings": \[\s*"n=0: result.points is empty"/);
 });
 
 test('models are deterministic: two calls with the same params give identical output', () => {

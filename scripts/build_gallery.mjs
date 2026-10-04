@@ -23,7 +23,7 @@ if (!cdn) {
   await new Promise(r => setTimeout(r, 600));
   cdn = `http://localhost:${port}/.cdn/`;
 }
-const run = (script, a) => { const r = spawnSync(process.execPath, [path.join(root, 'kit', script), ...a], { encoding: 'utf8' }); if (r.status) { console.error(r.stdout, r.stderr); throw new Error(script + ' failed: ' + a.join(' ')); } return r.stdout; };
+const run = (script, a, tolerate) => { const r = spawnSync(process.execPath, [path.join(root, 'kit', script), ...a], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }); if (r.status && !tolerate) { console.error(r.stdout, r.stderr); throw new Error(script + ' failed: ' + a.join(' ')); } if (r.error) throw r.error; return r.stdout; };
 
 // Items: specs, renderers and meta -> lab objects
 const items = [], pages = [], failures = [];
@@ -60,8 +60,8 @@ for (const slug of gal.order) {
 }
 
 // Verify all pages at once
-const out = run('verify.mjs', [path.join(work, 'shots'), ...pages]);
-for (const line of out.split('\n').filter(l => l.startsWith('{'))) { const r = JSON.parse(line); if (!r.pass) failures.push(r.page + ': ' + (r.errors.join('; ') || (r.blank ? 'blank' : 'check failed'))); }
+const out = run('verify.mjs', [path.join(work, 'shots'), ...pages], true);   // verify exits 1 when a page fails; the failures are listed below
+for (const line of out.split('\n').filter(l => l.startsWith('{'))) { const r = JSON.parse(line); if (!r.pass) failures.push(r.page + ': ' + (r.errors.join('; ') || (r.blank ? 'blank' : r.overflow ? 'overflows at phone width' : r.embedClipped ? 'scrolls inside the standard embed' : r.extremes.some(e => !e.check) ? 'check fails at a slider extreme' : 'check failed'))); }
 
 // Thumbnails: version A at the end of playback, clipped to the visual, at 0.56 scale (560x311)
 const { chromium } = await import('playwright');

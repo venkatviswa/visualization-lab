@@ -130,8 +130,9 @@ window.lab = {
 - model(p) and check(p) already exist as globals. Call model(params) for every number you draw. Never re-implement or redefine model or check.
 - The host owns the controls: do not create sliders, inputs or buttons for the params. update(params) redraws from new values without a reload and restarts any animation.
 - The host owns playback: do not run your own clock, autoplay or replay button for the lesson's progress. seek(t) draws the exact state at playback time t (0 to duration), is cheap, and always draws the same picture for the same t; seek(duration) is a complete end state. A requestAnimationFrame loop is fine for continuous rendering (three.js, a p5 draw loop) as long as it draws the state the last seek set. markers returns the playback times where steps begin, which powers the host's previous and next step buttons. Lessons with nothing that changes over time omit duration and seek.
-- root is an empty div filling the preview (position: relative). Size everything from root.clientWidth and root.clientHeight and handle resizing.
+- root is an empty div filling the preview (position: relative). Size everything from root.clientWidth and root.clientHeight and handle resizing. A ResizeObserver callback must not re-render synchronously (defer with requestAnimationFrame), or the browser reports "ResizeObserver loop completed with undelivered notifications" as an error.
 - No network requests, external images, fonts or tiles; libraries are already loaded. No alert, confirm or prompt.
+- Anything the learner must read also exists as text: the host puts model(p).summary (a one-line string) in a live status line for screen readers, so give the model a summary; a value that matters only as pixels on a canvas is not accessible.
 - destroy() removes everything you added: DOM, listeners, loops, timers, and GPU objects (dispose three.js geometries, materials, textures and the renderer; chart.destroy(); inst.remove(); Plotly.purge; root.unmount()).
 - Under about 250 lines of plain modern JavaScript, no build step.
 <!-- /lab -->
@@ -206,13 +207,20 @@ node kit/build.mjs spec.json a.js p5 studio a.html [--kit kit/story3d_kit.js] [-
 node kit/verify.mjs shots/ a.html b.html
 ```
 
-**check_spec** compiles the model and check, runs them at the defaults and at every control's min and max, flags empty, single-entry or NaN data, evaluates `expectAtDefaults`, and exits 1 on any issue. Never hand a failing spec to a renderer, human or agent.
+**check_spec** compiles the model and check, runs them at the defaults and at every control's min and max, and exits 1 on any issue: a failing check anywhere, empty, single-entry or NaN data at the defaults, NaN or no data at an extreme, or `expectAtDefaults` false. Empty or single-entry data at an extreme is a `warning` (an edge value may legitimately produce none); read the warnings and decide. Never hand a failing spec to a renderer, human or agent.
 
 **build** needs `--kit` for story3d and `--rfcss` for reactflow. `--cdn` points at a mirror for offline work. `--course` wraps the visual as a lesson page (title, objective, predict prompt, check line, explain prompt, assumptions and units), the same page the lab's **Export for course** writes.
 
-**verify** opens each page in headless Chromium and prints one JSON line per page: `pass`, `errors`, `check`, `timeline`, `blank` (a screenshot with fewer than four colours), `overflow` (horizontal scroll at phone width), and the paths of five screenshots (`t00`, `t35`, `t70`, `t100`, `phone`). A lesson is done when every version passes at the defaults **and** with every control at its min and max, and someone has looked at the screenshots. Verify catches errors and blanks; it cannot see an overlapping label or a misleading picture.
+**verify** opens each page in headless Chromium and prints one JSON line per page, then exits 1 if any page failed. Fields: `pass`, `errors`, `check`, `timeline`, `blank` (a screenshot with fewer than four colours), `overflow` (horizontal scroll at 420px), `embedClipped` (the page scrolls inside the standard embed below, on a 390×844 phone or in a 560px column; `null` for `--course` pages, which are whole documents and scroll by design), `status` (the text status line), `extremes` (for up to four controls, the check result and status at the control's min and max), and `shots`: `t00`, `t35`, `t70`, `t100` along the timeline, `phone` at 420px, and `x-<param>-min` / `x-<param>-max` for each control at the end of the timeline, so a reviewer can see what every slider does. `pass` requires ready, no errors, check passing, not blank, no overflow and not clipped in the embed. A lesson is done when every version passes and someone has looked at the screenshots: verify cannot see an overlapping label or a misleading picture.
 
-The standalone page has its own sliders and transport bar, so `a.html` can be embedded as it is; with `--course` it is a complete lesson page.
+The standalone page has its own sliders and transport bar. Embed it with this rule, which gives a lab the height it needs (about 640px) whatever the column width; the bake-off skill and verify use the same rule:
+
+```html
+<style>.lab-embed{display:block;width:100%;aspect-ratio:16/10;min-height:640px;max-height:85vh;border:0}</style>
+<iframe class="lab-embed" sandbox="allow-scripts" title="Rocket liftoff and escape" srcdoc="…the file's HTML, attribute-escaped…"></iframe>
+```
+
+`src="a.html"` works too when the file is hosted beside the course page. A bare `aspect-ratio:16/10` without the minimum height gives about 220px on a phone, which clips the controls. With `--course` the output is a complete lesson page instead; give it its own frame of 800–1000px as the README's course section describes.
 
 ---
 
@@ -265,7 +273,8 @@ Before a lesson ships, someone checks:
 - [ ] No renderer creates inputs or runs its own clock for lesson progress.
 - [ ] `seek(t)` draws the same picture for the same `t`, and `seek(duration)` is a complete end state.
 - [ ] Nothing is loaded from the network; `destroy()` leaves `root` empty and no loops running.
-- [ ] Verify passes at defaults, min and max; the screenshots look right at desktop and phone.
+- [ ] Verify passes (exit 0): no errors, check passing, not blank, no phone overflow, not clipped in the embed; the screenshots look right at desktop, at phone width and at each control's extremes (`x-*`).
+- [ ] The model returns a one-line `summary`, so the status line reads sensibly with the sliders at any value.
 - [ ] Nothing important is hover-only; colour never carries meaning alone.
 - [ ] The explanation says what the version does badly, not only well.
 - [ ] Names, people, companies and amounts are fictional or clearly labelled.

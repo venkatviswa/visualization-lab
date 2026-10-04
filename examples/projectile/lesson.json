@@ -50,7 +50,8 @@
     "learnerPrompts": {
       "predict": "Before you move the slider: which angle sends the ball farthest, 30°, 45° or 60°?",
       "explain": "Why do 30° and 60° land at the same spot even though one flies much higher?"
-    }
+    },
+    "expectAtDefaults": "m.range > 0 && m.maxHeight > 0 && m.points.length > 1"
   },
   "versions": [
     {

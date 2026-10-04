@@ -176,7 +176,7 @@ window.lab = {
     wrap.append(headEl, stripEl, flowEl, infoEl); root.append(wrap);
     rroot = ReactDOM.createRoot(flowEl);
     render();
-    ro = new ResizeObserver(() => layout(root)); ro.observe(flowEl);
+    ro = new ResizeObserver(() => requestAnimationFrame(() => { if (rroot) layout(root); })); ro.observe(flowEl);   // deferred: a synchronous re-render inside the observer trips "ResizeObserver loop completed"
   },
   update(params) { M = model(params); simT = 0; lastKey = ''; selected = null; render(); },
   destroy() { if (ro) ro.disconnect(); if (rroot) rroot.unmount(); if (wrap) wrap.remove(); rroot = null; M = null; inst = null; }

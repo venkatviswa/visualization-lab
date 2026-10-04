@@ -170,7 +170,14 @@ When the suggested library starts one of these pairs, the comparison is set auto
 3. The page loads its library from jsDelivr, so the learner's device needs internet access. On a restricted network, host the library files yourself and change the `<script src>` URLs in the file.
 4. Nothing is tracked or sent anywhere: the page is self-contained. For completion tracking, wrap it in your LMS's own activity (SCORM/xAPI packaging is not built in).
 
-**Download HTML** gives the same page without the lesson wrapper, for a slide, a wiki or a demo.
+**Download HTML** gives the same page without the lesson wrapper, for a slide, a wiki or a demo, or for a course that puts the lab between its own paragraphs. Embed that plain page with this rule so it keeps the height it needs (about 640 px) whatever the column width:
+
+```html
+<style>.lab-embed{display:block;width:100%;aspect-ratio:16/10;min-height:640px;max-height:85vh;border:0}</style>
+<iframe class="lab-embed" src="rocket-liftoff-and-escape-A-p5.html" sandbox="allow-scripts" title="Rocket liftoff and escape"></iframe>
+```
+
+Both pages carry a hidden live status line with the model's one-line summary, so screen readers get the key result as text.
 
 ## Ask Claude
 
@@ -256,7 +263,7 @@ See **AUTHORING.md** (published beside this file): the spec format, the model an
 - **Toolkit:** the scripts the lab uses are published alongside it under `kit/`:
   - `template.html` and `build.mjs` turn a spec and a renderer into a standalone page.
   - `check_spec.mjs` validates a spec.
-  - `verify.mjs` tests pages in headless Chromium and takes screenshots.
+  - `verify.mjs` tests pages in headless Chromium (errors, check, blank, phone overflow, embed fit, slider extremes) and takes screenshots; it exits 1 when a page fails.
   - `story3d_kit.js` is the 3D story kit.
 
   Worked examples are under `examples/`.

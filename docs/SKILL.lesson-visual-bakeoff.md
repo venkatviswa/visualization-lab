@@ -46,7 +46,7 @@ Rules:
 - 1 to 4 controls. On/off or choice controls use `min 0, step 1` and `labels`.
 - Use real units and constants. Name every simplification in `assumptions`. Mark placeholder names or numbers as illustrative.
 
-Validate: `node bakeoff/kit/check_spec.mjs bakeoff/<slug>/spec.json`. It must print `"ok": true`. It compiles the code, runs the model at defaults and at each slider's min and max, flags empty or NaN data, runs the check, and evaluates `expectAtDefaults`. Fix the spec until it passes. Never send builders a failing spec.
+Validate: `node bakeoff/kit/check_spec.mjs bakeoff/<slug>/spec.json`. It must print `"ok": true`. It compiles the code, runs the model and the check at the defaults and at each slider's min and max, fails on a failing check, on empty, single-entry or NaN data at the defaults, on NaN at an extreme and on `expectAtDefaults` being false; empty data at an extreme is listed under `warnings` for you to judge. Fix the spec until it passes. Never send builders a failing spec. Give the model a one-line `summary` string: the page shows it as a live text status for screen readers.
 
 ## 2. Choose three contenders
 
@@ -84,12 +84,14 @@ Write bakeoff/<slug>/src/<lib>.js. Contract (mandatory):
 - root is an empty div filling the visual area (position: relative). Size from root.clientWidth/clientHeight and handle resizing (ResizeObserver).
 - No network requests, external images or fonts; no alert or prompt. Text goes in the scene or an HTML overlay inside root.
 - Show current values, units and the key result on screen. Label what the learner must notice. Under 300 lines.
+- Anything the learner must read also has to exist as HTML text, not only as canvas pixels: the page shows model(p).summary as a live status line, so make sure the summary names the key result.
+- The page must fit a 640 px tall embed on a 390 px phone and in a 560 px column without scrolling inside the frame (verify reports embedClipped).
 Library notes: <paste the matching notes from the library table>.
 
 Build and test:
   node bakeoff/kit/build.mjs bakeoff/<slug>/spec.json bakeoff/<slug>/src/<lib>.js <lib> <theme> bakeoff/<slug>/candidates/<lib>.html <extra flags>
   node bakeoff/kit/verify.mjs bakeoff/<slug>/shots bakeoff/<slug>/candidates/<lib>.html
-Read the screenshots in bakeoff/<slug>/shots/<lib>/ (t00, t35, t70, t100, phone) and fix what looks wrong: clipped or overlapping text, empty areas, unreadable labels, nothing moving. Repeat until verify prints "pass": true and the screenshots look right, at most 4 rounds.
+Read the screenshots in bakeoff/<slug>/shots/<lib>/ (t00, t35, t70, t100, phone, and x-<param>-min / x-<param>-max for each slider) and fix what looks wrong: clipped or overlapping text, empty areas, unreadable labels, nothing moving, a slider whose extremes look the same. Repeat until verify prints "pass": true (it exits 1 otherwise) and the screenshots look right, at most 4 rounds.
 Return: the final verify JSON line, one paragraph on what the visual shows and how it teaches the objective, and known weaknesses.
 ```
 
@@ -111,11 +113,11 @@ Library notes (paste the matching row into the brief):
 
 `node bakeoff/kit/verify.mjs bakeoff/<slug>/shots bakeoff/<slug>/candidates/*.html`
 
-A candidate is disqualified if `pass` is false: it didn't load or mount, threw errors, failed the model check, or drew a blank. If two or more fail, send each failing builder its verify output with SendMessage for one more round. Never judge a failing page.
+A candidate is disqualified if `pass` is false: it didn't load or mount, threw errors, failed the model check, drew a blank, overflows at phone width (`overflow`), or scrolls inside the standard embed (`embedClipped`). Verify exits 1 when any page fails. If two or more fail, send each failing builder its verify output with SendMessage for one more round. Never judge a failing page.
 
 ## 5. Judge (a fresh sub-agent)
 
-Spawn one more `Agent` that built nothing. Give it the spec (objective, assumptions, learnerPrompts), each passing candidate's screenshots (it must Read every PNG: t00, t35, t70, t100, phone), the verify JSON, and the builders' summaries, but not their code. Ask it to score each candidate 1 to 5 per criterion and return JSON only:
+Spawn one more `Agent` that built nothing. Give it the spec (objective, assumptions, learnerPrompts), each passing candidate's screenshots (it must Read every PNG: t00, t35, t70, t100, phone, and the x-<param>-min / x-<param>-max pairs, which show what each slider does and are the evidence for "Interaction value"), the verify JSON (including `status`, the text a screen reader gets), and the builders' summaries, but not their code. Ask it to score each candidate 1 to 5 per criterion and return JSON only:
 
 | Criterion | Weight | Question |
 | --- | --- | --- |
@@ -141,7 +143,10 @@ Send the judge's fixes to the winning builder with SendMessage. Rebuild and re-v
 - Tell the user in two or three lines: the winner, its score against the others, and where the bundle is. Send `visual.html` and `scorecard.md` with SendUserFile when not running inside another agent.
 
 Instructions for the course agent that receives the bundle (include them in `lesson.json` as `embed`):
-- Embed `visual.html` unchanged as a fixed asset: `<iframe src="visual.html" sandbox="allow-scripts" title="<title>" style="width:100%;aspect-ratio:16/10;border:0"></iframe>`, or `srcdoc` with the file's HTML. One iframe per visual, so library globals never collide.
+- Embed `visual.html` unchanged, one iframe per visual so library globals never collide, with exactly this rule (a bare 16/10 aspect ratio gives about 220 px on a phone and clips the controls):
+  `<style>.lab-embed{display:block;width:100%;aspect-ratio:16/10;min-height:640px;max-height:85vh;border:0}</style>`
+  `<iframe class="lab-embed" sandbox="allow-scripts" title="<title>" srcdoc="<the file's HTML, attribute-escaped>"></iframe>` (or `src="visual.html"` when the file is hosted beside the page).
+- The `--course` page is a standalone whole-page lesson (objective, predict, visual, check line, explain, assumptions). Courses that want the lab inside their own text embed the plain `visual.html` as above; courses that want the ready-made lesson page give the `--course` file its own frame, 800 to 1000 px tall.
 - Never edit or restyle the visual. To change it, rerun this skill with a revised spec.
 - Write the narration, quizzes and recap from `lesson.json` (objective, assumptions, learnerPrompts, check detail). Use `fallback.html` where WebGL may be missing (virtual desktops).
 

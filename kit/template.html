@@ -22,9 +22,13 @@ addEventListener('unhandledrejection', e => __errors.push('Unhandled rejection: 
   body { display:flex; flex-direction:column; }
   #root { position:relative; flex:1; min-height:320px; overflow:hidden; background:{{ROOT_BG}}; }
   .bar { display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; padding:8px 12px; background:var(--panel); border-top:1px solid var(--line); }
-  .bar label { display:flex; gap:8px; align-items:center; white-space:nowrap; }
+  .bar label { display:flex; gap:8px; align-items:center; white-space:nowrap; max-width:100%; min-width:0; }
   .bar output { color:var(--accent); font-family:ui-monospace, monospace; min-width:5ch; }
   .bar input[type=range] { accent-color:var(--accent); }
+  #params input[type=range] { flex:1 1 60px; min-width:60px; width:60px; }
+  #params output { flex:0 0 auto; }
+  #params label { flex:1 1 260px; min-width:fit-content; max-width:100%; }
+  .sr { position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
   .bar #scrub { flex:1 1 160px; min-width:0; }
   .bar button, .bar select { background:transparent; color:var(--ink); border:1px solid var(--line); border-radius:7px; padding:4px 10px; font:inherit; cursor:pointer; }
   .bar button.primary { background:var(--accent); color:#111; border-color:var(--accent); }
@@ -49,6 +53,7 @@ addEventListener('unhandledrejection', e => __errors.push('Unhandled rejection: 
 <body>
 <div id="courseTop"></div>
 <div id="root"></div>
+<p id="status" class="sr" aria-live="polite"></p>
 <div class="bar" id="params"></div>
 <div class="bar" id="transport" hidden>
   <button id="prev" type="button" aria-label="Previous step">&#9664;&#9664;</button>
@@ -75,17 +80,23 @@ document.documentElement.dataset.look = window.LAB_THEME;
   const P = Object.fromEntries(SPEC.params.map(q => [q.id, q.value]));
   const text = (q, v) => (q.labels && q.labels[Math.round((v - q.min) / q.step)]) ?? (v + (q.unit ? ' ' + q.unit : ''));
   const runCheck = () => { try { window.__check = typeof check === 'function' ? check(Object.assign({}, P)) : { pass: true, detail: 'no check' }; } catch (e) { window.__check = { pass: false, detail: 'check() threw: ' + e.message }; } const cl = $('checkLine'); if (cl && window.__check) { cl.innerHTML = ''; const b = document.createElement('b'); b.textContent = window.__check.pass ? 'What the model confirms: ' : 'Check failed: '; cl.append(b, window.__check.detail || ''); } };
+  // Text version of what the visual shows, for screen readers and for verify.mjs: the model's summary when it has one, else the check line
+  const updateStatus = () => { let t = ''; try { const m = typeof model === 'function' ? model(Object.assign({}, P)) : null; if (m && typeof m.summary === 'string') t = m.summary; } catch (e) {} if (!t && window.__check) t = (window.__check.pass ? '' : 'Check failed: ') + (window.__check.detail || ''); $('status').textContent = t; window.__status = t; };
   if (COURSE) buildCourse();
   if (!window.lab || typeof lab.mount !== 'function') { __errors.push('window.lab.mount is missing'); return; }
   try { lab.mount(root, Object.assign({}, P)); } catch (e) { __errors.push('mount() failed: ' + e.message); return; }
-  runCheck();
+  runCheck(); updateStatus();
   // Learner controls come from the spec, never from the visual's own code
+  const inputs = {};
   for (const q of SPEC.params) {
     const out = document.createElement('output'), inp = Object.assign(document.createElement('input'), { type: 'range', min: q.min, max: q.max, step: q.step, value: q.value });
     out.textContent = text(q, q.value);
-    inp.oninput = () => { P[q.id] = Number(inp.value); out.textContent = text(q, P[q.id]); try { lab.update(Object.assign({}, P)); runCheck(); restart(); } catch (e) { __errors.push('update() failed: ' + e.message); } };
+    inp.oninput = () => { P[q.id] = Number(inp.value); out.textContent = text(q, P[q.id]); try { lab.update(Object.assign({}, P)); runCheck(); updateStatus(); restart(); } catch (e) { __errors.push('update() failed: ' + e.message); } };
     const lab_ = document.createElement('label'); lab_.append(q.label + ' ', inp, out); $('params').append(lab_);
+    inputs[q.id] = inp;
   }
+  // For verify.mjs and tests: set several params at once, as if the learner had moved the sliders
+  window.__setParams = vals => { for (const k in vals) if (inputs[k]) { inputs[k].value = vals[k]; inputs[k].oninput(); } };
   // Host-owned timeline: play, pause, step, scrub, speed
   const T = { frac: 0, playing: true, speed: 1, last: 0 };
   const has = () => typeof lab.seek === 'function';

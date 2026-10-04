@@ -61,7 +61,8 @@
     "learnerPrompts": {
       "predict": "Lower the propellant share from 0.95 to 0.93. Will the rocket still escape? Predict before you drag.",
       "explain": "Why does the escape speed line slope downward, and why does the rocket keep slowing after engine cutoff yet still escape?"
-    }
+    },
+    "expectAtDefaults": "m.outcome === \"escape\" && m.liftoffT === 0"
   },
   "versions": [
     {

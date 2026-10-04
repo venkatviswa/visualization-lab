@@ -93,3 +93,8 @@ test('the page\'s scoring rubric is the bake-off skill\'s judge rubric (same cri
   assert.equal(rows.length, rubric.length, 'judge table rows');
   rows.forEach((row, i) => { assert.equal(rubric[i].label, row.label); assert.equal(rubric[i].weight, row.weight); assert.equal(rubric[i].q, row.q); });
 });
+
+test('the embed rule is identical in verify.mjs, AUTHORING.md, README.md and the bake-off skill', () => {
+  const m = read('kit/verify.mjs').match(/const EMBED_CSS = '([^']+)'/); assert.ok(m, 'EMBED_CSS in verify.mjs');
+  for (const f of ['AUTHORING.md', 'README.md', 'docs/SKILL.lesson-visual-bakeoff.md']) assert.ok(read(f).includes(m[1]), `${f} does not carry the embed rule ${m[1]}`);
+});

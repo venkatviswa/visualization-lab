@@ -52,7 +52,8 @@
     "learnerPrompts": {
       "predict": "Before you look closely: which theme do you think has the most terms in the top 8?",
       "explain": "Compare the versions. In which one could you say exactly where “Guardrails” ranks, and why?"
-    }
+    },
+    "expectAtDefaults": "m.terms.length === p.topN && m.terms[0].weight === m.maxWeight"
   },
   "versions": [
     {

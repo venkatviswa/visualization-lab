@@ -48,6 +48,10 @@ test('build + verify: one page per library family passes', async () => {
   for (const x of results) assert.ok(x.pass, `${x.page}: ${x.errors.join('; ') || (x.blank ? 'blank' : JSON.stringify(x.check))}`);
   for (const x of results) assert.ok(x.timeline, `${x.page} has no timeline`);
   for (const x of results) assert.ok(!x.overflow, `${x.page} overflows on a phone`);
+  for (const x of results) assert.equal(x.embedClipped, false, `${x.page} scrolls inside the standard embed`);
+  for (const x of results) assert.ok(x.status.length > 10, `${x.page} has no text status line`);
+  for (const x of results) assert.ok(x.extremes.length >= 4 && x.extremes.every(e => e.check), `${x.page}: check fails at a slider extreme ${JSON.stringify(x.extremes)}`);
+  for (const x of results) assert.ok(x.shots.some(f => /x-\w+-min\.png$/.test(f)) && x.shots.some(f => /x-\w+-max\.png$/.test(f)), `${x.page} has no extreme screenshots`);
 });
 
 test('build.mjs applies the 2D look to story pages: night and blueprint build and pass, studio has no look stylesheet', () => {
@@ -72,6 +76,7 @@ test('build.mjs --course wraps the visual as a lesson page and it passes verify'
   const r = run('verify.mjs', [path.join(work, 'shots'), out]);
   const x = JSON.parse(r.stdout.split('\n').find(l => l.startsWith('{')));
   assert.ok(x.pass && x.timeline && !x.overflow, JSON.stringify(x));
+  assert.equal(x.embedClipped, null); assert.match(x.status, /Escapes/);
 });
 
 test('verify.mjs reports a broken renderer as failing', () => {
@@ -82,4 +87,19 @@ test('verify.mjs reports a broken renderer as failing', () => {
   const x = JSON.parse(r.stdout.split('\n').find(l => l.startsWith('{')));
   assert.equal(x.pass, false);
   assert.ok(x.errors.some(e => /boom/.test(e)));
+  assert.notEqual(r.status, 0, 'a failing page makes verify exit 1');
+});
+
+test('verify.mjs fails a page that scrolls inside the standard embed, and reports the course page as not embedded', () => {
+  // a renderer that forces the visual taller than any embed can be
+  const tall = path.join(work, 'tall.html');
+  fs.writeFileSync(path.join(work, 'tall.js'), "window.lab = { mount(root) { root.style.minHeight = '1400px'; const d = document.createElement('div'); d.textContent = 'tall'; d.style.cssText = 'height:1400px;background:linear-gradient(red,blue)'; root.append(d); }, update() {}, destroy() {} };");
+  assert.equal(run('build.mjs', [path.join(root, 'dist/examples/rocket.spec.json'), path.join(work, 'tall.js'), 'svg', 'studio', tall, '--cdn', server.cdn]).status, 0);
+  const course = path.join(work, 'tall_course.html');
+  assert.equal(run('build.mjs', [path.join(root, 'dist/examples/rocket.spec.json'), path.join(work, 'tall.js'), 'svg', 'studio', course, '--cdn', server.cdn, '--course']).status, 0);
+  const r = run('verify.mjs', [path.join(work, 'shots'), tall, course]);
+  const [a, b] = r.stdout.split('\n').filter(l => l.startsWith('{')).map(l => JSON.parse(l));
+  assert.equal(a.embedClipped, true); assert.equal(a.pass, false);
+  assert.equal(b.embedClipped, null, 'course pages scroll by design and are not embed-tested');
+  assert.notEqual(r.status, 0);
 });
