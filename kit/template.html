@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{TITLE}}</title>
+<script>
+window.LAB_THEME = "{{THEME}}";
+window.__errors = [];
+addEventListener('error', e => { const t = e.target; const u = t && t !== window && (t.src || t.href); if (u && /fonts\.(googleapis|gstatic)\.com/.test(u)) return; __errors.push(u ? 'Failed to load ' + u : (e.message || 'Script error') + (e.lineno ? ' (line ' + e.lineno + ')' : '')); }, true);
+addEventListener('unhandledrejection', e => __errors.push('Unhandled rejection: ' + (e.reason && e.reason.message || e.reason)));
+</script>
+{{HEAD}}
+<style>
+  :root { --bg:#0C1130; --panel:#161D45; --line:#2A3370; --ink:#EEF0FA; --muted:#A7AED3; --accent:#F5B83D; }
+  :root[data-look="studio"] { --bg:#f3f5f8; --panel:#ffffff; --line:#dbe0e8; --ink:#1d2433; --muted:#5b6475; --accent:#2b59c3; }
+  :root[data-look="blueprint"] { --bg:#0B2545; --panel:#0F335A; --line:#2E6DA4; --ink:#DDEFFF; --muted:#9CC3E6; --accent:#5EE0FF; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--ink); font:14px/1.45 system-ui, sans-serif; }
+  body { display:flex; flex-direction:column; }
+  #root { position:relative; flex:1; min-height:320px; overflow:hidden; background:{{ROOT_BG}}; }
+  .bar { display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; padding:8px 12px; background:var(--panel); border-top:1px solid var(--line); }
+  .bar label { display:flex; gap:8px; align-items:center; white-space:nowrap; }
+  .bar output { color:var(--accent); font-family:ui-monospace, monospace; min-width:5ch; }
+  .bar input[type=range] { accent-color:var(--accent); }
+  .bar #scrub { flex:1 1 160px; min-width:0; }
+  .bar button, .bar select { background:transparent; color:var(--ink); border:1px solid var(--line); border-radius:7px; padding:4px 10px; font:inherit; cursor:pointer; }
+  .bar button.primary { background:var(--accent); color:#111; border-color:var(--accent); }
+  #time { font-family:ui-monospace, monospace; color:var(--muted); font-size:12px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div class="bar" id="params"></div>
+<div class="bar" id="transport" hidden>
+  <button id="prev" type="button" aria-label="Previous step">&#9664;&#9664;</button>
+  <button id="play" class="primary" type="button">Pause</button>
+  <button id="next" type="button" aria-label="Next step">&#9654;&#9654;</button>
+  <input id="scrub" type="range" min="0" max="1000" value="0" aria-label="Playback position">
+  <span id="time">0.0 / 0.0 s</span>
+  <select id="speed" aria-label="Speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="4">4×</option></select>
+</div>
+<script>
+const SPEC = {{SPEC_JSON}};
+{{MODEL}}
+{{CHECK}}
+document.documentElement.dataset.look = window.LAB_THEME;
+</script>
+<script type="{{CODE_TYPE}}">
+{{CODE}}
+</script>
+<script type="{{CODE_TYPE}}">
+(() => {
+  const $ = id => document.getElementById(id), root = $('root');
+  const P = Object.fromEntries(SPEC.params.map(q => [q.id, q.value]));
+  const text = (q, v) => (q.labels && q.labels[Math.round((v - q.min) / q.step)]) ?? (v + (q.unit ? ' ' + q.unit : ''));
+  const runCheck = () => { try { window.__check = typeof check === 'function' ? check(Object.assign({}, P)) : { pass: true, detail: 'no check' }; } catch (e) { window.__check = { pass: false, detail: 'check() threw: ' + e.message }; } };
+  if (!window.lab || typeof lab.mount !== 'function') { __errors.push('window.lab.mount is missing'); return; }
+  try { lab.mount(root, Object.assign({}, P)); } catch (e) { __errors.push('mount() failed: ' + e.message); return; }
+  runCheck();
+  // Learner controls come from the spec, never from the visual's own code
+  for (const q of SPEC.params) {
+    const out = document.createElement('output'), inp = Object.assign(document.createElement('input'), { type: 'range', min: q.min, max: q.max, step: q.step, value: q.value });
+    out.textContent = text(q, q.value);
+    inp.oninput = () => { P[q.id] = Number(inp.value); out.textContent = text(q, P[q.id]); try { lab.update(Object.assign({}, P)); runCheck(); restart(); } catch (e) { __errors.push('update() failed: ' + e.message); } };
+    const lab_ = document.createElement('label'); lab_.append(q.label + ' ', inp, out); $('params').append(lab_);
+  }
+  // Host-owned timeline: play, pause, step, scrub, speed
+  const T = { frac: 0, playing: true, speed: 1, last: 0 };
+  const has = () => typeof lab.seek === 'function';
+  const dur = () => Number(lab.duration) > 0 ? Number(lab.duration) : 10;
+  const marks = () => { try { return Array.isArray(lab.markers) ? lab.markers.map(Number).sort((a, b) => a - b) : []; } catch (e) { return []; } };
+  const apply = () => { try { lab.seek(T.frac * dur()); } catch (e) { __errors.push('seek() failed: ' + e.message); T.playing = false; } };
+  const ui = () => { $('scrub').value = Math.round(T.frac * 1000); $('play').textContent = T.playing ? 'Pause' : (T.frac >= 1 ? 'Replay' : 'Play'); $('time').textContent = (T.frac * dur()).toFixed(1) + ' / ' + dur().toFixed(1) + ' s'; };
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function restart() { if (!has()) return; T.frac = reduce ? 1 : 0; T.playing = !reduce; apply(); ui(); }
+  window.__seekFrac = f => { T.frac = Math.max(0, Math.min(1, f)); T.playing = false; if (has()) apply(); ui(); };
+  if (has()) {
+    $('transport').hidden = false;
+    $('play').onclick = () => { if (T.frac >= 1) T.frac = 0; T.playing = !T.playing; ui(); };
+    $('scrub').oninput = e => window.__seekFrac(e.target.value / 1000);
+    $('speed').onchange = e => { T.speed = Number(e.target.value); };
+    const step = dir => { const d = dur(), cur = T.frac * d, ms = marks(); let t = ms.length ? (dir > 0 ? ms.find(m => m > cur + 0.05) : [...ms].reverse().find(m => m < cur - 0.3)) : cur + dir * d / 10; if (t == null) t = dir > 0 ? d : 0; window.__seekFrac(t / d); };
+    $('prev').onclick = () => step(-1); $('next').onclick = () => step(1);
+    addEventListener('keydown', e => { if (/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return; if (e.key === ' ' && e.target.tagName !== 'BUTTON') { e.preventDefault(); $('play').click(); } if (e.key === 'ArrowRight') step(1); if (e.key === 'ArrowLeft') step(-1); });
+    restart();
+    const tick = now => { if (T.playing) { const dt = T.last ? Math.min(0.1, (now - T.last) / 1000) : 0; T.frac = Math.min(1, T.frac + dt * T.speed / dur()); apply(); if (T.frac >= 1) T.playing = false; ui(); } T.last = now; requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  }
+  window.__ready = true;
+})();
+</script>
+</body>
+</html>

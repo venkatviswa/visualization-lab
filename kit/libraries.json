@@ -1,0 +1,147 @@
+{
+ "_about": "Single source for the lab's libraries and default comparisons. The page (LIBS, RUNTIME), the toolkit (build.mjs) and AUTHORING.md section 6 are generated from it. {{CDN}} is the package CDN base; {{THREE_HEAD}} and {{STORY3D_KIT}} are filled in by the host.",
+ "libraries": [
+  {
+   "id": "p5",
+   "name": "p5.js",
+   "dim": "2D",
+   "module": false,
+   "global": "p5",
+   "purpose": "educational 2D animation",
+   "head": "<script src=\"{{CDN}}p5@1.9.4/lib/p5.min.js\"></script>",
+   "runtime": "classic <script> tag loads p5 1.9.4 from jsDelivr before the code; global p5 exists; code must use instance mode inside root.",
+   "notes": "p5.js 1.9.4 is loaded as the global constructor p5. Use INSTANCE mode only: inst = new p5(s => { s.setup = ...; s.draw = ...; }, root). Size the canvas to root.clientWidth x root.clientHeight, resize in s.windowResized, and call inst.remove() in destroy()."
+  },
+  {
+   "id": "three",
+   "name": "three.js",
+   "dim": "3D",
+   "module": true,
+   "global": "ES module: import * as THREE from 'three' (window.THREE also set)",
+   "purpose": "custom 3D",
+   "head": "<script type=\"importmap\">{\"imports\":{\"three\":\"{{CDN}}three@0.169.0/build/three.module.js\",\"three/addons/\":\"{{CDN}}three@0.169.0/examples/jsm/\"}}</script><script type=\"module\">import * as T from 'three';import { OrbitControls } from 'three/addons/controls/OrbitControls.js';window.THREE=Object.assign({},T,{OrbitControls});window.OrbitControls=OrbitControls;</script>",
+   "runtime": "an import map maps 'three' and 'three/addons/' to three r169 on jsDelivr; a prelude module then sets window.THREE (with THREE.OrbitControls) and window.OrbitControls; the code runs as the next module. So 'THREE is not defined' can only mean the library failed to load (look for 'Failed to load' in Problems) or the code ran outside the module order.",
+   "notes": "three.js r169. The code runs as an ES module after an import map: prefer import * as THREE from 'three'; import { OrbitControls } from 'three/addons/controls/OrbitControls.js'. A prelude module also defines window.THREE (including THREE.OrbitControls) and window.OrbitControls before your code runs. Append renderer.domElement to root, size it to root, cap pixel ratio at 2, use renderer.setAnimationLoop, handle resize with a ResizeObserver on root. Put text in an absolutely positioned HTML overlay div inside root. destroy() stops the loop, disposes controls, geometries, materials and the renderer, and empties root."
+  },
+  {
+   "id": "chartjs",
+   "name": "Chart.js",
+   "dim": "2D",
+   "module": false,
+   "global": "Chart",
+   "purpose": "standard charts",
+   "head": "<script src=\"{{CDN}}chart.js@4.4.1/dist/chart.umd.js\"></script>",
+   "runtime": "classic <script> tag loads Chart.js 4.4.1 UMD; global Chart exists before the code.",
+   "notes": "Chart.js 4.4.1 is loaded as the global Chart. Create a wrapper div (width/height 100%) with a canvas inside root; set responsive: true and maintainAspectRatio: false. update() changes chart.data / options and calls chart.update(); destroy() calls chart.destroy()."
+  },
+  {
+   "id": "plotly",
+   "name": "Plotly.js",
+   "dim": "2D/3D",
+   "module": false,
+   "global": "Plotly",
+   "purpose": "scientific plots, 3D surfaces",
+   "head": "<script src=\"{{CDN}}plotly.js-dist-min@2.35.2/plotly.min.js\"></script>",
+   "runtime": "classic <script> tag loads plotly.js-dist-min 2.35.2; global Plotly exists before the code.",
+   "notes": "Plotly.js 2.35.2 is loaded as the global Plotly. Plot into a div filling root with Plotly.newPlot(div, data, layout, {responsive: true, displaylogo: false}). update() uses Plotly.react; destroy() calls Plotly.purge(div). No MathJax, no remote fonts or map tiles."
+  },
+  {
+   "id": "d3",
+   "name": "D3",
+   "dim": "2D",
+   "module": false,
+   "global": "d3",
+   "purpose": "custom data visualization: scales, axes, data joins and full control over every mark",
+   "head": "<script src=\"{{CDN}}d3@7.9.0/dist/d3.min.js\"></script>",
+   "runtime": "classic <script> tag loads d3 7.9.0 UMD from jsDelivr; global d3 exists before the code.",
+   "notes": "D3 7.9.0 is loaded as the global d3 (no d3-cloud plugin here; use the wordcloud library for word clouds). Build one <svg> in root with d3.select(root).append('svg') sized to root; use d3 scales (scaleLinear, scaleBand, scaleTime), d3.axisBottom/axisLeft, data joins with selection.join(), and label marks directly. update() redraws from model(params). For seek(t), compute and draw the exact state at t; do not rely on running d3 transitions for lesson progress. destroy() removes the svg and any listeners."
+  },
+  {
+   "id": "wordcloud",
+   "name": "Word cloud (D3 + d3-cloud)",
+   "dim": "2D",
+   "module": false,
+   "global": "d3, d3.layout.cloud",
+   "purpose": "a word cloud of terms sized by importance and coloured by theme, D3 + d3-cloud",
+   "head": "<script src=\"{{CDN}}d3@7.9.0/dist/d3.min.js\"></script><script src=\"{{CDN}}d3-cloud@1.2.7/build/d3.layout.cloud.js\"></script>",
+   "runtime": "classic <script> tags load d3 7.9.0 and then d3-cloud 1.2.7 from jsDelivr; d3.layout.cloud exists before the code.",
+   "notes": "D3 7.9.0 (global d3) plus d3-cloud 1.2.7, which adds d3.layout.cloud(). Lay out once in mount(), update() and on resize, never in seek(): d3.layout.cloud().size([w, h]).words(terms.map(t => ({ text: t.text, src: t }))).padding(3).rotate(0).font(FONT).fontWeight(600).fontSize(d => scale(d.src.weight)).random(seededRandom).timeInterval(Infinity).on('end', words => { placed = words; }).start(). With timeInterval(Infinity) the 'end' event fires synchronously. d3-cloud overwrites the text, weight, size and position fields on each word object, so keep your data in d.src. Words that do not fit are dropped: compare placed.length with the input, retry with a smaller font scale, and say on screen if any are missing. Use a seeded random function (for example mulberry32) so the cloud does not reshuffle on every update. Draw with an svg <text text-anchor=middle> per placed word at translate(w/2 + d.x, h/2 + d.y) with font-size d.size. Keep rotate(0) so every word reads horizontally. seek(t) only changes opacity or colour, for example revealing words in rank order."
+  },
+  {
+   "id": "reactflow",
+   "name": "React Flow",
+   "dim": "2D",
+   "module": false,
+   "global": "React, ReactDOM, ReactFlow.*",
+   "purpose": "interactive process, workflow and architecture diagrams",
+   "head": "<script src=\"{{CDN}}react@18.3.1/umd/react.production.min.js\"></script><script src=\"{{CDN}}react-dom@18.3.1/umd/react-dom.production.min.js\"></script><script>window.jsxRuntime={jsx:(t,p,k)=>React.createElement(t,k===undefined?p:Object.assign({},p,{key:k})),jsxs:(t,p,k)=>React.createElement(t,k===undefined?p:Object.assign({},p,{key:k})),Fragment:React.Fragment};</script><script src=\"{{CDN}}@xyflow/react@12.3.6/dist/umd/index.js\"></script>",
+   "runtime": "React 18.3.1 UMD, ReactDOM UMD, a jsx-runtime shim and @xyflow/react 12.3.6 UMD load first; globals React, ReactDOM, ReactFlow exist; no JSX compiler.",
+   "notes": "React 18.3.1 (globals React, ReactDOM) and React Flow 12 (global namespace ReactFlow: ReactFlow.ReactFlow, ReactFlow.Background, ReactFlow.Controls, ReactFlow.MarkerType, ReactFlow.Position, ReactFlow.Handle). There is NO JSX compiler: use const h = React.createElement. Render with const r = ReactDOM.createRoot(root); give the ReactFlow element style {width:'100%', height:'100%'} and fitView. update() re-renders with new params; destroy() calls r.unmount(). The React Flow stylesheet is already loaded."
+  },
+  {
+   "id": "story",
+   "name": "Story (SVG + GSAP + icons)",
+   "dim": "2D",
+   "module": false,
+   "global": "gsap, lucide, labIcon()",
+   "purpose": "animated explainer with people, agents, code windows, documents and scores, built from SVG, GSAP and icons; best for pipelines and processes told as a story",
+   "head": "<script src=\"{{CDN}}gsap@3.15.0/dist/gsap.min.js\"></script><script src=\"{{CDN}}lucide@1.49.0/dist/umd/lucide.min.js\"></script><script>window.labIcon=function(n,a){var k=String(n).replace(/(^|-)([a-z0-9])/g,function(m,p,c){return c.toUpperCase()});var node=lucide[k]||lucide.Circle;return lucide.createElement(node,Object.assign({width:24,height:24},a||{}))};</script>",
+   "runtime": "classic <script> tags load GSAP 3.15 (global gsap) and Lucide 1.49 (global lucide) from jsDelivr, then a helper defines labIcon(name, attrs) that returns an SVG icon element; no external images are allowed, so pictures must be icons or SVG shapes.",
+   "notes": "An animated explainer drawn in one SVG. GSAP 3.15 (global gsap) and Lucide 1.49 icons are loaded. labIcon(name, attrs) returns an <svg> icon element for a kebab-case Lucide name, for example 'user', 'users', 'bot', 'code', 'test-tube', 'search', 'bug', 'package', 'server', 'lock', 'shield-check', 'gauge', 'database', 'file-text', 'git-branch', 'refresh-cw', 'user-check', 'ticket', 'brain', 'wrench'; attrs such as {x, y, width, height, stroke}; append it inside your SVG. Build one <svg viewBox='0 0 1000 600' width='100%' height='100%'> in root. Draw people, agents, devices, code windows, documents and scores with icons and SVG shapes; no external images. Build ONE paused gsap.timeline() from model data: one scene group per step, shown with tl.set(group, {opacity: 1}, start) and hidden at its end, with tweens inside each scene. The duration getter returns the model's total; seek(t) calls tl.seek(t, false) and also sets step titles and highlight states directly from the current step, because tl.call callbacks do not reverse when scrubbing back. Set initial states with gsap.set before adding tweens. update() kills the timeline and rebuilds it."
+  },
+  {
+   "id": "story3d",
+   "name": "3D story (three.js)",
+   "dim": "3D",
+   "module": true,
+   "global": "Story3D",
+   "purpose": "the same kind of story as a three.js scene with a camera that travels between steps; use when a spatial journey helps, otherwise prefer story",
+   "head": "{{THREE_HEAD}}<script src=\"{{CDN}}lucide@1.49.0/dist/umd/lucide.min.js\"></script><script type=\"module\">{{STORY3D_KIT}}</script><script src=\"{{CDN}}gsap@3.15.0/dist/gsap.min.js\"></script>",
+   "runtime": "an import map plus prelude module provide three r169 (window.THREE with OrbitControls), then a module defines the global Story3D kit (Story3D.mount(root, config) returns {seek, update, destroy, duration, markers}; props: cards, robot, monitor, magnifier, servers, chain, shield, bars, gate, pages, database, people, rocket), and GSAP 3.15 loads as global gsap; the code runs as a module. Good 3D story code is a short config() adapter over the kit; hand-built scenes are the usual cause of flat, cluttered results.",
+   "notes": "Build it with the Story3D kit, which is already loaded as the global Story3D (it brings three.js r169, props, camera flights, labels and exact seeking). Do not build your own three.js scene. Write a config(m) function that turns model(params) output into {title, summary, duration, stations, events, loops}. A station is {id, label, prop, icon?, values?, pages?, count?, locked?}; icon is an optional kebab-case Lucide icon name for the floating badge above the station (each prop has a sensible default). prop is one of: cards (tickets or items arrive), robot (an AI agent plans), monitor (a screen showing a title, typed code lines and a status sequence), magnifier (inspection that raises red flags or a green OK), servers (a package deploys to a target rack; a second rack is padlocked unless locked is false), chain (linked traceability), shield (governance; event mode observe or enforce), bars (scores from values 0-100, optional stacked pages), gate (approval gate with a person; event open true or false), pages (documents stack; count), database (a data store), people (a team; count), rocket (a launch). Pick the prop that best fits each step's meaning. An event is {station, start, dur, title, note, loop?, flags?, ok?, mode?, open?, screen?}, with start and dur in playback seconds, note one sentence under 110 characters, flags the number of red markers on a magnifier, ok true for a passing inspection, and screen {title, status: [{label, color}], typing, highlightLine} for a monitor. loops is [{from, to, label}] for rework arcs; set loop: true on events that travel them. Then: let story; window.lab = { get duration() { return story.duration; }, get markers() { return story.markers; }, seek(t) { story.seek(t); }, mount(root, p) { story = Story3D.mount(root, config(model(p))); }, update(p) { story.update(config(model(p))); }, destroy() { story.destroy(); } }. Colors, lighting and fonts come from the viewer's chosen look (Night sky, Studio or Blueprint), so never set colors or materials yourself."
+  },
+  {
+   "id": "svg",
+   "name": "Plain SVG",
+   "dim": "2D",
+   "module": false,
+   "global": "DOM APIs only",
+   "purpose": "plain SVG, no library, hand-built for full flexibility",
+   "head": "",
+   "runtime": "no library; plain DOM and SVG APIs.",
+   "notes": "No library. Build an <svg> with document.createElementNS('http://www.w3.org/2000/svg', ...) sized to root, use requestAnimationFrame for animation and cancel it in destroy()."
+  }
+ ],
+ "comparisons": [
+  {
+   "kind": "Physical motion or simulation",
+   "when": "physical motion or simulation",
+   "a": "p5",
+   "b": "three",
+   "learn": "Whether depth adds useful information."
+  },
+  {
+   "kind": "Business chart",
+   "when": "business or data charts",
+   "a": "chartjs",
+   "b": "d3",
+   "learn": "Standard configuration versus custom control."
+  },
+  {
+   "kind": "Process walkthrough",
+   "when": "process walkthroughs",
+   "a": "reactflow",
+   "b": "svg",
+   "learn": "Convenience versus flexibility."
+  },
+  {
+   "kind": "Vocabulary or key terms",
+   "when": "vocabulary, key terms, buzzwords or jargon",
+   "a": "wordcloud",
+   "b": "chartjs",
+   "learn": "Visual impact versus accurate comparison: can learners tell which term matters most?",
+   "formA": "a word cloud: size shows weight, colour shows theme, every word horizontal",
+   "formB": "a ranked horizontal bar chart of the same terms, largest at the top, coloured by theme"
+  }
+ ]
+}

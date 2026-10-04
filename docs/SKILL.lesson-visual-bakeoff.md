@@ -1,0 +1,147 @@
+---
+name: "lesson-visual-bakeoff"
+description: "Build three competing interactive visuals of one teaching concept in parallel sub-agents, verify them in headless Chromium, have a fresh judge pick the best, and return an embeddable bundle for a course."
+---
+
+# Lesson visual bake-off
+
+Use this when a course or lesson needs one excellent interactive visual for a concept: a process or pipeline, an algorithm, a physics or math idea, or a data story. The calling agent (often a course builder) gets back a tested, self-contained page plus the lesson content to write around it.
+
+Flow: **spec → validate → 3 builders in parallel → verify → fresh judge → polish winner → bundle.**
+
+Outputs in `bakeoff/<slug>/`:
+- `visual.html`: the winner. Standalone, with its own sliders, play/pause/step/speed bar and theme. Loads pinned libraries from jsDelivr.
+- `fallback.html`: the best 2D candidate, when the winner is 3D (no-GPU machines).
+- `lesson.json`: spec, learner prompts, check result, judge scores and notes.
+- `candidates/`, `shots/`, `scorecard.md`.
+
+## 0. Set up the toolkit (once per session)
+
+The toolkit ships inside this skill's folder, next to this SKILL.md: `kit/` (template.html, build.mjs, verify.mjs, check_spec.mjs, story3d_kit.js, reactflow.css) and `examples/` (pipe.spec.json, pipe_story.js, pipe_story3d.js, pipe_flow.js, rocket.spec.json, rocket_p5.js, rocket_chart.js).
+Copy both folders into the working project as `bakeoff/kit/` and `bakeoff/examples/` (keep `template.html` next to `build.mjs`). Needs Node 18+. If the folders are missing, stop and tell the user; do not improvise a harness.
+
+Check the browser once: `node -e "import('playwright').then(()=>console.log('ok'))"`. If missing, `npm i playwright`; use the preinstalled Chromium at `/opt/pw-browsers/chromium` if present (verify.mjs finds it), otherwise `npx playwright install chromium`, or set `CHROMIUM_PATH`.
+
+## 1. Write the spec (you, not a sub-agent)
+
+Write `bakeoff/<slug>/spec.json`:
+
+```json
+{
+  "title": "short name",
+  "objective": "one sentence: what the learner should understand",
+  "assumptions": ["..."], "units": ["quantity: unit"],
+  "params": [{"id": "camelCase", "label": "...", "min": 0, "max": 1, "step": 1, "value": 1, "unit": "", "labels": ["Off", "On"]}],
+  "modelCode": "function model(p) { ... }",
+  "checkCode": "function check(p) { ... return { pass, detail }; }",
+  "expectAtDefaults": "JS expression over m (model output) and p, true when the defaults show the main behavior",
+  "learnerPrompts": { "predict": "question before exploring", "explain": "question after" }
+}
+```
+
+Rules:
+- `model(p)` is pure and deterministic: no DOM, no randomness. It returns plain data a renderer needs. Anything that changes over time returns `frames` or `events` with times, including the first and last state, under 2,000 entries, plus summary values and a one-line `summary`. Processes return ordered `stations`/steps with ids, labels and details, and `events` `{station, start, dur, note}` in playback seconds.
+- `check(p)` tests the objective's core claim at any params (a formula, invariant or guardrail), never side arithmetic. `detail` is one sentence with numbers.
+- The defaults must show the main behavior (the rocket escapes, the list ends sorted, the claim is approved). Failure cases sit at the edges of a slider. `expectAtDefaults` enforces this.
+- 1 to 4 controls. On/off or choice controls use `min 0, step 1` and `labels`.
+- Use real units and constants. Name every simplification in `assumptions`. Mark placeholder names or numbers as illustrative.
+
+Validate: `node bakeoff/kit/check_spec.mjs bakeoff/<slug>/spec.json`. It must print `"ok": true`. It compiles the code, runs the model at defaults and at each slider's min and max, flags empty or NaN data, runs the check, and evaluates `expectAtDefaults`. Fix the spec until it passes. Never send builders a failing spec.
+
+## 2. Choose three contenders
+
+Pick three that differ in kind, not just library. Always include at least one 2D candidate.
+
+| Concept | Default trio |
+| --- | --- |
+| Process, pipeline, workflow, architecture | `story` (2D animated story), `story3d` (3D kit), `reactflow` (clickable diagram) |
+| Physics, motion, simulation | `p5` (2D animation with forces), `chartjs` or `plotly` (plotted run), `three` (3D scene) |
+| Math, functions, geometry | `svg` (hand-drawn explorer), `plotly` (surfaces/plots), `p5` |
+| Algorithms on lists, trees, graphs | `p5` or `svg` (step animation), `reactflow` (graph), `story` |
+| Data story, comparison over time | `chartjs`, `plotly`, `svg` (custom D3-style drawing) |
+
+Use `story3d` only for journeys and processes where a spatial path helps, or when the user asks for 3D. Theme (`night`, `studio`, `blueprint`): `night` by default (matches the user's "Curious to Creator" masterclass look), `studio` for white corporate decks, `blueprint` for architecture topics. The theme fully styles `story3d` and the page chrome. Other libraries draw on white.
+
+## 3. Build in parallel (three sub-agents, one message)
+
+Spawn three `Agent` calls in a single message so they run concurrently. Give each the builder brief below, filled in. Each builder writes `bakeoff/<slug>/src/<lib>.js`, builds and verifies its own page, and returns the verify JSON line, a short paragraph on what the visual shows, and known weaknesses.
+
+Builder brief (fill the angle brackets):
+
+```
+You are building ONE candidate visual for a lesson bake-off. Another two agents build rivals from the same spec; a judge picks the best.
+Spec: bakeoff/<slug>/spec.json (read it; do not change it). Library: <lib>. Theme: <theme>.
+Toolkit: bakeoff/kit/ (template.html, build.mjs, verify.mjs). Worked examples to imitate: bakeoff/examples/ (<the most relevant example files>).
+
+Write bakeoff/<slug>/src/<lib>.js. Contract (mandatory):
+- Define window.lab = { mount(root, params), update(params), destroy() }.
+- model(p) and check(p) already exist as globals. Call model(params) for everything you draw. Never re-implement or redefine them.
+- The page owns the controls: do not build sliders or inputs for the params. update(params) redraws without reloading.
+- Time: if anything changes over time, give window.lab a getter `duration` (playback seconds, 4 to 40) and seek(t) that draws the exact state at time t, plus a getter `markers` (array of step start times) for step buttons. Never run your own clock or autoplay; the page plays, pauses, steps and scrubs by calling seek. A render loop for redrawing or camera controls is fine.
+- root is an empty div filling the visual area (position: relative). Size from root.clientWidth/clientHeight and handle resizing (ResizeObserver).
+- No network requests, external images or fonts; no alert or prompt. Text goes in the scene or an HTML overlay inside root.
+- Show current values, units and the key result on screen. Label what the learner must notice. Under 300 lines.
+Library notes: <paste the matching notes from the library table>.
+
+Build and test:
+  node bakeoff/kit/build.mjs bakeoff/<slug>/spec.json bakeoff/<slug>/src/<lib>.js <lib> <theme> bakeoff/<slug>/candidates/<lib>.html <extra flags>
+  node bakeoff/kit/verify.mjs bakeoff/<slug>/shots bakeoff/<slug>/candidates/<lib>.html
+Read the screenshots in bakeoff/<slug>/shots/<lib>/ (t00, t35, t70, t100, phone) and fix what looks wrong: clipped or overlapping text, empty areas, unreadable labels, nothing moving. Repeat until verify prints "pass": true and the screenshots look right, at most 4 rounds.
+Return: the final verify JSON line, one paragraph on what the visual shows and how it teaches the objective, and known weaknesses.
+```
+
+Extra flags: `--kit bakeoff/kit/story3d_kit.js` for `story3d`; `--rfcss bakeoff/kit/reactflow.css` for `reactflow`.
+
+Library notes (paste the matching row into the brief):
+- **p5**: p5.js 1.9.4, global constructor p5. Instance mode only: `inst = new p5(s => { s.setup = ...; s.draw = ...; }, root)`. Size to root, resize in `s.windowResized`, `inst.remove()` in destroy. Draw from the time last given to seek.
+- **three**: three r169 as an ES module: `import * as THREE from 'three'`, `import { OrbitControls } from 'three/addons/controls/OrbitControls.js'` (`window.THREE` also exists). Cap pixel ratio at 2, `renderer.setAnimationLoop`, ResizeObserver on root, text in an HTML overlay, dispose everything in destroy.
+- **chartjs**: Chart.js 4.4.1, global Chart. A wrapper div filling root with a canvas; `responsive: true, maintainAspectRatio: false, animation: false, parsing: false`. seek reveals data up to t; `chart.update('none')`; `chart.destroy()` in destroy.
+- **plotly**: Plotly 2.35.2, global Plotly. `Plotly.newPlot(div, data, layout, {responsive: true, displaylogo: false})`, `Plotly.react` to update, `Plotly.purge` in destroy. No MathJax or map tiles.
+- **reactflow**: React 18.3.1 (React, ReactDOM) and React Flow 12 (namespace ReactFlow: ReactFlow.ReactFlow, Background, Controls, MarkerType, Position, Handle). No JSX: `const h = React.createElement`. `ReactDOM.createRoot(div)`, ReactFlow element style 100% by 100% with fitView, nodesDraggable false. seek highlights the active node; re-render only when the active step changes. Leave about 60 px at the bottom of root for a details strip (click a node for details).
+- **story**: animated 2D explainer in one SVG (`viewBox 0 0 1000 545`). GSAP 3.15 (global gsap) and Lucide icons via `labIcon(name, {x, y, width, height, stroke})`, which returns an SVG icon element for kebab-case names (user, users, bot, code, test-tube, search, bug, package, server, lock, shield-check, gauge, database, file-text, git-branch, refresh-cw, user-check, ticket, brain, wrench). One paused gsap.timeline built from model data, one scene group per event shown with `tl.set` at its start. `seek(t)` calls `tl.seek(t, false)` and sets titles and highlights directly. Rebuild on update. See examples/pipe_story.js.
+- **story3d**: use the Story3D kit (global Story3D, loaded by build.mjs). Never build your own scene. Write `config(m)` returning `{title, summary, duration, stations, events, loops}`. A station is `{id, label, prop, icon?, values?, pages?, count?, locked?}`, where prop is one of cards, robot, monitor, magnifier, servers, chain, shield, bars, gate, pages, database, people, rocket. An event is `{station, start, dur, title, note (under 110 chars), loop?, flags?, ok?, mode: 'observe'|'enforce', open?, screen: {title, status: [{label, color}], typing, highlightLine}}`. Then `window.lab = { get duration() { return story.duration; }, get markers() { return story.markers; }, seek(t) { story.seek(t); }, mount(root, p) { story = Story3D.mount(root, config(model(p))); }, update(p) { story.update(config(model(p))); }, destroy() { story.destroy(); } }`. Never set colors: the theme owns them. See examples/pipe_story3d.js.
+- **svg**: no library. Build an `<svg>` with `document.createElementNS`, viewBox sized to root, redraw in seek.
+
+## 4. Verify all three (you)
+
+`node bakeoff/kit/verify.mjs bakeoff/<slug>/shots bakeoff/<slug>/candidates/*.html`
+
+A candidate is disqualified if `pass` is false: it didn't load or mount, threw errors, failed the model check, or drew a blank. If two or more fail, send each failing builder its verify output with SendMessage for one more round. Never judge a failing page.
+
+## 5. Judge (a fresh sub-agent)
+
+Spawn one more `Agent` that built nothing. Give it the spec (objective, assumptions, learnerPrompts), each passing candidate's screenshots (it must Read every PNG: t00, t35, t70, t100, phone), the verify JSON, and the builders' summaries, but not their code. Ask it to score each candidate 1 to 5 per criterion and return JSON only:
+
+| Criterion | Weight | Question |
+| --- | --- | --- |
+| Teaches the objective | 30% | Could a learner answer the predict and explain prompts from what they see? |
+| Faithful to the model | 20% | Are the numbers and states visibly from model()? Are units and assumptions shown? Is nothing invented? |
+| Clear at a glance | 15% | Clear hierarchy, readable labels, no overlaps or clipping, obvious focus |
+| Interaction value | 15% | Do the sliders change something meaningful? Does stepping land on meaningful states? |
+| Visual quality | 10% | Polished and consistent with the theme, not cluttered |
+| Robustness | 10% | Works at phone width, small file, no GPU needed (3D loses points here) |
+
+Return `{"scores": {"<lib>": {"teach": n, ..., "weighted": n}}, "winner": "<lib>", "why": "two sentences", "fixes": ["top 3 concrete fixes for the winner"], "runnerUp": "<lib>"}`. Tie-breaker: prefer the simpler or 2D candidate.
+
+## 6. Polish the winner (one round)
+
+Send the judge's fixes to the winning builder with SendMessage. Rebuild and re-verify. Keep the polished page only if it still passes and its screenshots are no worse; otherwise keep the original.
+
+## 7. Bundle and hand over
+
+- Copy the winner to `bakeoff/<slug>/visual.html`. If the winner is `story3d` or `three`, also copy the best passing 2D candidate to `fallback.html`.
+- Write `lesson.json`: `{title, objective, assumptions, units, params, learnerPrompts, check: <defaults check result>, winner, runnerUp, scores, judgeWhy, fixesApplied, embed}`.
+- Write `scorecard.md`: a weighted score table, the winner and the reason.
+- Tell the user in two or three lines: the winner, its score against the others, and where the bundle is. Send `visual.html` and `scorecard.md` with SendUserFile when not running inside another agent.
+
+Instructions for the course agent that receives the bundle (include them in `lesson.json` as `embed`):
+- Embed `visual.html` unchanged as a fixed asset: `<iframe src="visual.html" sandbox="allow-scripts" title="<title>" style="width:100%;aspect-ratio:16/10;border:0"></iframe>`, or `srcdoc` with the file's HTML. One iframe per visual, so library globals never collide.
+- Never edit or restyle the visual. To change it, rerun this skill with a revised spec.
+- Write the narration, quizzes and recap from `lesson.json` (objective, assumptions, learnerPrompts, check detail). Use `fallback.html` where WebGL may be missing (virtual desktops).
+
+## Gotchas
+
+- Builders who add their own sliders, clocks or autoplay break stepping and sync. Reject those pages.
+- Most failures come from the spec (empty data at defaults, a weak check), not the renderer. Fix the spec first.
+- A blocked Google Font is not an error. Load failures of jsDelivr scripts are; the visual needs network access to jsDelivr.
+- Keep everything a learner must read inside the visual area: the page chrome only holds the controls.
