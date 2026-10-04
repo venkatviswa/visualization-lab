@@ -142,7 +142,7 @@ window.lab = {
 - White background. Text #1d2433, muted #5b6475, lines #dbe0e8. Accent #2b59c3, highlight #c2410c, good #1f7a4d. Theme or series colours #2b59c3, #0f766e, #b4530f. Font system-ui, sans-serif.
 - Title top-left (14px, weight 600) with a one-line subtitle that becomes the model's summary at the end of playback.
 - Label things directly on the visual, with units on axes. Show the current control values and the key result on screen. Colour never carries meaning alone.
-- Story versions follow the viewer's chosen look (Night sky, Studio, Blueprint). 3D stories take colours, lighting and fonts from the kit: never set colours there. 2D stories are re-coloured at display time by matching the palette literals above, so use those exact hex values; a colour outside the palette is mapped by lightness and may look off.
+- Story versions follow the viewer's chosen look (Night sky, Studio, Blueprint, and for 2D also Slate, Graphite, Forest, Paper). 3D stories take colours, lighting and fonts from the kit: never set colours there. 2D stories are re-coloured at display time by matching the palette literals above, so use those exact hex values; a colour outside the palette is mapped by lightness and may look off.
 <!-- /lab -->
 
 ### Phone

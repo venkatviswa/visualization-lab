@@ -27,7 +27,9 @@ window.Story3D = (function () {
 
   function mount(root, cfg) {
     const THREE = window.THREE, OrbitControls = THREE.OrbitControls;
-    const TH = THEMES[(cfg && cfg.theme) || window.LAB_THEME || 'night'] || THEMES.night;
+    const KIT_THEME = { paper: 'studio', slate: 'night', graphite: 'night', forest: 'night' };   // 2D-only looks map to the nearest 3D theme
+    const want = (cfg && cfg.theme) || window.LAB_THEME || 'night';
+    const TH = THEMES[want] || THEMES[KIT_THEME[want]] || THEMES.night;
     COL = TH.col;
     const mat = (color, o) => {
       const m = new THREE.MeshStandardMaterial(Object.assign({ color, roughness: TH.rough, metalness: TH.metal }, o || {}));

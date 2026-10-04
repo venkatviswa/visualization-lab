@@ -19,6 +19,26 @@
       bg: '#0B2545', '#ffffff': '#0F335A', '#1d2433': '#DDEFFF', '#5b6475': '#9CC3E6', '#dbe0e8': '#2E6DA4', '#eef1f5': '#123A64',
       '#2b59c3': '#5EE0FF', '#c2410c': '#FFB86B', '#1f7a4d': '#7EF0C8', '#b42318': '#FF8FA3', '#0f766e': '#7EF0C8', '#b4530f': '#FFB86B',
       '#e8eefb': '#16456F', '#e6f4ec': '#134E5A', '#fdecea': '#4A2A44', '#fff4e5': '#4A3A2A', '#f4f6f9': '#113760', '#fafbfc': '#0E2F54', '#9aa3b2': '#6F9CC8', '#c3c9d4': '#2E6DA4'
+    },
+    slate: {
+      bg: '#14161B', '#ffffff': '#1E2128', '#1d2433': '#ECEDF0', '#5b6475': '#A2A8B4', '#dbe0e8': '#2F333C', '#eef1f5': '#1A1D23',
+      '#2b59c3': '#F2A33C', '#c2410c': '#FF7A59', '#1f7a4d': '#5BD39A', '#b42318': '#FF6B7A', '#0f766e': '#5BD39A', '#b4530f': '#F2A33C',
+      '#e8eefb': '#3A2E18', '#e6f4ec': '#193226', '#fdecea': '#3E2124', '#fff4e5': '#3A2E18', '#f4f6f9': '#1A1D23', '#fafbfc': '#181B21', '#9aa3b2': '#7B818D', '#c3c9d4': '#3A3F49'
+    },
+    paper: {
+      bg: '#F6F1E7', '#ffffff': '#FFFDF8', '#1d2433': '#2B2520', '#5b6475': '#6E655B', '#dbe0e8': '#E2D9CA', '#eef1f5': '#EFE8DA',
+      '#2b59c3': '#8A4F2B', '#c2410c': '#B5452C', '#1f7a4d': '#3E7D5A', '#b42318': '#A8352F', '#0f766e': '#3E7D5A', '#b4530f': '#B07A2A',
+      '#e8eefb': '#F3E7D6', '#e6f4ec': '#E6EEDF', '#fdecea': '#F6E0D6', '#fff4e5': '#F8EBD2', '#f4f6f9': '#EFE8DA', '#fafbfc': '#F6F1E7', '#9aa3b2': '#A89E90', '#c3c9d4': '#D3C9B8'
+    },
+    forest: {
+      bg: '#0F1E17', '#ffffff': '#17291F', '#1d2433': '#E9F2EC', '#5b6475': '#9DB5A6', '#dbe0e8': '#27413A', '#eef1f5': '#132620',
+      '#2b59c3': '#8FD3B6', '#c2410c': '#F2B544', '#1f7a4d': '#9EE6A8', '#b42318': '#FF8A7A', '#0f766e': '#8FD3B6', '#b4530f': '#F2B544',
+      '#e8eefb': '#1D3A2E', '#e6f4ec': '#1B3A2F', '#fdecea': '#43282A', '#fff4e5': '#3F3620', '#f4f6f9': '#132620', '#fafbfc': '#11231B', '#9aa3b2': '#6F8A7A', '#c3c9d4': '#2E4A41'
+    },
+    graphite: {
+      bg: '#1B1B1E', '#ffffff': '#262629', '#1d2433': '#F2F2F2', '#5b6475': '#A9A9AE', '#dbe0e8': '#37373C', '#eef1f5': '#202023',
+      '#2b59c3': '#7FB3FF', '#c2410c': '#FFB020', '#1f7a4d': '#5BD39A', '#b42318': '#FF6B7A', '#0f766e': '#5BD39A', '#b4530f': '#FFB020',
+      '#e8eefb': '#223047', '#e6f4ec': '#1E3328', '#fdecea': '#3E2124', '#fff4e5': '#3A2E18', '#f4f6f9': '#202023', '#fafbfc': '#1E1E21', '#9aa3b2': '#7E7E84', '#c3c9d4': '#3B3B41'
     }
   };
   const hex6 = h => { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); return '#' + h.toLowerCase(); };
@@ -31,8 +51,11 @@
     let [h, s, l] = toHsl(toRgb(hex));
     if (look === 'blueprint' && s < 0.2) { h = 212; s = Math.max(s, 0.35); }
     if (look === 'night' && s < 0.12) { h = 232; s = Math.max(s, 0.22); }
+    if (look === 'paper') { if (s < 0.2) { h = 38; s = Math.max(s, 0.18); } return fromHsl([h, s, l > 0.6 ? Math.min(0.97, l - 0.02) : l]); }
+    if (look === 'forest' && s < 0.12) { h = 155; s = Math.max(s, 0.2); }
+    // tints become muted dark panels (saturation capped so amber or pink cards do not glow); marks become light and keep their colour
     const nl = l > 0.6 ? 0.13 + (1 - l) * 0.55 : Math.min(0.9, 1 - l * 0.55);
-    const ns = l > 0.6 ? Math.min(1, s + 0.25) : Math.min(1, s + 0.1);
+    const ns = l > 0.6 ? Math.min(0.32, s * 0.8 + 0.08) : Math.min(1, s + 0.1);
     return fromHsl([h, ns, nl]);
   };
   function look2dCss(code, look) {

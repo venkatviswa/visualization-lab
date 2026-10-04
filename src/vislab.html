@@ -278,7 +278,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:12.5px}
         <h2>Explore</h2>
         <div class="foot-actions">
           <label class="sync" title="Look for story versions (2D and 3D)">Look
-            <select id="themeSel" aria-label="Look for story versions"><option value="night">Night sky</option><option value="studio">Studio</option><option value="blueprint">Blueprint</option></select></label>
+            <select id="themeSel" aria-label="Look for story versions"><option value="night">Night sky</option><option value="studio">Studio</option><option value="blueprint">Blueprint</option><option value="slate">Slate</option><option value="graphite">Graphite</option><option value="forest">Forest</option><option value="paper">Paper</option></select></label>
           <button class="btn small" id="btnReplay" type="button">Replay</button>
           <button class="btn small" id="btnReset" type="button">Reset values</button>
         </div>
@@ -1488,7 +1488,7 @@ function parseLesson(text) {
   if (!L || typeof L !== "object") throw new Error("That file isn't a Visualization Lab lesson (no \"lesson\" with a spec and versions).");
   const out = { goal: String(L.goal || ""), view: ["Auto", "2D", "3D"].includes(L.view) ? L.view : "Auto", libChoice: typeof L.libChoice === "string" ? L.libChoice : "recommend",
     spec: null, versions: [], chat: Array.isArray(L.chat) ? L.chat.filter(m => m && typeof m.content === "string" && /^(user|assistant)$/.test(m.role)).map(m => ({ role: m.role, content: m.content })) : [],
-    theme: ["night", "studio", "blueprint"].includes(L.theme) ? L.theme : "night", sync: L.sync !== false };
+    theme: ["night", "studio", "blueprint", "slate", "graphite", "forest", "paper"].includes(L.theme) ? L.theme : "night", sync: L.sync !== false };
   if (L.spec) out.spec = validateSpec(L.spec);
   if (Array.isArray(L.versions)) for (const v of L.versions) {
     if (!v || !/^[ABC]$/.test(v.id) || typeof v.code !== "string") continue;

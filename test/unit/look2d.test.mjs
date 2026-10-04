@@ -19,6 +19,12 @@ test('night and blueprint remap the canonical palette and set the background', (
   }
 });
 
+test('all seven looks are defined and build a stylesheet', () => {
+  assert.deepEqual([...globalThis.LOOK2D_LOOKS].sort(), ['blueprint', 'forest', 'graphite', 'night', 'paper', 'slate']);
+  for (const look of globalThis.LOOK2D_LOOKS) assert.match(css("'#1d2433'", look), /html,body,#root\{background:#/, look);
+  assert.match(css("'#1d2433'", 'paper'), /background:#F6F1E7/, 'paper is light');
+});
+
 test('literals outside the palette are mapped by lightness: light tints go dark, dark marks go light', () => {
   const out = css("'#fdeee6' '#6d4bbf'", 'night');
   const tint = out.match(/\[fill="#fdeee6"\][^{]*\{fill:(#[0-9a-f]{6})/)[1], mark = out.match(/\[fill="#6d4bbf"\][^{]*\{fill:(#[0-9a-f]{6})/)[1];

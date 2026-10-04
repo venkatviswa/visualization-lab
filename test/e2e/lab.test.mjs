@@ -332,6 +332,9 @@ test('look: switching Night sky / Studio / Blueprint re-colours 2D story version
   assert.equal(await inkFill(), 'rgb(29, 36, 51)');
   await page.selectOption('#themeSel', 'blueprint'); await sleep(3500);
   assert.equal(await rootBg(), 'rgb(11, 37, 69)');
+  await page.selectOption('#themeSel', 'paper'); await sleep(3500);
+  assert.equal(await rootBg(), 'rgb(246, 241, 231)', 'paper is a light look');
+  assert.equal(await page.$$eval('#themeSel option', o => o.length), 7);
   assert.ok(allPass(await statuses(page)), 'stories still pass their check after re-theming');
   await ctx.close();
 });

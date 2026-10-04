@@ -115,7 +115,7 @@ When the suggested library starts one of these pairs, the comparison is set auto
 **Explore panel** (shared by all versions)
 - **Sliders** update every version at once, without regenerating any code.
 - **Replay** restarts the animations. **Reset values** puts the sliders back to their defaults.
-- **Look** sets the theme for story versions, 2D and 3D: Night sky, Studio or Blueprint. 3D stories change their lighting and props; 2D stories are re-coloured from their palette (Studio is the plain white look).
+- **Look** sets the theme for story versions. 2D stories have seven: **Night sky** (indigo), **Studio** (plain white), **Blueprint** (blue and cyan), **Slate** (charcoal with amber), **Graphite** (neutral dark), **Forest** (deep green) and **Paper** (warm cream). 3D stories have their own Night sky, Studio and Blueprint scenes; the other looks use the nearest of those (Paper → Studio, the dark ones → Night sky).
 - **Timeline:** ‹ Step, Play/Pause, Step ›, scrub bar and speed (0.25× to 4×). Steps jump between the lesson's key moments when the version defines them.
 - **Keep versions in sync** makes play, pause and scrub drive all versions together. Turn it off to control each one separately.
 - **Keyboard:** Space plays or pauses, ← and → step.
