@@ -1,6 +1,6 @@
 // End-to-end tests of the lab page in headless Chromium, against the built dist/vislab.html and the local package mirror.
 // Covers: examples load and pass their checks; shared sliders; host-owned playback and keyboard; the view/library mismatch flag;
-// comparison lines; the scoring rubric; the code editor (run, errors with line jumps, undo, discard); the console; full screen; download availability;
+// comparison lines; the scoring rubric; up to six versions; the code editor (run, errors with line jumps, undo, discard); the console; full screen; download availability;
 // the gallery tab (load on demand, filters, surprise me, open, use this prompt, the replace guard); dark mode and phone width.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -356,6 +356,56 @@ test('scoring rubric: score versions 1-5, weighted totals and the winner, stale 
   assert.deepEqual(await page.$$eval('[data-total]', n => n.map(x => x.textContent)), ['82', '90 ✓'], 'imported scores shown, rubric opened');
   await page.click('#btnRubricClear'); await sleep(200);
   assert.deepEqual(await page.$$eval('[data-total]', n => n.map(x => x.textContent)), ['–', '–']);
+  await ctx.close();
+});
+
+test('more than three versions: rows D to F are added on request, a six-version lesson imports, runs, compares and scores; removing a version frees its row', async () => {
+  const fs = await import('fs'); const os = await import('os'); const path = await import('path');
+  const { ctx, page } = await fresh({ acceptDownloads: true });
+  await page.click('#btnRocket'); await sleep(4000);
+  // step 4 shows A, B, C and an "Add another version" button; each click adds the next row up to F
+  assert.deepEqual(await page.$$eval('.gen-row select', ns => ns.map(n => n.id)), ['libA', 'libB', 'libC']);
+  assert.match(await page.$eval('#btnAddSlot', b => b.textContent), /Add another version \(D\)/);
+  await page.click('#btnAddSlot'); await sleep(200);
+  assert.ok(await page.$('#libD')); assert.match(await page.$eval('#btnGenD', b => b.textContent), /Add version D/);
+  assert.match(await page.$eval('#btnAddSlot', b => b.textContent), /\(E\)/);
+  assert.equal(await page.$eval('#lessonLines', n => n.textContent.match(/A vs [A-F]/g).length), 3, 'a comparison line per row beyond A');
+  await page.click('#btnAddSlot'); await sleep(200); await page.click('#btnAddSlot'); await sleep(200);
+  assert.equal(await page.$('#btnAddSlot'), null, 'no more rows after F');
+  assert.ok(await page.$('#libF'));
+  await page.reload(); await sleep(3000);
+  assert.ok(await page.$('#libF'), 'added rows survive a reload');
+  await page.click('[aria-label="Remove row F"]'); await sleep(200);
+  assert.equal(await page.$('#libF'), null); assert.match(await page.$eval('#btnAddSlot', b => b.textContent), /\(F\)/);
+  // a lesson with six versions imports and runs: the rocket's two renderers, each used three times
+  const lesson = JSON.parse(fs.readFileSync(path.join(root, 'examples/rocket/lesson.json'), 'utf8'));
+  const spec = { ...lesson.spec, modelCode: fs.readFileSync(path.join(root, 'examples/rocket/model.js'), 'utf8'), checkCode: fs.readFileSync(path.join(root, 'examples/rocket/check.js'), 'utf8') };
+  const a = fs.readFileSync(path.join(root, 'examples/rocket/a.js'), 'utf8'), b = fs.readFileSync(path.join(root, 'examples/rocket/b.js'), 'utf8');
+  const six = ['A', 'B', 'C', 'D', 'E', 'F'].map((id, i) => ({ id, lib: i % 2 ? 'chartjs' : 'p5', code: i % 2 ? b : a, explanation: 'copy ' + id, caveats: [] }));
+  const file = path.join(os.tmpdir(), 'vl-six.json');
+  fs.writeFileSync(file, JSON.stringify({ visualizationLab: 1, lesson: { ...lesson, spec, versions: six, chat: [], scores: { F: { teach: 5, faithful: 5, clarity: 5, interaction: 5, visual: 5, robustness: 5, why: 'the sixth', by: 'designer' } } } }));
+  await page.click('#btnImport'); await page.setInputFiles('#importFile', file); await sleep(9000);
+  const st = await statuses(page);
+  assert.deepEqual(st.map(([id]) => id), ['A', 'B', 'C', 'D', 'E', 'F'], 'six panes in order');
+  assert.ok(allPass(st), JSON.stringify(st));
+  assert.deepEqual(await page.$$eval('#compareBanner .compare .tag', ns => ns.map(n => n.textContent)), ['A', 'B', 'C', 'D', 'E', 'F']);
+  assert.equal(await page.$$eval('#compareBanner .learn > div', ns => ns.length), 5, 'A vs each other version');
+  assert.equal(await page.$$eval('table.rubric select', n => n.length), 36, '6 criteria x 6 versions');
+  assert.deepEqual(await page.$$eval('[data-total]', n => n.map(x => x.textContent)), ['–', '–', '–', '–', '–', '100 ✓']);
+  assert.match(await page.$eval('#btnGenF', b => b.textContent), /Regenerate F/);
+  // phone width: six panes and the rubric must not overflow the page
+  await page.setViewportSize({ width: 420, height: 2600 }); await sleep(500);
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth), false, 'no horizontal overflow at 420px');
+  await page.setViewportSize({ width: 1500, height: 2600 }); await sleep(300);
+  // removing D frees its row, keeps the others, and the keyboard still drives playback from the lead version
+  await page.click('.pane[data-vid="D"] button:has-text("Remove D")'); await sleep(500);
+  assert.deepEqual((await statuses(page)).map(([id]) => id), ['A', 'B', 'C', 'E', 'F']);
+  assert.equal(await page.$('#libD'), null); assert.match(await page.$eval('#btnAddSlot', b => b.textContent), /\(D\)/);
+  assert.deepEqual(await page.$$eval('[data-total]', n => n.map(x => x.textContent)), ['–', '–', '–', '–', '100 ✓']);
+  // export keeps all five
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#btnExport')]);
+  const out = path.join(os.tmpdir(), 'vl-five.json'); await dl.saveAs(out);
+  assert.deepEqual(JSON.parse(fs.readFileSync(out, 'utf8')).lesson.versions.map(v => v.id), ['A', 'B', 'C', 'E', 'F']);
   await ctx.close();
 });
 

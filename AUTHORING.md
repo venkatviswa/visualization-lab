@@ -218,7 +218,7 @@ The standalone page has its own sliders and transport bar, so `a.html` can be em
 
 ## 8. Lesson files
 
-The lab's **Export lesson** writes `{ visualizationLab: 1, exportedAt, title, lesson: { goal, view, libChoice, spec, versions, chat, theme, sync, scores } }`. `spec` is the section 2 object with `modelCode` and `checkCode` inline; each version is `{ id, lib, code, explanation, caveats, handEdited }`; `scores` is `null` or `{ A: { teach, faithful, clarity, interaction, visual, robustness, why, by }, … }` with 1–5 per criterion, `why` one sentence and `by` either `claude` or `designer` (the bake-off judge's rubric; the lab drops a version's scores whenever its code changes). The same shape, minus the wrapper, is what the gallery stores per lesson, so a gallery item's `spec.json` plus its renderers can be assembled into an importable file, and an exported file can be split into an item folder.
+The lab's **Export lesson** writes `{ visualizationLab: 1, exportedAt, title, lesson: { goal, view, libChoice, spec, versions, chat, theme, sync, scores } }`. `spec` is the section 2 object with `modelCode` and `checkCode` inline; each version is `{ id, lib, code, explanation, caveats, handEdited }` with `id` one of A to F; `scores` is `null` or `{ A: { teach, faithful, clarity, interaction, visual, robustness, why, by }, … }` with 1–5 per criterion, `why` one sentence and `by` either `claude` or `designer` (the bake-off judge's rubric; the lab drops a version's scores whenever its code changes). The same shape, minus the wrapper, is what the gallery stores per lesson, so a gallery item's `spec.json` plus its renderers can be assembled into an importable file, and an exported file can be split into an item folder.
 
 ## 9. Adding a lesson to the gallery
 

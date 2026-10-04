@@ -6,7 +6,7 @@
 /* Layout: three-pane workbench — setup (spec) | stage (controls + versions) | Claude chat. Stacks on narrow screens. */
 :root{
   --bg:#f3f5f8; --surface:#ffffff; --sunk:#eef1f5; --ink:#1b2130; --muted:#5b6475; --line:#dbe0e8;
-  --accent:#2b59c3; --accent-ink:#ffffff; --a:#2b59c3; --b:#b4530f; --c:#0f766e;
+  --accent:#2b59c3; --accent-ink:#ffffff; --a:#2b59c3; --b:#b4530f; --c:#0f766e; --d:#6d28d9; --e:#be185d; --f:#4d7c0f;
   --good:#1f7a4d; --bad:#b42318; --warn:#9a5b00; --focus:#2b59c3;
   --hl-kw:#7a3e9d; --hl-str:#a3412a; --hl-num:#1f6f8b; --hl-com:#6b7280; --hl-fn:#2b59c3; --hl-def:#1b2130;
   --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -14,11 +14,11 @@
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0f1217; --surface:#171b23; --sunk:#12161d; --ink:#e5e8ee; --muted:#9aa3b2; --line:#2a303b;
-  --accent:#7ea2ff; --accent-ink:#0b1020; --a:#7ea2ff; --b:#f0a35e; --c:#4fd1c5; --good:#5cc28d; --bad:#ff8a80; --warn:#f2b54f; --focus:#9db8ff; color-scheme:dark;
+  --accent:#7ea2ff; --accent-ink:#0b1020; --a:#7ea2ff; --b:#f0a35e; --c:#4fd1c5; --d:#c4a6ff; --e:#f48fb1; --f:#a3e635; --good:#5cc28d; --bad:#ff8a80; --warn:#f2b54f; --focus:#9db8ff; color-scheme:dark;
   --hl-kw:#c9a7ff; --hl-str:#f2a98c; --hl-num:#7fd1e8; --hl-com:#8b93a7; --hl-fn:#9db8ff; --hl-def:#e5e8ee}}
 :root[data-theme="dark"]{
   --bg:#0f1217; --surface:#171b23; --sunk:#12161d; --ink:#e5e8ee; --muted:#9aa3b2; --line:#2a303b;
-  --accent:#7ea2ff; --accent-ink:#0b1020; --a:#7ea2ff; --b:#f0a35e; --c:#4fd1c5; --good:#5cc28d; --bad:#ff8a80; --warn:#f2b54f; --focus:#9db8ff; color-scheme:dark;
+  --accent:#7ea2ff; --accent-ink:#0b1020; --a:#7ea2ff; --b:#f0a35e; --c:#4fd1c5; --d:#c4a6ff; --e:#f48fb1; --f:#a3e635; --good:#5cc28d; --bad:#ff8a80; --warn:#f2b54f; --focus:#9db8ff; color-scheme:dark;
   --hl-kw:#c9a7ff; --hl-str:#f2a98c; --hl-num:#7fd1e8; --hl-com:#8b93a7; --hl-fn:#9db8ff; --hl-def:#e5e8ee}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--sans);padding-inline:16px;padding-block:0 32px}
@@ -128,7 +128,9 @@ body.has-max{overflow:hidden}
 .pane{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;background:var(--surface);min-width:0;overflow:hidden}
 .pane-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
 .tag{font-family:var(--mono);font-weight:500;font-size:12px;width:22px;height:22px;display:inline-grid;place-items:center;border-radius:5px;color:#fff}
-.tag.A{background:var(--a)}.tag.B{background:var(--b)}.tag.C{background:var(--c)}
+.tag.A{background:var(--a)}.tag.B{background:var(--b)}.tag.C{background:var(--c)}.tag.D{background:var(--d)}.tag.E{background:var(--e)}.tag.F{background:var(--f)}
+.gen-row.extra{grid-template-columns:minmax(0,1fr) auto auto}
+.rubric-wrap{overflow-x:auto}
 :root[data-theme="dark"] .tag,.tag{color:var(--surface)}
 .pane-title{font-weight:600}
 .pane-sub{color:var(--muted);font-size:12px}
@@ -311,7 +313,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:12.5px}
 
   <aside class="panel chat" aria-label="Ask Claude">
     <h2>Ask Claude</h2>
-    <p class="note">Claude sees the spec, both versions' code, errors and check results.</p>
+    <p class="note">Claude sees the spec, every version's code, errors and check results.</p>
     <div class="chips" id="chatChips"></div>
     <div class="msgs" id="msgs" aria-live="polite"></div>
     <form id="chatForm">
@@ -378,6 +380,7 @@ const RF_CSS = document.getElementById("rfcss").textContent;
 const STORE = "vislab:v1";
 let state = load() || Object.assign(clone(EXAMPLE), { source: "example" });
 let params = {};
+const VIDS = ["A", "B", "C", "D", "E", "F"];        // version ids; A, B and C always have a row under step 4, D to F are added on request
 const panes = {};            // id -> {iframe, errors[], check, booted, hasContent, busy, ctl, tab}
 let sample = null;
 let chatCtl = null;
@@ -573,6 +576,14 @@ function renderSpec() {
   const selB = libSel(versionLib("B") || s.alternative?.library, "libB");
   const libAv = versionLib("A") || s.recommended?.library, libBv = versionLib("B") || s.alternative?.library;
   const selC = libSel(versionLib("C") || (libAv === "story" ? "story3d" : LIB_IDS.find(k => k !== libAv && k !== libBv)), "libC");
+  // extra slots D to F: a row exists for every such version, plus any the designer added with "Add another version"
+  const extraIds = VIDS.slice(3).filter(id => has(id) || (state.slots || []).includes(id));
+  const usedLibs = () => VIDS.map(id => { const e = $("lib" + id); return e ? e.value : versionLib(id); }).filter(Boolean);
+  const extraRows = extraIds.map(id => el("div", { class: "gen-row extra" },
+    libSel(versionLib(id) || LIB_IDS.find(k => !usedLibs().includes(k)) || "svg", "lib" + id),
+    el("button", { class: "btn", type: "button", id: "btnGen" + id, text: has(id) ? "Regenerate " + id : "Add version " + id, onclick: () => generate(id, $("lib" + id).value) }),
+    el("button", { class: "btn small", type: "button", "aria-label": "Remove row " + id, title: has(id) ? "Remove version " + id : "Remove this row", text: "\u00d7", onclick: () => { state.slots = (state.slots || []).filter(x => x !== id); if (has(id)) removeVersion(id); else { save(); renderSpec(); } } })));
+  const nextId = VIDS.slice(3).find(id => !extraIds.includes(id));
   box.append(el("div", { class: "spec" },
     el("h3", { text: s.title }),
     el("p", { style: "margin:0", text: s.objective }),
@@ -603,6 +614,8 @@ function renderSpec() {
     el("div", { class: "flag", id: "flagA", role: "status", hidden: true }),
     el("div", { class: "gen-row" }, selB, el("button", { class: "btn", type: "button", id: "btnGenB", text: has("B") ? "Regenerate B" : "Add version B", onclick: () => generate("B", $("libB").value) })),
     el("div", { class: "gen-row" }, selC, el("button", { class: "btn", type: "button", id: "btnGenC", text: has("C") ? "Regenerate C" : "Add version C", onclick: () => generate("C", $("libC").value) })),
+    extraRows,
+    nextId ? el("button", { class: "btn small", type: "button", id: "btnAddSlot", text: "Add another version (" + nextId + ")", title: "Up to " + VIDS.length + " versions of the same lesson", onclick: () => { state.slots = (state.slots || []).concat(nextId); save(); renderSpec(); } }) : el("p", { class: "note", text: VIDS.length + " versions is the limit." }),
     el("p", { class: "note", id: "lessonLines" }),
     el("p", { class: "note", text: "All versions share the same spec, model, controls and check, so differences come from the library alone." }),
     el("details", {}, el("summary", { text: "Default comparisons" }),
@@ -612,16 +625,16 @@ function renderSpec() {
   const lessonLines = () => {
     const box = $("lessonLines"); if (!box) return; box.innerHTML = "";
     const a = $("libA").value;
-    for (const id of ["B", "C"]) box.append(el("div", {}, el("b", { text: "A vs " + id + ": " }), lessonFor(a, $("lib" + id).value)));
+    for (const id of VIDS.slice(1)) if ($("lib" + id)) box.append(el("div", {}, el("b", { text: "A vs " + id + ": " }), lessonFor(a, $("lib" + id).value)));
   };
-  for (const id of ["libA", "libB", "libC"]) $(id).addEventListener("change", lessonLines);
+  for (const id of VIDS) if ($("lib" + id)) $("lib" + id).addEventListener("change", lessonLines);
   lessonLines();
   if (editing) $("specJson").value = JSON.stringify(s, null, 2);
   const flagA = () => {
     const box = $("flagA"), lib = $("libA").value, d = viewConflict(lib);
     box.innerHTML = ""; box.hidden = !d;
     if (d) box.append(
-      el("div", {}, el("b", { text: "Version A doesn't match the view. " }), `${libName(lib)} draws in ${d}, but the view is set to ${state.view}. Versions B and C are meant for comparing dimensions, so they aren't flagged.`),
+      el("div", {}, el("b", { text: "Version A doesn't match the view. " }), `${libName(lib)} draws in ${d}, but the view is set to ${state.view}. The other versions are meant for comparing dimensions, so they aren't flagged.`),
       el("div", { class: "foot-actions" }, el("button", { class: "btn small", type: "button", text: `Switch view to ${d}`, onclick: () => setView(d) })));
   };
   $("libA").addEventListener("change", () => { state.pickA = { title: s.title, lib: $("libA").value }; save(); flagA(); }); flagA();
@@ -716,7 +729,7 @@ $("themeSel").addEventListener("change", e => {
 function broadcast(msg) { for (const id in panes) panes[id].iframe?.contentWindow?.postMessage(Object.assign({ __host: 1 }, msg), "*"); }
 $("btnReplay").addEventListener("click", () => broadcast({ type: "replay" }));
 let tlSpeed = 1, scrubbing = false;
-function leadId() { return ["A", "B", "C"].find(i => panes[i] && panes[i].timeline); }
+function leadId() { return VIDS.find(i => panes[i] && panes[i].timeline); }
 function leadPane() { const i = leadId(); return i ? panes[i] : null; }
 function renderTimeline() {
   const lead = leadPane();
@@ -823,7 +836,7 @@ function renderVersions() {
     return;
   }
   box.querySelector(".empty")?.remove();
-  for (const id of ["A", "B", "C"]) {
+  for (const id of VIDS) {
     const v = state.versions.find(x => x.id === id);
     const pn = panes[id];
     if (!v && !(pn && pn.busy)) continue;
@@ -1112,7 +1125,7 @@ function renderPaneStatus(id) {
 
 function renderCompare() {
   const b = $("compareBanner");
-  const vs = ["A", "B", "C"].map(i => state.versions.find(v => v.id === i)).filter(Boolean);
+  const vs = VIDS.map(i => state.versions.find(v => v.id === i)).filter(Boolean);
   b.hidden = vs.length < 2;
   if (vs.length < 2) return;
   b.innerHTML = "";
@@ -1176,11 +1189,11 @@ function renderRubric(vs) {
     Object.keys(sc).length ? el("button", { class: "btn small", type: "button", id: "btnRubricClear", text: "Clear scores", onclick: () => { delete state.scores; save(); refreshRubric(vs); } }) : null,
     el("span", { class: "note", id: "rubricVerdict", text: winners.length === 1 ? "Winner so far: " + winners[0].id + " (" + libName(winners[0].lib) + ")." : winners.length > 1 ? "Tie between " + winners.map(w => w.id).join(" and ") + "; the rubric prefers the simpler or 2D version." : "Score each version 1 to 5, or let Claude fill a first pass and adjust it." }));
   const why = vs.filter(v => sc[v.id] && sc[v.id].why);
-  return el("div", { id: "rubric" }, table, bar, why.length ? el("ul", { class: "rubric-why" }, why.map(v => el("li", {}, el("span", { class: "tag " + v.id, text: v.id }), sc[v.id].why + (sc[v.id].by === "claude" ? " (Claude's first pass)" : "")))) : null);
+  return el("div", { id: "rubric" }, el("div", { class: "rubric-wrap" }, table), bar, why.length ? el("ul", { class: "rubric-why" }, why.map(v => el("li", {}, el("span", { class: "tag " + v.id, text: v.id }), sc[v.id].why + (sc[v.id].by === "claude" ? " (Claude's first pass)" : "")))) : null);
 }
 async function scoreWithClaude() {
   if (!sample) return;
-  const vs = ["A", "B", "C"].map(i => state.versions.find(v => v.id === i)).filter(Boolean);
+  const vs = VIDS.map(i => state.versions.find(v => v.id === i)).filter(Boolean);
   if (vs.length < 2) return;
   const btn = $("btnRubricClaude"); btn.disabled = true; btn.textContent = "Scoring\u2026";
   const prompt = `You are the judge in a lesson visual bake-off. Score each version of the same lesson on this rubric, 1 (poor) to 5 (excellent) per criterion. You cannot see the pixels: judge from the code, the errors, the console, the check results and what the code evidently draws. Be strict and discriminating; identical scores for every version are a failure.
@@ -1201,7 +1214,7 @@ ${chatContext()}`;
 }
 
 function removeVersion(id) {
-  state.versions = state.versions.filter(v => v.id !== id); dropScore(id);
+  state.versions = state.versions.filter(v => v.id !== id); dropScore(id); if (state.slots) state.slots = state.slots.filter(x => x !== id);
   if (panes[id]) { panes[id].node?.remove(); delete panes[id]; }
   save(); renderAll();
 }
@@ -1209,7 +1222,7 @@ function removeVersion(id) {
 function syncGenButtons() {
   const anyBusy = Object.values(panes).some(p => p.busy) || specBusy;
   document.querySelectorAll("[data-gen]").forEach(b => b.disabled = !sample || anyBusy);
-  ["btnGenA", "btnGenB", "btnGenC"].forEach(i => { const b = $(i); if (b) b.disabled = !sample || anyBusy; });
+  VIDS.forEach(i => { const b = $("btnGen" + i); if (b) b.disabled = !sample || anyBusy; });
   $("btnSpec").disabled = !sample || anyBusy;
 }
 
@@ -1383,10 +1396,10 @@ function renderChat() {
 }
 function chatBubble(m) {
   const node = el("div", { class: "msg " + m.role });
-  const text = m.role === "assistant" ? m.content.replace(/^REFINE [ABC]:.*$/gm, "").trim() : m.content;
+  const text = m.role === "assistant" ? m.content.replace(/^REFINE [A-F]:.*$/gm, "").trim() : m.content;
   node.append(text || "…");
   if (m.role === "assistant") {
-    const acts = [...m.content.matchAll(/^REFINE ([ABC]):\s*(.+)$/gm)];
+    const acts = [...m.content.matchAll(/^REFINE ([A-F]):\s*(.+)$/gm)];
     if (acts.length) node.append(el("div", { class: "applies" }, acts.map(([, id, instr]) =>
       el("button", { class: "btn small", type: "button", "data-gen": "1", title: instr, text: "Apply to " + id + ": " + (instr.length > 48 ? instr.slice(0, 46) + "…" : instr),
         disabled: !state.versions.some(v => v.id === id), onclick: () => refine(id, instr) }))));
@@ -1409,7 +1422,7 @@ function chatContext() {
 const CHAT_RULES = `You are Claude inside Visualization Lab, helping an educator or L&D designer build and compare interactive lessons. Be concise and specific: under 170 words unless asked for more, short paragraphs or a few bullets, no headings. Ground answers in the spec, code, errors and check results below. Speak about learning impact as well as code.
 When a code change to a version would help, end your reply with one line per change in exactly this form, which the page turns into a button:
 REFINE A: <one-sentence instruction for the code generator>
-(use REFINE B: or REFINE C: for versions B and C). Never claim you changed anything yourself.
+(use the version's letter: REFINE B:, REFINE C:, up to REFINE F:). Never claim you changed anything yourself.
 How the lab runs code: each version runs in a sandboxed iframe. model() and check() are defined as globals first, then the library loads as described per version, then the code, which must define window.lab = {mount, update, destroy} and, for anything that changes over time, a duration getter and seek(t); the host supplies sliders and play/pause/scrub. Use these facts to diagnose. If code breaks the contract (a missing import, its own sliders or clock, a global-mode p5 sketch), say so plainly and propose a REFINE. Only blame loading when Problems shows "Failed to load". If the model returns empty or degenerate data at the default values, say the spec needs fixing and suggest the "Ask Claude to fix the model" button rather than patching the renderer.
 
 Current lab state:
@@ -1427,7 +1440,7 @@ async function askChat(text) {
   const turns = state.chat.slice(0, -1).slice(-10);
   try {
     const { text: out } = await sample([{ role: "user", content: CHAT_RULES + chatContext() }, ...turns], {
-      cache: false, signal: chatCtl.signal, onText: ({ text: t }) => { bubble.textContent = t.replace(/^REFINE [ABC]:.*$/gm, "").trim(); $("msgs").scrollTop = $("msgs").scrollHeight; } });
+      cache: false, signal: chatCtl.signal, onText: ({ text: t }) => { bubble.textContent = t.replace(/^REFINE [A-F]:.*$/gm, "").trim(); $("msgs").scrollTop = $("msgs").scrollHeight; } });
     reply.content = out;
   } catch (e) {
     reply.content = (e && e.text ? e.text + "\n\n" : "") + (e && e.code === "cancelled" ? "(Stopped.)" : errText(e));
@@ -1594,7 +1607,7 @@ function parseLesson(text) {
     theme: ["night", "studio", "blueprint", "slate", "graphite", "forest", "paper"].includes(L.theme) ? L.theme : "night", sync: L.sync !== false };
   if (L.spec) out.spec = validateSpec(L.spec);
   if (Array.isArray(L.versions)) for (const v of L.versions) {
-    if (!v || !/^[ABC]$/.test(v.id) || typeof v.code !== "string") continue;
+    if (!v || !/^[A-F]$/.test(v.id) || typeof v.code !== "string") continue;
     if (!LIB_IDS.includes(v.lib)) throw new Error("Version " + v.id + " uses a library this lab doesn't have: " + v.lib + ".");
     out.versions.push({ id: v.id, lib: v.lib, code: v.code, explanation: String(v.explanation || ""), caveats: Array.isArray(v.caveats) ? v.caveats.map(String) : [], handEdited: !!v.handEdited, history: [] });
   }

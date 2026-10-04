@@ -2,7 +2,7 @@
 
 A browser workbench for building interactive teaching visuals with JavaScript, and comparing how different libraries explain the same idea.
 
-It's built for educators and L&D designers who know **what** they want to explain but not necessarily **which library** to use. Describe a concept, and Claude writes a teaching spec: the objective, a small model of the system, the learner controls and a correctness check. Then you generate up to three versions with different libraries, explore them side by side and refine them.
+It's built for educators and L&D designers who know **what** they want to explain but not necessarily **which library** to use. Describe a concept, and Claude writes a teaching spec: the objective, a small model of the system, the learner controls and a correctness check. Then you generate up to six versions with different libraries, explore them side by side and refine them.
 
 ---
 
@@ -11,7 +11,7 @@ It's built for educators and L&D designers who know **what** they want to explai
 | Panel | What's in it |
 | --- | --- |
 | **Left: Lesson setup** | 1 Describe the goal → 2 Choose a view and library → 3 Review the spec → 4 Generate and compare |
-| **Middle: Explore and versions** | Shared sliders and playback, learner prompts, the comparison banner, and one pane per version (A, B, C) |
+| **Middle: Explore and versions** | Shared sliders and playback, learner prompts, the comparison banner, and one pane per version (A to F) |
 | **Right: Ask Claude** | A chat that can see the spec, every version's code, errors, check results and console output |
 | **Guide** (top right, or press `?`) | This guide and the lesson authoring guide, inside the app. The `?` next to Draft spec opens the spec rules. |
 
@@ -91,7 +91,7 @@ Right after drafting, the lab runs the model and the check:
 - **Edit spec and model** opens the spec as JSON. Changing the model updates every version at once, because versions call `model()` and never copy it.
 
 ### 4. Generate and compare
-- **Generate A** builds the main version. **Add version B / C** builds comparisons.
+- **Generate A** builds the main version. **Add version B / C** builds comparisons. **Add another version** adds a row for D, E and F (six is the limit); the × on such a row removes the row, or the version if one was generated. Panes wrap to as many columns as fit, so four or more versions read best in full screen or on a wide display.
 - Each row has its own library picker. Under the rows, **A vs B** and **A vs C** lines say what each comparison teaches, and they update as you change libraries.
 - Generation usually takes 30–90 seconds per version. You can press **Stop** while one is generating.
 
@@ -145,7 +145,7 @@ When the suggested library starts one of these pairs, the comparison is set auto
 | **Download HTML** | Saves this version as a standalone page with its own sliders, play bar and the current Look |
 | **Export for course** | Saves this version as a lesson page: title, objective, the **Predict** prompt, the visual with its controls, a live "What the model confirms" line, the **Explain** prompt, assumptions and units. Ready to drop into a course. |
 | **Undo last change** | Steps back through the last 5 revisions (generations, refines, fixes and your own edits) |
-| **Remove B / C** | Deletes a comparison version |
+| **Remove B … F** | Deletes a comparison version (A can be regenerated but not removed) |
 
 ---
 
