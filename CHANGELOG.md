@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Guide drawer in the app: the README and the authoring guide, with a `?` next to Draft spec that opens the spec rules; keyboard `?` toggles it.
+- Replace guard on Draft spec and New lab: a second click is needed when the lesson is the designer's own work (the gallery already had it).
+
 ## 0.9.0 — repository and test suite
 
 - Project restructured as a git repository: page template in `src/`, toolkit in `kit/`, built-in lessons in `examples/`, gallery lessons in `gallery/items/`, build scripts in `scripts/`, output in `dist/`.

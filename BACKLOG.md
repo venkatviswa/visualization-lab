@@ -4,8 +4,8 @@ Open items, roughly in the order we plan to take them. Tick items here in the sa
 
 ## Next up (small, high value)
 
-- [ ] **Guide button** in the header that opens README.md / AUTHORING.md in the app; a "?" next to Draft spec with the spec rules.
-- [ ] **Draft-spec guard**: drafting a new spec replaces the current lesson; ask to click again when the lesson holds the designer's own work (same guard the gallery already has).
+- [x] **Guide button** in the header that opens README.md / AUTHORING.md in the app; a "?" next to Draft spec with the spec rules.
+- [x] **Draft-spec guard** (and New lab): a second click is needed when the lesson holds the designer's own work.
 - [ ] **Export / import a lesson as JSON** (spec + versions + chat), so lessons move between browsers and people without a backend.
 - [ ] **2D themes for story versions** (3D has Night sky, Studio, Blueprint; 2D stories have only the white look).
 - [ ] **"Export for course" button**: one standalone HTML with the chosen version, the learner prompts and the check, ready to embed in an LMS page.

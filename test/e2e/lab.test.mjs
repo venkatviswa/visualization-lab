@@ -229,3 +229,56 @@ test('state survives a reload, including the page you were on', async () => {
   assert.ok(allPass(await statuses(page)));
   await ctx.close();
 });
+
+test('guide: opens from the header and the "?" key, renders both docs, the spec help deep-links, Escape closes', async () => {
+  const { ctx, page, errors } = await fresh();
+  assert.equal(await page.$eval('#guide', n => n.hidden), true);
+  await page.click('#btnGuide'); await sleep(800);
+  assert.equal(await page.$eval('#guide', n => n.hidden), false);
+  assert.equal(await page.$eval('#btnGuide', b => b.getAttribute('aria-expanded')), 'true');
+  const h1 = await page.$eval('#guideBody h1', n => n.textContent);
+  assert.match(h1, /Visualization Lab/);
+  assert.ok(await page.$$eval('#guideBody table', t => t.length) >= 3, 'README tables render');
+  assert.ok(await page.$$eval('#guideBody h2', h => h.some(x => /Gotchas/.test(x.textContent))));
+  await page.click('#guideTabs [data-doc="AUTHORING.md"]'); await sleep(600);
+  assert.match(await page.$eval('#guideBody h1', n => n.textContent), /authoring guide/i);
+  assert.ok(await page.$$eval('#guideBody pre', p => p.length) >= 1, 'code blocks render');
+  assert.ok(await page.$$eval('#guideBody table td code', c => c.some(x => x.textContent === 'wordcloud')), 'generated library table present');
+  await page.keyboard.press('Escape'); await sleep(200);
+  assert.equal(await page.$eval('#guide', n => n.hidden), true);
+  // "?" next to Draft spec opens the authoring guide at the spec rules
+  await page.click('#btnSpecHelp'); await sleep(800);
+  assert.equal(await page.$eval('#guideTabs [aria-selected="true"]', b => b.dataset.doc), 'AUTHORING.md');
+  assert.ok(await page.$eval('#guideBody .target', n => /Spec rules/.test(n.textContent)), 'scrolled to the spec rules heading');
+  await page.click('#btnGuideClose'); await sleep(200);
+  // keyboard shortcut
+  await page.keyboard.press('?'); await sleep(600);
+  assert.equal(await page.$eval('#guide', n => n.hidden), false);
+  await page.click('#guideBackdrop', { position: { x: 20, y: 20 } }); await sleep(200);
+  assert.equal(await page.$eval('#guide', n => n.hidden), true);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('replace guard: New lab and Draft spec ask for a second click when the lesson is the designer\'s own work', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('#btnRocket'); await sleep(3000);
+  // an example is not own work: New lab acts at once
+  await page.click('#btnNew'); await sleep(300);
+  assert.equal(await page.$$eval('.pane', n => n.length), 0);
+  // open the example again and make it own work by running an edit
+  await page.click('#btnRocket'); await sleep(3000);
+  await page.click('.pane[data-vid="A"] [data-tab="source"]'); await sleep(1200);
+  await page.evaluate(() => { const ed = CM.EditorView.findFromDOM(document.querySelector('.pane[data-vid="A"] .cm-editor')); ed.dispatch({ changes: { from: 0, insert: '// mine\n' } }); });
+  await page.click('.pane[data-vid="A"] [data-r=run]'); await sleep(1500);
+  await page.click('#btnNew'); await sleep(200);
+  assert.match(await page.$eval('#btnNew', b => b.textContent), /Replace your current lesson/);
+  assert.equal(await page.$$eval('.pane', n => n.length), 2, 'first click only arms');
+  // Draft spec is disabled without Claude in the viewer, but shares the same guard; arming New lab leaves it alone
+  assert.equal(await page.$eval('#btnSpec', b => b.disabled), true);
+  await sleep(4300);
+  assert.equal(await page.$eval('#btnNew', b => b.textContent), 'New lab', 'the arm times out');
+  await page.click('#btnNew'); await sleep(200); await page.click('#btnNew'); await sleep(400);
+  assert.equal(await page.$$eval('.pane', n => n.length), 0, 'second click within the window acts');
+  await ctx.close();
+});

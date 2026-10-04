@@ -26,8 +26,8 @@ export function labUrlForTests(server) {
   const src = read('dist/vislab.html').replaceAll('https://cdn.jsdelivr.net/npm/', server.cdn);
   const dir = path.join(root, '.work/lab'); fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'vislab.test.html'), src);
-  // vendor/ and gallery/ are resolved relative to the page, so link them next to it
-  for (const d of ['vendor', 'gallery']) { const l = path.join(dir, d); try { fs.unlinkSync(l); } catch (e) {} fs.symlinkSync(path.join(root, 'dist', d), l, 'dir'); }
+  // vendor/, gallery/ and the two guides are resolved relative to the page, so link them next to it
+  for (const d of ['vendor', 'gallery', 'README.md', 'AUTHORING.md']) { const l = path.join(dir, d); try { fs.unlinkSync(l); } catch (e) {} fs.symlinkSync(path.join(root, 'dist', d), l); }
   return server.base + '/.work/lab/vislab.test.html';
 }
 

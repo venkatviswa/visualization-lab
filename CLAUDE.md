@@ -59,7 +59,7 @@ Do not add a feature without a test, and do not change a prompt rule without upd
 
 ## Publishing
 
-The artifact is `dist/vislab.html` plus `dist/vendor/`, `dist/gallery/`, `dist/kit/`, `dist/examples/`, `dist/README.md`, `dist/AUTHORING.md`, published together (relative paths). Bump `version` in `package.json` and add a `CHANGELOG.md` entry when publishing.
+The artifact is `dist/vislab.html` plus `dist/vendor/`, `dist/gallery/`, `dist/kit/`, `dist/examples/`, `dist/README.md`, `dist/AUTHORING.md`, published together (relative paths; the in-app Guide fetches the two .md files from beside the page). Bump `version` in `package.json` and add a `CHANGELOG.md` entry when publishing.
 
 ## Known rough spots
 

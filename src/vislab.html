@@ -183,6 +183,32 @@ body.has-max{overflow:hidden}
 .chat textarea{min-height:60px}
 .banner{font-size:13px;border:1px solid var(--line);background:var(--sunk);border-radius:8px;padding:8px 12px}
 .banner.bad{color:var(--bad)}
+.guide-backdrop{position:fixed;inset:0;background:rgba(10,14,24,.35);z-index:90}
+.guide-backdrop[hidden]{display:none}
+.guide{position:fixed;top:0;right:0;bottom:0;width:min(760px,100%);z-index:91;background:var(--surface);border-left:1px solid var(--line);display:flex;flex-direction:column;box-shadow:-12px 0 40px rgba(0,0,0,.18)}
+.guide[hidden]{display:none}
+.guide-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+.guide-head h2{font-size:16px;font-weight:600;margin-right:auto}
+.guide-head .seg{min-width:260px}
+.guide-body{flex:1;overflow:auto;padding:4px 22px 40px;font-size:14px;line-height:1.55;scroll-behavior:smooth}
+.guide-body h1{font-size:22px;margin:22px 0 10px}
+.guide-body h2{font-size:17px;margin:26px 0 8px;padding-top:8px;border-top:1px solid var(--line)}
+.guide-body h3{font-size:14.5px;margin:18px 0 6px}
+.guide-body p,.guide-body ul,.guide-body ol{margin:0 0 10px}
+.guide-body li{margin:3px 0}
+.guide-body table{border-collapse:collapse;width:100%;margin:8px 0 14px;font-size:13px}
+.guide-body th,.guide-body td{text-align:left;vertical-align:top;padding:5px 8px;border-bottom:1px solid var(--line)}
+.guide-body th{color:var(--muted);font-weight:500}
+.guide-body code{font-family:var(--mono);font-size:12px;background:var(--sunk);padding:1px 4px;border-radius:4px}
+.guide-body pre{background:var(--sunk);border-radius:8px;padding:10px 12px;overflow:auto;font:12px/1.5 var(--mono);margin:0 0 12px}
+.guide-body pre code{background:none;padding:0}
+.guide-body blockquote{margin:0 0 12px;padding:6px 12px;border-left:3px solid var(--accent);color:var(--muted)}
+.guide-body a{color:var(--accent)}
+.guide-body hr{border:0;border-top:1px solid var(--line);margin:18px 0}
+.guide-body .target{animation:flash 1.6s ease-out}
+@keyframes flash{from{background:color-mix(in srgb,var(--accent) 22%,transparent)}to{background:transparent}}
+.guide-body input[type=checkbox]{margin-right:6px;vertical-align:-1px}
+body.guide-open{overflow:hidden}
 .flag{font-size:12.5px;border:1px solid var(--warn);border-left-width:4px;border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;background:var(--sunk)}
 .flag[hidden]{display:none}
 .learn{display:flex;flex-direction:column;gap:4px;margin-top:8px;font-size:13px}
@@ -207,6 +233,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:12.5px}
     <button type="button" data-page="lab" aria-pressed="true">Lab</button>
     <button type="button" data-page="inspire" aria-pressed="false">Get inspired</button>
   </div>
+  <button class="btn" id="btnGuide" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="guide" title="How to use the lab and how to write lessons (?)">Guide</button>
   <div class="top-actions" id="topActions">
     <button class="btn" id="btnExample" type="button">Projectile example</button>
     <button class="btn" id="btnRocket" type="button">Rocket example</button>
@@ -233,7 +260,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:12.5px}
       </div>
       <select id="libChoice" aria-label="Library"></select>
       <div class="flag" id="viewWarn" role="status" hidden></div>
-      <button class="btn primary" id="btnSpec" type="button">Draft spec</button>
+      <div class="gen-row"><button class="btn primary" id="btnSpec" type="button">Draft spec</button><button class="btn small" id="btnSpecHelp" type="button" aria-label="What makes a good spec" title="What makes a good spec">?</button></div>
       <p class="note" id="genNote" hidden></p>
     </div>
     <div class="step" id="specStep">
@@ -299,6 +326,19 @@ details summary{cursor:pointer;color:var(--muted);font-size:12.5px}
   <p class="note" id="galCount" aria-live="polite"></p>
   <div class="ggrid" id="galGrid"></div>
 </section>
+
+<div class="guide-backdrop" id="guideBackdrop" hidden></div>
+<aside class="guide" id="guide" role="dialog" aria-modal="true" aria-labelledby="guideTitle" hidden>
+  <div class="guide-head">
+    <h2 id="guideTitle">Guide</h2>
+    <div class="seg" role="tablist" aria-label="Guide section" id="guideTabs">
+      <button type="button" role="tab" data-doc="README.md" aria-selected="true">Using the lab</button>
+      <button type="button" role="tab" data-doc="AUTHORING.md" aria-selected="false">Writing lessons</button>
+    </div>
+    <button class="btn small" type="button" id="btnGuideClose" aria-label="Close the guide">Close</button>
+  </div>
+  <div class="guide-body" id="guideBody" tabindex="0"></div>
+</aside>
 
 <script type="text/plain" id="rfcss">/*@RFCSS@*/</script>
 
@@ -1137,7 +1177,7 @@ ${s.checkCode || "(none)"}`;
 }
 
 let specBusy = false;
-$("btnSpec").addEventListener("click", draftSpec);
+$("btnSpec").addEventListener("click", e => confirmReplace(e.currentTarget, "draft", draftSpec));
 async function draftSpec() {
   if (!sample) return;
   const goal = (state.goal || "").trim();
@@ -1295,7 +1335,7 @@ $("btnExample").addEventListener("click", () => { resetLab(Object.assign(clone(E
 $("btnRocket").addEventListener("click", () => { resetLab(Object.assign(clone(ROCKET), { source: "example" })); });
 $("btnPipeline").addEventListener("click", () => { resetLab(Object.assign(clone(PIPELINE), { source: "example" })); });
 $("btnTerms").addEventListener("click", () => { resetLab(Object.assign(clone(TERMS), { source: "example" })); });
-$("btnNew").addEventListener("click", () => { resetLab({ goal: "", view: "Auto", libChoice: "recommend", spec: null, versions: [], chat: [] }); $("goal").focus(); });
+$("btnNew").addEventListener("click", e => confirmReplace(e.currentTarget, "new", () => { resetLab({ goal: "", view: "Auto", libChoice: "recommend", spec: null, versions: [], chat: [] }); $("goal").focus(); }));
 function resetLab(next) {
   for (const id in panes) { panes[id].ctl?.abort(); panes[id].node?.remove(); delete panes[id]; }
   state = next; state.specCheck = null; resetParams(); save(); renderAll(); if (state.spec) runSpecCheck();
@@ -1327,6 +1367,8 @@ function galFiltered() {
   return (GALLERY || []).filter(it => (gal.cat === "All" || it.category === gal.cat) && (gal.lib === "all" || galLab(it).versions.some(v => v.lib === gal.lib)));
 }
 function hasOwnWork() { return !!(state.spec && state.versions.length && !state.source); }
+// Confirm-by-second-click guard for anything that replaces the designer's own lesson (gallery, Draft spec, New lab)
+function confirmReplace(btn, key, run) { return galAct(btn, key, run); }
 function galAct(btn, key, run) {
   if (hasOwnWork() && gal.armed !== key) {
     gal.armed = key; clearTimeout(gal.armTimer);
@@ -1414,6 +1456,81 @@ function showPage(p) {
   else renderGallery();
 }
 $("pageSeg").addEventListener("click", e => { const b = e.target.closest("button"); if (b) showPage(b.dataset.page); });
+
+/* ---------- Guide (README.md and AUTHORING.md, published beside the page) ---------- */
+const guideCache = {};
+let guideDoc = "README.md", guideOpener = null;
+function mdInline(t) {
+  t = t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const codes = []; t = t.replace(/`([^`]+)`/g, (_, c) => { codes.push(c); return "\u0000" + (codes.length - 1) + "\u0000"; });
+  t = t.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>").replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s).,;:]|$)/g, "$1<i>$2</i>").replace(/(^|[\s(])_([^_\n]+)_(?=[\s).,;:]|$)/g, "$1<i>$2</i>");
+  t = t.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, a, h) => /^(https?:|#)/.test(h) ? `<a href="${h}" target="_blank" rel="noopener">${a}</a>` : /\.md$/.test(h) ? `<a href="#" data-doc="${h}">${a}</a>` : a);
+  return t.replace(/\u0000(\d+)\u0000/g, (_, i) => "<code>" + codes[Number(i)] + "</code>");
+}
+const slugify = h => h.toLowerCase().replace(/<[^>]+>/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+function mdRender(src) {
+  const lines = src.replace(/\r/g, "").replace(/<!--[\s\S]*?-->/g, "").split("\n"), out = []; let i = 0;
+  const para = []; const flush = () => { if (para.length) { out.push("<p>" + mdInline(para.join(" ")) + "</p>"); para.length = 0; } };
+  while (i < lines.length) {
+    const L = lines[i];
+    if (/^```/.test(L)) { flush(); const buf = []; i++; while (i < lines.length && !/^```/.test(lines[i])) buf.push(lines[i++]); i++; out.push("<pre><code>" + buf.join("\n").replace(/&/g, "&amp;").replace(/</g, "&lt;") + "</code></pre>"); continue; }
+    const h = L.match(/^(#{1,4})\s+(.+)/);
+    if (h) { flush(); const n = h[1].length, txt = mdInline(h[2]); out.push(`<h${n} id="${slugify(h[2])}">${txt}</h${n}>`); i++; continue; }
+    if (/^\s*---+\s*$/.test(L)) { flush(); out.push("<hr>"); i++; continue; }
+    if (/^\|/.test(L) && /^\s*\|?\s*:?-{3,}/.test(lines[i + 1] || "")) {
+      flush(); const cells = r => r.replace(/^\||\|$/g, "").split("|").map(c => mdInline(c.trim()));
+      const head = cells(L); i += 2; const rows = [];
+      while (i < lines.length && /^\|/.test(lines[i])) rows.push(cells(lines[i++]));
+      out.push("<table><thead><tr>" + head.map(c => "<th>" + c + "</th>").join("") + "</tr></thead><tbody>" + rows.map(r => "<tr>" + r.map(c => "<td>" + c + "</td>").join("") + "</tr>").join("") + "</tbody></table>"); continue;
+    }
+    const li = L.match(/^(\s*)([-*]|\d+\.)\s+(.*)/);
+    if (li) {
+      flush(); const ordered = /\d/.test(li[2]); const items = [];
+      while (i < lines.length) { const m = lines[i].match(/^(\s*)([-*]|\d+\.)\s+(.*)/); if (!m) { if (/^\s{2,}\S/.test(lines[i]) && items.length) { items[items.length - 1] += " " + lines[i].trim(); i++; continue; } break; } items.push(m[3]); i++; }
+      out.push((ordered ? "<ol>" : "<ul>") + items.map(t => "<li>" + mdInline(t.replace(/^\[([ x])\]\s+/, (_, c) => `<input type="checkbox" disabled ${c === "x" ? "checked" : ""}> `)).replace(/&lt;input type="checkbox"([^&]*)&gt;/, "<input type=\"checkbox\"$1>") + "</li>").join("") + (ordered ? "</ol>" : "</ul>")); continue;
+    }
+    if (/^>\s?/.test(L)) { flush(); const buf = []; while (i < lines.length && /^>\s?/.test(lines[i])) buf.push(lines[i++].replace(/^>\s?/, "")); out.push("<blockquote>" + mdInline(buf.join(" ")) + "</blockquote>"); continue; }
+    if (!L.trim()) { flush(); i++; continue; }
+    para.push(L.trim()); i++;
+  }
+  flush(); return out.join("\n");
+}
+async function loadGuideDoc(name) {
+  if (guideCache[name]) return guideCache[name];
+  try { const r = await fetch(name, { cache: "no-cache" }); if (!r.ok) throw new Error(r.status); guideCache[name] = await r.text(); }
+  catch (e) { guideCache[name] = "# " + name + "\n\nThis guide couldn't be loaded here. It is published next to the lab as `" + name + "`."; }
+  return guideCache[name];
+}
+async function showGuideDoc(name, anchor) {
+  guideDoc = name;
+  for (const b of $("guideTabs").querySelectorAll("button")) b.setAttribute("aria-selected", String(b.dataset.doc === name));
+  const body = $("guideBody"); body.innerHTML = '<p class="note" style="padding:12px 0">Loading…</p>';
+  body.innerHTML = mdRender(await loadGuideDoc(name));
+  body.querySelectorAll("a[data-doc]").forEach(a => a.addEventListener("click", e => { e.preventDefault(); showGuideDoc(a.dataset.doc); }));
+  body.scrollTop = 0;
+  if (anchor) { const t = body.querySelector("#" + anchor) || [...body.querySelectorAll("h1,h2,h3")].find(h => h.textContent.toLowerCase().includes(anchor.replace(/-/g, " "))); if (t) { t.scrollIntoView({ block: "start" }); t.classList.add("target"); } }
+}
+function openGuide(name, anchor) {
+  guideOpener = document.activeElement;
+  $("guideBackdrop").hidden = false; $("guide").hidden = false; document.body.classList.add("guide-open");
+  $("btnGuide").setAttribute("aria-expanded", "true");
+  showGuideDoc(name || guideDoc, anchor).then(() => $("guideBody").focus({ preventScroll: true }));
+}
+function closeGuide() {
+  if ($("guide").hidden) return;
+  $("guideBackdrop").hidden = true; $("guide").hidden = true; document.body.classList.remove("guide-open");
+  $("btnGuide").setAttribute("aria-expanded", "false");
+  if (guideOpener && guideOpener.focus) guideOpener.focus();
+}
+$("btnGuide").addEventListener("click", () => $("guide").hidden ? openGuide() : closeGuide());
+$("btnSpecHelp").addEventListener("click", () => openGuide("AUTHORING.md", "spec-rules"));
+$("btnGuideClose").addEventListener("click", closeGuide);
+$("guideBackdrop").addEventListener("click", closeGuide);
+$("guideTabs").addEventListener("click", e => { const b = e.target.closest("button"); if (b) showGuideDoc(b.dataset.doc); });
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && !$("guide").hidden) { closeGuide(); return; }
+  if (e.key === "?" && !e.ctrlKey && !e.metaKey && !e.altKey && !/INPUT|SELECT|TEXTAREA/.test(e.target.tagName) && !e.target.closest(".cm-editor")) { e.preventDefault(); $("guide").hidden ? openGuide() : closeGuide(); }
+});
 
 /* ---------- Boot ---------- */
 resetParams();

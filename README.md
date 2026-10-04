@@ -13,6 +13,7 @@ It's built for educators and L&D designers who know **what** they want to explai
 | **Left: Lesson setup** | 1 Describe the goal → 2 Choose a view and library → 3 Review the spec → 4 Generate and compare |
 | **Middle: Explore and versions** | Shared sliders and playback, learner prompts, the comparison banner, and one pane per version (A, B, C) |
 | **Right: Ask Claude** | A chat that can see the spec, every version's code, errors, check results and console output |
+| **Guide** (top right, or press `?`) | This guide and the lesson authoring guide, inside the app. The `?` next to Draft spec opens the spec rules. |
 
 On narrow screens the panels stack.
 
@@ -197,7 +198,7 @@ All libraries load from jsDelivr at fixed versions.
 - **Don't paste confidential material into the goal or chat.** It's sent to Claude to draft the spec and code.
 
 **While building**
-- **Drafting a new spec, or opening a gallery lesson, replaces the current lesson**, including all its versions. Download anything you want to keep first.
+- **Drafting a new spec, opening a gallery lesson or clicking New lab replaces the current lesson**, including all its versions. When the lesson holds your own work (anything you drafted, generated or edited), these buttons ask you to click again. Download anything you want to keep first.
 - **The default comparisons apply to new specs only.** The three built-in examples keep their own comparisons.
 - **The view/library warning doesn't block you.** If you generate with a mismatch, the code follows the library, not the view.
 - **A passing check validates the model, not the picture.** The check proves the numbers are right; it can't tell if a label is misplaced or an animation misleads. Always look at the result.
