@@ -1,0 +1,72 @@
+{
+  "title": "Attention: what does \"it\" refer to?",
+  "objective": "Learners see how attention lets a language model work out which other words matter to each word, using a sentence where changing the last word changes what \"it\" refers to.",
+  "view": "2D",
+  "recommended": {
+    "library": "d3",
+    "why": "Arcs from one focus word to every other word, thick where attention is strong, make the \"it\" to \"cat\" (or \"road\") link easy to see and to feel flip."
+  },
+  "alternative": {
+    "library": "svg",
+    "why": "Arcs from one word versus the full matrix: which builds intuition, and which shows the whole picture?"
+  },
+  "assumptions": [
+    "Attention weights are illustrative, made from hand-set scores passed through a softmax per row, not taken from a real model",
+    "Every word may look at every other word, before and after it, as in an encoder such as BERT; chat models such as GPT only look at earlier words",
+    "Each row includes the word attending to itself and adds up to 100%",
+    "Real models run many heads in each of many layers; two heads are shown to make the point that heads specialise"
+  ],
+  "units": [
+    "attention weight: percent of the focus word's attention (each row sums to 100%)"
+  ],
+  "params": [
+    {
+      "id": "lastWord",
+      "label": "Last word",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 0,
+      "unit": "",
+      "labels": [
+        "tired",
+        "wide"
+      ]
+    },
+    {
+      "id": "focus",
+      "label": "Focus word",
+      "min": 0,
+      "max": 2,
+      "step": 1,
+      "value": 0,
+      "unit": "",
+      "labels": [
+        "it",
+        "tired/wide",
+        "cross"
+      ]
+    },
+    {
+      "id": "head",
+      "label": "Head",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 0,
+      "unit": "",
+      "labels": [
+        "Meaning head",
+        "Position head"
+      ]
+    }
+  ],
+  "modelCode": "function model(p) {\n  // Illustrative self-attention for one sentence, two variants (last word \"tired\" or \"wide\") and two heads.\n  // Scores are hand-set compatibilities, not weights from a real model; each row goes through a softmax.\n  const LAST = ['tired', 'wide'], HEADS = ['Meaning head', 'Position head'];\n  const base = ['The', 'cat', \"didn't\", 'cross', 'the', 'road', 'because', 'it', 'was', 'too'];\n  const v = Math.round(Math.min(1, Math.max(0, p.lastWord)));\n  const h = Math.round(Math.min(1, Math.max(0, p.head)));\n  const fIdx = [7, 10, 3][Math.round(Math.min(2, Math.max(0, p.focus)))];\n  const softmax = xs => { const mx = Math.max(...xs), e = xs.map(x => Math.exp(x - mx)), s = e.reduce((a, b) => a + b, 0); return e.map(x => x / s); };\n  // Meaning head: what each word \"looks for\". tired describes an animal (cat), wide describes a place (road).\n  function meaning(last) {\n    const tired = last === 'tired', n = 11, S = Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => (i === j ? 0.5 : 0)));\n    const set = (i, pairs) => { for (const j in pairs) S[i][j] = pairs[j]; };\n    set(0, { 1: 2.5 });                                   // The -> its noun\n    set(1, { 2: 1.2, 3: 1.8, 7: tired ? 1.0 : 0.2, 10: tired ? 1.6 : 0.3 }); // cat -> what it does, what describes it\n    set(2, { 1: 1.2, 3: 2.4 });                           // didn't -> the verb it negates\n    set(3, { 1: 2.0, 2: 1.4, 5: 2.2 });                   // cross -> who crosses, what is crossed\n    set(4, { 5: 2.5 });                                   // the -> its noun\n    set(5, { 3: 2.0, 4: 0.8, 7: tired ? 0.2 : 1.0, 10: tired ? 0.2 : 1.6 });\n    set(6, { 2: 1.4, 3: 1.2, 8: 1.0, 10: 1.2 });          // because -> the two clauses it joins\n    set(7, { 1: tired ? 3.0 : 0.6, 5: tired ? 0.6 : 3.0, 8: 0.6, 10: 1.6 }); // it -> the noun the adjective fits\n    set(8, { 7: 2.0, 10: 1.6 });                          // was -> subject and complement\n    set(9, { 10: 2.6 });                                  // too -> the adjective it modifies\n    set(10, { 1: tired ? 2.0 : 0, 5: tired ? 0 : 2.0, 7: 2.2, 9: 1.2 }); // last word -> what it describes\n    return S;\n  }\n  // Position head: ignores meaning. Strong recency bias: the previous word, then the next word, then distance decay.\n  function position() {\n    return Array.from({ length: 11 }, (_, i) => Array.from({ length: 11 }, (_, j) => {\n      const d = j - i;\n      return d === 0 ? 0.8 : d === -1 ? 2.4 : d === 1 ? 2.0 : 0.6 - 0.5 * (Math.abs(d) - 2);\n    }));\n  }\n  const build = S => S.map(softmax);\n  const matrices = {};\n  LAST.forEach(w => { matrices[w] = { meaning: build(meaning(w)), position: build(position()) }; });\n  const last = LAST[v], words = base.concat([last]);\n  const matrix = matrices[last][h ? 'position' : 'meaning'];\n  const row = matrix[fIdx];\n  const tokens = words.map((text, i) => ({ i, text, weight: row[i], isFocus: i === fIdx }));\n  const others = tokens.filter(t => !t.isFocus).sort((a, b) => b.weight - a.weight || a.i - b.i);\n  const top3 = others.slice(0, 3).map(t => t.i), strongest = others[0];\n  tokens.forEach(t => { t.rank = t.isFocus ? 0 : others.indexOf(t) + 1; t.top3 = top3.includes(t.i); t.strongest = t.i === strongest.i; });\n  // The referent of \"it\" according to the meaning head: what the sentence means.\n  const itRow = matrices[last].meaning[7], referent = itRow[1] > itRow[5] ? 'cat' : 'road';\n  const pc = x => Math.round(x * 100) + '%', f = words[fIdx], s = strongest.text;\n  let why;\n  if (h) why = 'the word right ' + (strongest.i < fIdx ? 'before' : 'after') + ' it. This head tracks position, not meaning.';\n  else if (fIdx === 7) why = 'so \"it\" means the ' + s + ': ' + (last === 'tired' ? 'cats get tired.' : 'roads are wide.');\n  else if (fIdx === 10) why = 'and ' + pc(row[referent === 'cat' ? 1 : 5]) + ' on \"' + referent + '\": the thing that was too ' + last + '.';\n  else why = 'and ' + pc(others[1].weight) + ' on \"' + others[1].text + '\": what is crossed and who crosses.';\n  const summary = '\"' + f + '\" puts ' + pc(strongest.weight) + ' of its attention on \"' + s + '\", ' + why;\n  const steps = [\n    { at: 0, label: 'Read the sentence' },\n    { at: 1.5, label: 'Pick the focus word' },\n    { at: 3, label: 'Its attention weights appear' },\n    { at: 6.5, label: 'The strongest link' },\n    { at: 8.5, label: 'What it means' }\n  ];\n  return {\n    words, tokens, lastWord: last, head: HEADS[h], headIndex: h, focusIndex: fIdx, focusWord: f,\n    matrix, row, selfWeight: row[fIdx], rowSum: row.reduce((a, b) => a + b, 0),\n    strongest: { i: strongest.i, text: s, weight: strongest.weight }, top3, referent, matrices,\n    steps, duration: 10, markers: steps.map(x => x.at), summary\n  };\n}",
+  "checkCode": "function check(p) {\n  const m = model(p), all = [];\n  for (const w in m.matrices) for (const k in m.matrices[w]) all.push(m.matrices[w][k]);\n  const worst = Math.max(...all.flatMap(M => M.map(r => Math.abs(r.reduce((a, b) => a + b, 0) - 1))));\n  const argmax = r => r.reduce((b, x, j) => (x > r[b] ? j : b), 0);\n  const itT = m.matrices.tired.meaning[7], itW = m.matrices.wide.meaning[7];\n  const tiredOk = argmax(itT) === 1, wideOk = argmax(itW) === 5;\n  const posOk = ['tired', 'wide'].every(w => m.matrices[w].position.every((r, i) => Math.abs(argmax(r) - i) === 1));\n  const pc = x => Math.round(x * 100) + '%';\n  return {\n    pass: worst < 1e-9 && tiredOk && wideOk && posOk && Math.abs(m.rowSum - 1) < 1e-9,\n    detail: 'All 44 rows sum to 1 (largest error ' + worst.toExponential(1) + '); the meaning head sends \"it\" ' + pc(itT[1]) + ' to \"cat\" with \"tired\" and ' +\n      pc(itW[5]) + ' to \"road\" with \"wide\"; the position head\\'s strongest link is to an adjacent word in ' + (posOk ? 'all 22' : 'not all 22') + ' rows.'\n  };\n}",
+  "checkDescription": "Every row of every attention matrix sums to 1; the meaning head's strongest link from \"it\" is \"cat\" with \"tired\" and \"road\" with \"wide\"; the position head's strongest link from every word is a neighbouring word.",
+  "expectAtDefaults": "m.focusWord === \"it\" && m.strongest.text === \"cat\" && m.referent === \"cat\"",
+  "learnerPrompts": {
+    "predict": "Before you switch the last word to \"wide\": which word do you expect \"it\" to attend to most, and roughly how much?",
+    "explain": "Switch to the position head. Why does changing \"tired\" to \"wide\" no longer change anything, and why would a model still want a head like this?"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "slug": "llm-context-window",
+  "category": "ML and LLM",
+  "title": "The context window is the model's desk",
+  "goal": "Show what fills an AI assistant's context window during a long working session (instructions, files, messages, tool results), what happens at the limit when older turns are compacted into a summary, and why saving key decisions to a notes file keeps them safe.",
+  "a": {
+    "lib": "p5",
+    "explanation": "The context window is drawn as a desk: each turn adds a block made of your message, the tool result and the reply, stacking toward a red 200k limit line. When the next turn would cross the dashed 90% line, the older blocks are outlined, then squashed into a purple summary block while the two most recent turns stay, so the drop in usage is something you watch happen. p5's immediate-mode canvas makes it easy to draw the exact state at any playback time, including the squash. Beside the desk, a plan.md card and a facts list show each fact as kept word for word, kept only as a gist, or lost, and the facts flip as the summary absorbs them. The weakness is that the desk only shows the current moment: you cannot compare usage across turns at a glance, and with Small tool results the turn blocks get thin.",
+    "caveats": [
+      "Sizes are illustrative and seeded; real assistants, models and compaction strategies differ.",
+      "Thin blocks (small turns, the re-read plan.md) are labelled with chips or not at all, so exact token counts come from the subtitle and the scale."
+    ]
+  },
+  "b": {
+    "lib": "chartjs",
+    "explanation": "The same session is a stacked bar per turn, showing tokens on the desk by kind (instructions, plan.md, summary, messages, tool results, replies) against the 200k limit and the 90% compaction line. Each compaction is marked (C1, C2 and so on), with a dashed red box showing where that turn would have reached without it, followed by a sharp drop in the next bar. Chart.js gives accurate axes and tooltips, so learners can read the sawtooth pattern and see that Large tool results trigger compaction about every five turns. The facts table beside it is plain HTML and updates as playback moves. What it does not convey as well is the idea of older turns being physically replaced by a summary; the drop is a number, not an action.",
+    "caveats": [
+      "Bars show the desk after each turn, so the moment of compaction appears as a marker and a drop rather than an animation.",
+      "On a phone the Turn column of the facts table is hidden and the plan.md card shows a count instead of the list."
+    ]
+  }
+}

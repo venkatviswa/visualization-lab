@@ -1,0 +1,16 @@
+{
+  "slug": "regression-outlier",
+  "category": "Math",
+  "title": "How one outlier pulls a least-squares line",
+  "goal": "Show how a single outlier pulls a least-squares line, and why the fitted line is the one with the smallest total squared error.",
+  "a": {
+    "lib": "svg",
+    "explanation": "Twelve learners' scores are plotted against practice hours, the least-squares line is drawn, then an outlier arrives and the line visibly swings towards it as it refits. Every residual of the fitted line is then drawn as a real square, so the quantity the method minimises becomes an area you can see, and the outlier's square dwarfs the rest. A side panel tracks the slope as it moves, splits the total squared error into one segment per learner and compares it with the old line. Plain SVG gives full control over the squares and the panel, but every axis, key and label is hand-built, and big squares overlap each other.",
+    "caveats": ["Squares overlap when residuals are large, so individual small squares can be hard to pick out.", "Data are seeded synthetic scores, not real learner results."]
+  },
+  "b": {
+    "lib": "chartjs",
+    "explanation": "A standard Chart.js scatter shows the same learners, the line fitted without the outlier as a dashed line and the refitted line with it, plus vertical residual sticks. Chart.js supplies axes, a legend with the two slopes and hover tooltips for free, so it looks like the charts learners meet in reports. It shows clearly that the line moves, and the subtitle states the total squared error. What it cannot show is why: a residual stick is only a length, so the outlier's outsized influence through squaring stays invisible.",
+    "caveats": ["Residuals are drawn as lengths, not squares, so the squared error is only reported as a number.", "Data are seeded synthetic scores, not real learner results."]
+  }
+}

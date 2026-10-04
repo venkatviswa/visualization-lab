@@ -1,0 +1,57 @@
+{
+  "title": "Lead to cash",
+  "objective": "Learners follow one B2B deal through the lead-to-cash stages and see which choices add stages and where deals stall on the way to cash.",
+  "view": "3D",
+  "recommended": {
+    "library": "story3d",
+    "why": "A 3D walkthrough gives each stage a memorable object and place, so learners can recall the sequence as a journey."
+  },
+  "alternative": {
+    "library": "reactflow",
+    "why": "A 3D walkthrough versus a clickable diagram: does the scene help people remember the stages?"
+  },
+  "assumptions": [
+    "Illustrative company, deal and stage durations, not benchmarks: lead 2 days, qualify 7, quote 3, contract 10, credit check 1, order 2, invoice 1, net 30 payment",
+    "Discounts above 15% need a sales manager's approval, taking 2 days plus 2 more for every 5 points above 15%",
+    "A credit hold lasts 9 days and ends when the customer pays a deposit",
+    "List price is $120,000 a year; the discount does not change any other stage",
+    "Event times are playback seconds for the explainer; days are the deal's calendar days"
+  ],
+  "units": [
+    "discount: % off list price",
+    "time: calendar days (deal), playback seconds (animation)",
+    "money: US dollars"
+  ],
+  "params": [
+    {
+      "id": "discount",
+      "label": "Discount",
+      "min": 0,
+      "max": 30,
+      "step": 5,
+      "value": 10,
+      "unit": "%"
+    },
+    {
+      "id": "credit",
+      "label": "Credit check",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 0,
+      "unit": "",
+      "labels": [
+        "Pass",
+        "Hold"
+      ]
+    }
+  ],
+  "modelCode": "function model(p) {\n  // One illustrative B2B deal moving from lead to cash. Stage days are typical illustrative values, not benchmarks.\n  // Event times are playback seconds for the explainer; days are the deal's calendar days.\n  const disc = Math.max(0, Math.min(30, Math.round(p.discount / 5) * 5));\n  const hold = Math.round(p.credit) === 1;\n  const LIMIT = 15, LIST = 120000;\n  const net = Math.round(LIST * (1 - disc / 100));\n  const needApproval = disc > LIMIT;\n  const approvalDays = needApproval ? 2 + (disc - LIMIT) / 5 * 2 : 0;\n  const money = v => '$' + v.toLocaleString('en-US');\n  const DEF = [\n    ['lead', 'Lead', 2, 'Marketing captures the lead and routes it to a sales rep within service-level targets.'],\n    ['qualify', 'Qualify', 7, 'Discovery confirms budget, decision maker, need and timeline before the rep invests in a quote.'],\n    ['quote', 'Quote', 3, 'Configure, price, quote: products, list price and any discount, assembled into a quote document.'],\n    ['approval', 'Discount approval', approvalDays, 'Discounts above ' + LIMIT + '% need a sales manager\\'s approval. Deeper discounts take longer to justify.'],\n    ['contract', 'Contract', 10, 'Legal redlines and signatures. The signed contract fixes the price, terms and start date.'],\n    ['credit', 'Credit check', 1, 'Finance checks the customer\\'s credit limit and payment history before booking the order.'],\n    ['hold', 'Credit hold', 9, 'An over-limit customer stalls here until finance gets a deposit or raises the limit.'],\n    ['order', 'Order', 2, 'The order is booked in the order system and provisioning or shipping starts.'],\n    ['invoice', 'Invoice', 1, 'Billing issues the invoice with net 30 payment terms.'],\n    ['payment', 'Payment', 30, 'The customer pays within its terms and the cash is applied to the invoice: the deal is closed and paid.']\n  ];\n  const stations = DEF.map(([id, label, days, detail], k) => ({\n    id, k, label, detail, days, onPath: id === 'approval' ? needApproval : id === 'hold' ? hold : true\n  }));\n  const raw = [];\n  const add = (station, kind, days, note) => raw.push({ station, kind, days, note, dur: days ? 1.3 + 0.03 * days : 0.9 });\n  add('lead', 'lead', 2, 'An inbound lead from a mid-size manufacturer is routed to a sales rep.');\n  add('qualify', 'qualify', 7, 'Discovery confirms budget, decision maker, need and timeline.');\n  add('quote', 'quote', 3, 'Quote: ' + money(LIST) + ' a year at list, ' + disc + '% discount, ' + money(net) + ' net.');\n  if (needApproval) {\n    add('approval', 'wait', approvalDays, disc + '% is above the ' + LIMIT + '% limit: the deal waits ' + approvalDays + ' days for a manager.');\n    add('approval', 'approved', 0, 'The sales manager approves the discount and the quote goes to the customer.');\n  }\n  add('contract', 'contract', 10, 'Redlines and signatures take 10 days; the signed contract locks the price.');\n  add('credit', hold ? 'over' : 'pass', 1, hold ? 'Credit check: the customer is over its credit limit.' : 'Credit check: within the limit, so the order can be booked.');\n  if (hold) {\n    add('hold', 'wait', 9, 'Credit hold: the deal stalls 9 days until the customer pays a deposit.');\n    add('hold', 'released', 0, 'The deposit arrives and finance releases the hold.');\n  }\n  add('order', 'order', 2, 'The order is booked and provisioning starts.');\n  add('invoice', 'invoice', 1, 'The invoice for ' + money(net) + ' goes out with net 30 terms.');\n  add('payment', 'paid', 30, 'Cash arrives and is applied to the invoice: closed and paid.');\n  const total = raw.reduce((a, e) => a + e.dur, 0), scale = Math.min(14 / total, Math.max(1, 7 / total));\n  let t = 0, day = 0;\n  const events = raw.map((e, i) => {\n    const ev = Object.assign({ i, start: +t.toFixed(2), dayStart: day, dayEnd: day + e.days }, e, { dur: +(e.dur * scale).toFixed(2) });\n    t += e.dur * scale; day += e.days; return ev;\n  });\n  const stallDays = approvalDays + (hold ? 9 : 0);\n  const stalls = [];\n  if (needApproval) stalls.push(approvalDays + ' days waiting for discount approval');\n  if (hold) stalls.push('9 days on credit hold');\n  const summary = 'Paid on day ' + day + (stallDays\n    ? ', ' + stallDays + ' of them stalled: ' + stalls.join(' and ') + '.'\n    : ' with no stalls: a ' + disc + '% discount needs no approval and credit passed.');\n  return {\n    stations, events, duration: +t.toFixed(2), markers: events.map(e => e.start),\n    discountPct: disc, approvalLimit: LIMIT, approvalStep: needApproval, approvalDays, creditHold: hold,\n    listValue: LIST, netValue: net, totalDays: day, stallDays, summary\n  };\n}",
+  "checkCode": "function check(p) {\n  const m = model(p), ev = m.events, order = m.stations.map(s => s.id);\n  const disc = Math.round(p.discount / 5) * 5, hold = Math.round(p.credit) === 1;\n  const has = id => ev.some(e => e.station === id);\n  const approvalOk = has('approval') === (disc > 15);\n  const holdOk = has('hold') === hold;\n  const idx = ev.map(e => order.indexOf(e.station));\n  const ordered = idx.every((k, i) => k >= 0 && (i === 0 || (k >= idx[i - 1] && ev[i].start > ev[i - 1].start)));\n  const required = ['lead', 'qualify', 'quote', 'contract', 'credit', 'order', 'invoice', 'payment'].every(has);\n  const ends = ev[0].station === 'lead' && ev[ev.length - 1].station === 'payment';\n  const pathDays = m.stations.filter(s => s.onPath).reduce((a, s) => a + s.days, 0);\n  const daysOk = ev.reduce((a, e) => a + e.days, 0) === m.totalDays && pathDays === m.totalDays;\n  return {\n    pass: approvalOk && holdOk && ordered && required && ends && daysOk,\n    detail: 'Discount ' + disc + '% ' + (disc > 15 ? '> 15%, so an approval step (' + m.approvalDays + ' days)' : '<= 15%, so no approval step') +\n      '; credit ' + (hold ? 'Hold, so a 9-day hold' : 'Pass, so no hold') + '; ' + new Set(ev.map(e => e.station)).size +\n      ' stages in valid order from lead to payment, paid on day ' + m.totalDays + ' (' + m.stallDays + ' days stalled).'\n  };\n}",
+  "checkDescription": "The approval step appears exactly when the discount is above 15%, the credit hold appears exactly when Hold is chosen, stages run in a valid order from lead to payment, and the reported total days equal the sum of the stage days.",
+  "expectAtDefaults": "!m.approvalStep && !m.creditHold && m.events[m.events.length - 1].station === 'payment' && m.totalDays === 56",
+  "learnerPrompts": {
+    "predict": "Raise the discount to 20% and set credit to Hold. How many days later will the cash arrive, and which stages will be new?",
+    "explain": "Which stall would you attack first in your own business, the discount approval or the credit hold, and why?"
+  }
+}

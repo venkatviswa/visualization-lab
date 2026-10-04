@@ -1,0 +1,62 @@
+{
+  "title": "Data governance terms and how they connect",
+  "objective": "New team members learn 14 data governance terms in plain English and see which roles, processes and safeguards depend on each other, so the vocabulary reads as one system rather than a list.",
+  "view": "2D",
+  "recommended": {
+    "library": "d3",
+    "why": "A network map puts every term next to the terms it acts on, so the dependencies are visible at a glance, and the focus shows one term with its direct neighbours and their definitions."
+  },
+  "alternative": {
+    "library": "svg",
+    "why": "A connected map versus a tidy glossary: which helps learners remember how terms relate?"
+  },
+  "assumptions": [
+    "Fourteen terms chosen for a first week in a data team; definitions are simplified for newcomers, not legal wording",
+    "Three themes: People (roles and the people data is about), Processes (how data is described and kept trustworthy), Safeguards (how data is protected)",
+    "Each link reads as a sentence from source to target, for example \"Data steward maintains Data catalog\"; the 19 links are illustrative, not exhaustive",
+    "The focus highlights the chosen term plus every term it shares a link with, in either direction"
+  ],
+  "units": [
+    "links: count of typed relationships between terms"
+  ],
+  "params": [
+    {
+      "id": "focus",
+      "label": "Focus term",
+      "min": 0,
+      "max": 5,
+      "step": 1,
+      "value": 5,
+      "unit": "",
+      "labels": [
+        "None",
+        "Data steward",
+        "Data owner",
+        "Metadata",
+        "Classification",
+        "Access control"
+      ]
+    },
+    {
+      "id": "showLabels",
+      "label": "Show link labels",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 1,
+      "unit": "",
+      "labels": [
+        "No",
+        "Yes"
+      ]
+    }
+  ],
+  "modelCode": "function model(p) {\n  // 14 data governance terms in three themes, joined by typed links that read as sentences (source, label, target).\n  const THEMES = ['People', 'Processes', 'Safeguards'];\n  const TERMS = [\n    ['owner', 'Data owner', 0, 'The business leader accountable for a data set, who decides how it may be used.'],\n    ['steward', 'Data steward', 0, 'The day-to-day caretaker who keeps definitions, quality and catalog entries in order.'],\n    ['pii', 'PII', 0, 'Personally identifiable information: any detail that can identify a person.'],\n    ['consent', 'Consent', 0, 'A person\\'s recorded permission to use their data for a stated purpose.'],\n    ['catalog', 'Data catalog', 1, 'A searchable inventory of data sets, so people can find and understand them.'],\n    ['metadata', 'Metadata', 1, 'Data about data: names, owners, definitions, formats and dates.'],\n    ['lineage', 'Lineage', 1, 'The path data takes from source to report, including every step that changed it.'],\n    ['quality', 'Data quality', 1, 'How accurate, complete and up to date data is for the job it has to do.'],\n    ['master', 'Master data', 1, 'The core shared records a business runs on, such as customers, products and suppliers.'],\n    ['golden', 'Golden record', 1, 'The single trusted version of a customer or product, merged from duplicate records.'],\n    ['classification', 'Classification', 2, 'Labelling data by sensitivity, such as public, internal or confidential.'],\n    ['access', 'Access control', 2, 'The rules that decide who can see or change which data.'],\n    ['retention', 'Retention policy', 2, 'The rule for how long data is kept and when it must be deleted.'],\n    ['audit', 'Audit trail', 2, 'A tamper-evident log of who accessed or changed data, and when.']\n  ];\n  const LINKS = [\n    ['owner', 'steward', 'appoints'], ['owner', 'access', 'approves'], ['owner', 'retention', 'sets'],\n    ['steward', 'catalog', 'maintains'], ['steward', 'quality', 'monitors'],\n    ['catalog', 'metadata', 'organises'], ['metadata', 'master', 'describes'], ['metadata', 'lineage', 'captures'],\n    ['metadata', 'classification', 'carries'], ['lineage', 'quality', 'traces issues in'],\n    ['master', 'golden', 'is merged into'], ['quality', 'golden', 'underpins'],\n    ['classification', 'pii', 'flags'], ['classification', 'access', 'drives'], ['access', 'pii', 'protects'],\n    ['pii', 'consent', 'needs'], ['consent', 'retention', 'shapes'], ['access', 'audit', 'is logged in'], ['audit', 'consent', 'records']\n  ];\n  const CENTRAL = ['steward', 'owner', 'metadata', 'classification', 'access'];\n  const fi = Math.max(0, Math.min(CENTRAL.length, Math.round(p.focus)));\n  const focusId = fi > 0 ? CENTRAL[fi - 1] : null;\n  const showLabels = Math.round(p.showLabels) === 1;\n  // Playback: terms theme by theme, then the links one by one, then the focus step.\n  const themeStart = [0, 1.9, 4.6], gap = 0.42, linksStart = 6.6, linkGap = 0.16, focusAt = 10.4, duration = 12;\n  const nb = new Set();\n  LINKS.forEach(([s, t]) => { if (s === focusId) nb.add(t); if (t === focusId) nb.add(s); });\n  const byId = {}, counts = [0, 0, 0];\n  const terms = TERMS.map(([id, name, g, def]) => {\n    const k = counts[g]++;\n    const t = { id, name, theme: THEMES[g], themeIndex: g, def, revealAt: +(themeStart[g] + k * gap).toFixed(2),\n      isFocus: id === focusId, isNeighbour: nb.has(id), highlighted: id === focusId || nb.has(id), degree: 0 };\n    byId[id] = t;\n    return t;\n  });\n  const links = LINKS.map(([s, t, label], i) => {\n    const a = byId[s], b = byId[t];\n    if (a) a.degree++;\n    if (b) b.degree++;\n    return { source: s, target: t, label, sentence: (a ? a.name : s) + ' ' + label + ' ' + (b ? b.name : t),\n      revealAt: +(linksStart + i * linkGap).toFixed(2),\n      crossTheme: !!(a && b && a.themeIndex !== b.themeIndex), highlighted: !!focusId && (s === focusId || t === focusId) };\n  });\n  const cross = links.filter(l => l.crossTheme).length;\n  const f = focusId ? byId[focusId] : null;\n  const nbNames = terms.filter(t => t.isNeighbour).map(t => t.name);\n  const list = nbNames.length > 1 ? nbNames.slice(0, -1).join(', ') + ' and ' + nbNames[nbNames.length - 1] : nbNames.join('');\n  const summary = f\n    ? f.name + ' links directly to ' + nbNames.length + ' terms: ' + list + '.'\n    : terms.length + ' terms and ' + links.length + ' links; ' + cross + ' links cross between themes, so the vocabulary works as one system.';\n  return {\n    themes: THEMES, terms, links, focusId, focusTerm: f ? f.name : null, neighbourCount: nbNames.length,\n    crossThemeLinks: cross, showLabels, themeStart, linksStart, focusAt, duration,\n    markers: themeStart.concat([linksStart, focusAt]), summary\n  };\n}",
+  "checkCode": "function check(p) {\n  const m = model(p);\n  const ids = new Set(m.terms.map(t => t.id));\n  const badLinks = m.links.filter(l => !ids.has(l.source) || !ids.has(l.target) || l.source === l.target);\n  const linked = new Set();\n  m.links.forEach(l => { linked.add(l.source); linked.add(l.target); });\n  const orphans = m.terms.filter(t => !linked.has(t.id)).map(t => t.name);\n  // Recompute the focus neighbourhood from the links and compare it with what the model highlights.\n  const expected = new Set();\n  if (m.focusId) {\n    expected.add(m.focusId);\n    m.links.forEach(l => { if (l.source === m.focusId) expected.add(l.target); if (l.target === m.focusId) expected.add(l.source); });\n  }\n  const got = m.terms.filter(t => t.highlighted).map(t => t.id);\n  const focusOk = got.length === expected.size && got.every(id => expected.has(id)) &&\n    m.links.every(l => l.highlighted === (!!m.focusId && (l.source === m.focusId || l.target === m.focusId)));\n  const pass = ids.size === m.terms.length && badLinks.length === 0 && orphans.length === 0 && focusOk;\n  return {\n    pass,\n    detail: m.links.length + ' links between ' + ids.size + ' defined terms, ' + badLinks.length + ' pointing at unknown terms, ' +\n      orphans.length + ' terms without a link' + (orphans.length ? ' (' + orphans.join(', ') + ')' : '') +\n      (m.focusId ? '; focus on ' + m.focusTerm + ' highlights ' + got.length + ' terms, expected ' + expected.size + ' (the term plus ' + (expected.size - 1) + ' direct neighbours).'\n        : '; no focus term, ' + got.length + ' terms highlighted.')\n  };\n}",
+  "checkDescription": "Every link connects two defined terms, every term has at least one link, and the focus highlights exactly the focus term plus its direct neighbours.",
+  "expectAtDefaults": "m.focusTerm === 'Access control' && m.terms.filter(t => t.highlighted).length === 5 && m.links.length >= 18 && m.showLabels",
+  "learnerPrompts": {
+    "predict": "Before you focus on it: how many terms do you think Access control connects to, and in which themes?",
+    "explain": "Pick a link that crosses from Processes to Safeguards. Say it as a sentence and explain why a privacy team would care about it."
+  }
+}

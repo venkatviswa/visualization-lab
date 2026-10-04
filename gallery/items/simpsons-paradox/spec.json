@@ -1,0 +1,55 @@
+{
+  "title": "Simpson’s paradox in win rates",
+  "objective": "Learners see how Team A can win more often than Team B in every deal size yet have a worse overall win rate, because overall rates are averages weighted by each team’s mix of easy and hard deals.",
+  "view": "2D",
+  "recommended": {
+    "library": "d3",
+    "why": "A custom annotated story can split each overall bar into its deal-size segments, with bar widths showing the mix, so learners watch the weighted average form."
+  },
+  "alternative": {
+    "library": "chartjs",
+    "why": "A custom annotated story versus standard grouped bars: which makes the paradox click?"
+  },
+  "assumptions": [
+    "Deal counts and win rates are illustrative synthetic numbers, not real sales data",
+    "Each team works 200 deals; Team B’s mix is fixed at 25% large deals",
+    "Underlying win rates: Team A 78% small and 36% large, Team B 72% small and 28% large; wins are rounded to whole deals",
+    "Large deals are harder to win for both teams"
+  ],
+  "units": [
+    "win rate: percent of deals won",
+    "mix: percent of a team’s deals that are large"
+  ],
+  "params": [
+    {
+      "id": "shareLarge",
+      "label": "Team A's share of large deals",
+      "min": 10,
+      "max": 90,
+      "step": 5,
+      "value": 75,
+      "unit": "%"
+    },
+    {
+      "id": "view",
+      "label": "View",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 1,
+      "unit": "",
+      "labels": [
+        "Overall",
+        "By deal size"
+      ]
+    }
+  ],
+  "modelCode": "function model(p) {\n  // Illustrative sales data: two teams, 200 deals each, two deal sizes. Large deals are harder to win for everyone.\n  // Team A is slightly better in each size; the slider moves Team A's mix of large deals. Team B's mix is fixed at 25% large.\n  const N = 200;\n  const team = (name, nLarge, rSmall, rLarge) => {\n    const nSmall = N - nLarge, winSmall = Math.round(nSmall * rSmall), winLarge = Math.round(nLarge * rLarge);\n    return { name, n: N, nSmall, nLarge, winSmall, winLarge, wins: winSmall + winLarge,\n      rateSmall: winSmall / nSmall, rateLarge: winLarge / nLarge, overall: (winSmall + winLarge) / N,\n      shareSmall: nSmall / N, shareLarge: nLarge / N };\n  };\n  const share = Math.max(10, Math.min(90, p.shareLarge)) / 100;\n  const A = team('Team A', Math.round(N * share), 0.78, 0.36);\n  const B = team('Team B', 50, 0.72, 0.28);\n  const view = Math.round(p.view) === 1 ? 'segments' : 'overall';\n  const paradox = A.rateSmall > B.rateSmall && A.rateLarge > B.rateLarge && A.overall < B.overall;\n  const f = v => (v * 100).toFixed(1) + '%', s0 = v => Math.round(v * 100) + '%';\n  const lead = A.overall < B.overall ? 'Team B' : 'Team A';\n  const steps = [\n    { id: 'overall', start: 0, chip: 'Overall', title: 'Overall win rate', text: 'Overall, ' + lead + ' looks better: Team A wins ' + f(A.overall) + ' of its deals, Team B ' + f(B.overall) + '.' },\n    { id: 'split', start: 3, chip: 'Split by size', title: 'Split by deal size', text: 'By deal size, Team A wins more often in both: small ' + f(A.rateSmall) + ' vs ' + f(B.rateSmall) + ', large ' + f(A.rateLarge) + ' vs ' + f(B.rateLarge) + '.' },\n    { id: 'mix', start: 6, chip: 'The mix', title: 'Look at the mix', text: s0(A.shareLarge) + ' of Team A’s deals are large (the hard kind) versus ' + s0(B.shareLarge) + ' of Team B’s.' },\n    { id: 'weighted', start: 9, chip: 'Weighted average', title: 'Overall = mix-weighted average', text: 'Each overall rate is the segment rates weighted by the mix. Team A: ' + s0(A.shareSmall) + ' × ' + f(A.rateSmall) + ' + ' + s0(A.shareLarge) + ' × ' + f(A.rateLarge) + ' = ' + f(A.overall) + '.' }\n  ];\n  const summary = paradox\n    ? 'Simpson’s paradox: Team A wins more often in every deal size, yet ' + f(A.overall) + ' vs ' + f(B.overall) + ' overall, because ' + s0(A.shareLarge) + ' of its deals are large.'\n    : 'No paradox at this mix: Team A wins more often in each deal size and overall (' + f(A.overall) + ' vs ' + f(B.overall) + ').';\n  const formula = t => s0(t.shareSmall) + ' × ' + f(t.rateSmall) + ' + ' + s0(t.shareLarge) + ' × ' + f(t.rateLarge) + ' = ' + f(t.overall);\n  A.formula = formula(A); B.formula = formula(B);\n  return { teams: [A, B], view, paradox, steps, duration: 12, summaryAt: 11, markers: steps.map(s => s.start), summary };\n}",
+  "checkCode": "function check(p) {\n  const m = model(p), [A, B] = m.teams, pc = v => (v * 100).toFixed(1) + '%';\n  // 1. Team A beats Team B within each deal size.\n  const segOk = A.rateSmall > B.rateSmall && A.rateLarge > B.rateLarge;\n  // 2. Each overall rate equals the mix-weighted average of that team's segment rates.\n  const wavg = t => t.shareSmall * t.rateSmall + t.shareLarge * t.rateLarge;\n  const avgOk = m.teams.every(t => Math.abs(t.overall - wavg(t)) < 1e-12 && t.nSmall + t.nLarge === t.n && t.winSmall <= t.nSmall && t.winLarge <= t.nLarge);\n  // 3. The paradox flag matches the numbers.\n  const flagOk = m.paradox === (A.overall < B.overall);\n  return { pass: segOk && avgOk && flagOk,\n    detail: 'Team A wins ' + pc(A.rateSmall) + ' vs ' + pc(B.rateSmall) + ' of small deals and ' + pc(A.rateLarge) + ' vs ' + pc(B.rateLarge) + ' of large ones, ' + (m.paradox ? 'yet' : 'and') + ' overall ' + pc(A.overall) + ' = ' +\n      Math.round(A.shareSmall * 100) + '% × ' + pc(A.rateSmall) + ' + ' + Math.round(A.shareLarge * 100) + '% × ' + pc(A.rateLarge) + ' vs Team B ' + pc(B.overall) + (m.paradox ? ' (paradox).' : ' (no paradox at this mix).') };\n}",
+  "checkDescription": "Team A beats Team B within each deal size, and each team's overall win rate equals the mix-weighted average of its segment rates; at the default mix Team A loses overall.",
+  "expectAtDefaults": "m.paradox === true && m.teams[0].overall < m.teams[1].overall",
+  "learnerPrompts": {
+    "predict": "Team A wins more small deals and more large deals than Team B. Before you play: must Team A have the higher overall win rate?",
+    "explain": "Drag Team A's share of large deals down until the paradox disappears. Why does the mix alone flip the overall winner?"
+  }
+}

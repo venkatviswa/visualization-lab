@@ -1,0 +1,22 @@
+{
+  "slug": "llm-attention",
+  "category": "ML and LLM",
+  "title": "Attention: what does \"it\" refer to?",
+  "goal": "Show how attention lets a language model work out which other words matter to each word, using a sentence where changing the last word changes what \"it\" refers to: \"The cat didn't cross the road because it was too tired / too wide\". Let learners switch the last word, pick the focus word (it, the last word, cross) and compare a meaning head with a position head.",
+  "a": {
+    "lib": "d3",
+    "explanation": "The sentence sits on one line and arcs grow from the focus word to every other word, with thickness and opacity set by the attention weight, so the one heavy arc from \"it\" to \"cat\" (or \"road\") jumps out. The top three weights are labelled on the arcs, the strongest link turns orange, and at the end \"= cat\" or \"= road\" appears under \"it\". D3 scales and data joins keep the drawing tied to the model, and the arc is computed exactly for any playback time, so scrubbing is smooth. The weakness is that it shows one row at a time: learners never see that every word does this at once, and thin arcs below about 5% are hard to tell apart.",
+    "caveats": [
+      "Arcs from a word near the end of the sentence bundle together where they leave the word.",
+      "On a phone the sentence shrinks to about 12px so all 11 words fit on one line."
+    ]
+  },
+  "b": {
+    "lib": "svg",
+    "explanation": "The full 11 by 11 attention matrix is drawn as a heat map, rows for the word doing the looking and columns for the word being looked at, with the focus row outlined and labelled with exact percentages. Playback fills the focus row first, then every other row, so learners see that each word has its own pattern and that every row adds up to 100%. Switching to the position head turns the map into a bright band beside the diagonal, which makes the idea that heads specialise visible at a glance. Plain SVG needs no library but more layout code, and the grid is more abstract than arcs: learners must first learn to read rows and columns before the \"it\" to \"cat\" link means anything.",
+    "caveats": [
+      "Only the focus row and cells of 20% or more carry numbers, to keep the grid readable.",
+      "On a phone the side panel with the top 3 is dropped; the focus row's numbers still show."
+    ]
+  }
+}

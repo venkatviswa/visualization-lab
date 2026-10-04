@@ -1,0 +1,16 @@
+{
+  "slug": "ticket-backlog",
+  "category": "Data stories",
+  "title": "Why a support backlog explodes",
+  "goal": "Explain why a support backlog explodes when tickets arrive faster than agents can resolve them, and how one extra agent changes it. Use a deterministic hourly queue over a 5-day week with a daily arrival pattern and capacity = agents × 60 / handle minutes.",
+  "a": {
+    "lib": "p5",
+    "explanation": "An animated p5.js queue: tickets flow in from the left at the current arrival rate, pile up as dots in the waiting area, and agents on the right resolve them into a running total. Chips show the time, arrivals, capacity and waiting count, and a sparkline underneath tracks the backlog across the week against one extra agent. p5 makes the queue feel physical, so learners see the pile grow during busy hours and what is left each morning. Exact numbers are harder to read than in a chart, and at very large backlogs each dot stands for several tickets.",
+    "caveats": ["Moving dots are illustrative; only the counts and the sparkline come from the hourly model", "Agents are assumed to work every hour, which keeps the model simple but is not a real rota"]
+  },
+  "b": {
+    "lib": "chartjs",
+    "explanation": "Two aligned Chart.js charts: tickets arriving per hour against the capacity line for the current team and for one more agent, and below it the backlog for both. Playback reveals the week hour by hour and marks the peak once it is reached. Chart.js makes the cause and effect easy to read: whenever the bars rise above the capacity line, the backlog grows. It is precise but abstract, so learners have to translate lines into waiting customers themselves.",
+    "caveats": ["Arrivals and backlog use different units, so they are drawn as two charts rather than on one shared axis"]
+  }
+}

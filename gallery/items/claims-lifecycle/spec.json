@@ -1,0 +1,76 @@
+{
+  "title": "Health claim lifecycle",
+  "objective": "New claims processors follow one claim from intake to payment and see the rules that decide whether it pends, is denied, is appealed or gets paid.",
+  "view": "2D",
+  "recommended": {
+    "library": "reactflow",
+    "why": "A clickable flow diagram shows every possible route at once, lights up the one this claim takes, and lets learners click any step for its rule."
+  },
+  "alternative": {
+    "library": "svg",
+    "why": "A clickable diagram versus a hand-drawn swimlane: convenience versus flexibility."
+  },
+  "assumptions": [
+    "Illustrative, generic process and wording; not any specific health plan's rules, systems or forms",
+    "The member has active coverage on the date of service",
+    "A missing prior authorization always leads to a denial; an appeal is only possible after a denial",
+    "A pended claim always gets its records back and resumes; time limits and partial payments are not modelled",
+    "Amounts are illustrative: $1,240 billed, $860 allowed, $160 member cost share, $700 paid by the plan",
+    "Event times are playback seconds for the explainer, not real processing days"
+  ],
+  "units": [
+    "time: playback seconds",
+    "amounts: US dollars (illustrative)"
+  ],
+  "params": [
+    {
+      "id": "priorAuth",
+      "label": "Prior authorization",
+      "min": 0,
+      "max": 2,
+      "step": 1,
+      "value": 1,
+      "unit": "",
+      "labels": [
+        "Not needed",
+        "Approved",
+        "Missing"
+      ]
+    },
+    {
+      "id": "missingInfo",
+      "label": "Missing information",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 0,
+      "unit": "",
+      "labels": [
+        "No",
+        "Yes, pend loop"
+      ]
+    },
+    {
+      "id": "appeal",
+      "label": "Appeal if denied",
+      "min": 0,
+      "max": 2,
+      "step": 1,
+      "value": 0,
+      "unit": "",
+      "labels": [
+        "None filed",
+        "Won",
+        "Lost"
+      ]
+    }
+  ],
+  "modelCode": "function model(p) {\n  // One illustrative professional claim moving through a generic health plan's claims process.\n  // Event times are playback seconds for the explainer, not real processing times. Amounts are illustrative.\n  const pa = Math.max(0, Math.min(2, Math.round(p.priorAuth)));   // 0 not needed, 1 approved, 2 missing\n  const info = Math.round(p.missingInfo) === 1;\n  const ap = Math.max(0, Math.min(2, Math.round(p.appeal)));      // 0 none filed, 1 won, 2 lost\n  const lanes = [\n    { id: 'provider', label: 'Provider' }, { id: 'payer', label: 'Payer system' },\n    { id: 'processor', label: 'Claims processor' }, { id: 'member', label: 'Member' }\n  ];\n  const stations = [\n    { id: 'intake', n: 1, lane: 'provider', label: 'Intake', detail: 'The provider\\'s billing office sends the claim electronically. The system checks format, member ID and required fields before accepting it.' },\n    { id: 'eligibility', n: 2, lane: 'payer', label: 'Eligibility', detail: 'Was the member covered on the date of service, and under which benefits? An inactive member is rejected here, before any review.' },\n    { id: 'auth', n: 3, lane: 'payer', label: 'Prior auth', detail: 'Some services must be approved before they happen. The system looks for an authorization matching member, provider, service and dates.' },\n    { id: 'adjudicate', n: 4, lane: 'processor', label: 'Adjudication', detail: 'The processor applies benefits, contract pricing, coding edits and the authorization status, then decides: pay, pend or deny.' },\n    { id: 'pend', n: 5, lane: 'provider', label: 'Pend: request info', detail: 'A pended claim is on hold, not denied. The payer asks the provider for the missing records and resumes when they arrive.' },\n    { id: 'deny', n: 6, lane: 'processor', label: 'Denial', detail: 'A denial must give the reason and the appeal rights. Here the reason is a missing prior authorization.' },\n    { id: 'appeal', n: 7, lane: 'member', label: 'Appeal', detail: 'The member or provider asks for reconsideration. A different reviewer weighs the medical evidence and overturns or upholds the denial.' },\n    { id: 'pay', n: 8, lane: 'payer', label: 'Payment', detail: 'The plan pays its share (allowed amount minus the member\\'s cost share) to the provider in a payment run, with a remittance advice.' },\n    { id: 'notify', n: 9, lane: 'member', label: 'EOB to member', detail: 'The member receives an Explanation of Benefits: billed, allowed, paid and what they owe. It is not a bill.' }\n  ];\n  const edges = [\n    ['intake', 'eligibility', ''], ['eligibility', 'auth', ''], ['auth', 'adjudicate', ''],\n    ['adjudicate', 'pend', 'request info'], ['pend', 'adjudicate', 'records sent'],\n    ['adjudicate', 'pay', 'pay'], ['adjudicate', 'deny', 'no auth'],\n    ['deny', 'appeal', 'appeal'], ['deny', 'notify', 'no appeal'],\n    ['appeal', 'pay', 'overturned'], ['appeal', 'notify', 'upheld'], ['pay', 'notify', '']\n  ].map(([from, to, label]) => ({ id: from + '-' + to, from, to, label }));\n  const money = { billed: 1240, allowed: 860, memberShare: 160, planPays: 700 };\n  const eligible = true; // assumption: active coverage on the date of service\n  const authRequired = pa !== 0;\n  const authStatus = ['not required', 'approved', 'missing'][pa];\n  const denied = pa === 2;\n  const appealFiled = denied && ap !== 0;\n  const appealWon = appealFiled && ap === 1;\n  const paid = eligible && (!authRequired || pa === 1 || appealWon) && (!denied || appealWon);\n  const raw = [];\n  const add = (station, kind, note, dur) => raw.push({ station, kind, note, dur });\n  add('intake', 'submit', 'The provider submits the claim: member, diagnosis and procedure codes, $' + money.billed + ' billed.', 1.4);\n  add('eligibility', 'eligible', 'Coverage is active on the date of service, so the claim moves on.', 1.2);\n  add('auth', ['notRequired', 'approved', 'missing'][pa], [\n    'This outpatient service does not require prior authorization.',\n    'An approved authorization matches the member, provider, service and dates.',\n    'The service requires prior authorization, and none is on file.'][pa], 1.4);\n  if (info) {\n    add('adjudicate', 'pendStart', 'The processor finds the operative report missing and cannot finish adjudication.', 1.3);\n    add('pend', 'pend', 'Pended, not denied: the provider is asked for the report and the claim waits.', 1.6);\n  }\n  add('adjudicate', denied ? 'denyDecision' : 'payDecision', (info ? 'Records arrive and adjudication resumes. ' : '') + (denied\n    ? 'Decision: the authorization rule is not met, so no payment.'\n    : 'Decision: benefits and pricing allow $' + money.allowed + ' of $' + money.billed + ' billed.'), info ? 1.6 : 1.4);\n  if (denied) {\n    add('deny', 'deny', 'Denied for missing prior authorization; the notice explains the appeal rights.', 1.3);\n    if (appealFiled) add('appeal', appealWon ? 'won' : 'lost', appealWon\n      ? 'Appeal won: a reviewer finds the service medically necessary and overturns the denial.'\n      : 'Appeal lost: a second reviewer upholds the denial.', 1.6);\n  }\n  if (paid) add('pay', 'pay', 'The plan pays the provider $' + money.planPays + '; the member\\'s share is $' + money.memberShare + '.', 1.4);\n  add('notify', paid ? 'eobPaid' : 'eobDenied', paid\n    ? 'The member\\'s EOB shows $' + money.allowed + ' allowed, $' + money.planPays + ' paid by the plan, $' + money.memberShare + ' owed.'\n    : 'The member\\'s notice shows $0 paid by the plan, with the denial reason' + (appealFiled ? ' and the appeal decision.' : ' and how to appeal.'), 1.3);\n  const total = raw.reduce((a, e) => a + e.dur, 0), k = Math.min(1, 13 / total);\n  let t = 0;\n  const events = raw.map((e, i) => { const ev = Object.assign({ i, start: +t.toFixed(2) }, e, { dur: +(e.dur * k).toFixed(2) }); t += e.dur * k; return ev; });\n  const duration = +t.toFixed(2);\n  const finalState = paid ? 'paid' : 'denied';\n  const extras = [];\n  if (info) extras.push('one pend for missing records');\n  if (appealWon) extras.push('a denial overturned on appeal');\n  const summary = paid\n    ? 'Paid: the plan pays $' + money.planPays + ' and the member owes $' + money.memberShare + (extras.length ? ', after ' + extras.join(' and ') : '') + (ap !== 0 && !denied ? '; nothing was denied, so no appeal.' : '.')\n    : 'Denied for missing prior authorization' + (appealFiled ? '; the appeal upheld it' : '; no appeal was filed') + ', so the plan pays $0.';\n  return {\n    lanes, stations, edges, events, duration, markers: events.map(e => e.start),\n    eligible, authRequired, authStatus, denied, appealFiled, appealWon, pends: info ? 1 : 0,\n    finalState, paidAmount: paid ? money.planPays : 0, money, summary\n  };\n}",
+  "checkCode": "function check(p) {\n  const m = model(p), ev = m.events, ids = new Set(m.stations.map(s => s.id));\n  const real = ev.every(e => ids.has(e.station));\n  const timed = ev.every((e, i) => i === 0 || e.start > ev[i - 1].start);\n  const legal = ev.every((e, i) => i === 0 || m.edges.some(g => g.from === ev[i - 1].station && g.to === e.station));\n  const ends = ev[0].station === 'intake' && ev[ev.length - 1].station === 'notify';\n  const denyAt = ev.findIndex(e => e.station === 'deny'), appealAt = ev.findIndex(e => e.station === 'appeal');\n  const denied = denyAt >= 0, won = appealAt >= 0 && ev[appealAt].kind === 'won';\n  const denyOk = denied === (m.authStatus === 'missing');\n  const appealOk = appealAt < 0 || (denied && denyAt < appealAt);\n  const authOk = !m.authRequired || m.authStatus === 'approved' || won;\n  const shouldPay = m.eligible && authOk && (!denied || won);\n  const paidOk = (m.finalState === 'paid') === shouldPay && ev.some(e => e.station === 'pay') === shouldPay;\n  const pends = ev.filter(e => e.station === 'pend').length, pendOk = pends === (Math.round(p.missingInfo) === 1 ? 1 : 0);\n  return {\n    pass: real && timed && legal && ends && denyOk && appealOk && paidOk && pendOk,\n    detail: ev.length + ' events, each at a real station and a legal next step in time order; eligible, prior auth ' + m.authStatus + ', ' + pends + (pends === 1 ? ' pend, ' : ' pends, ') +\n      (denied ? 'denied' + (appealAt >= 0 ? ' then appeal ' + ev[appealAt].kind : ' with no appeal') : 'never denied') + ', so the claim ends ' + m.finalState + ' with $' + m.paidAmount + ' paid.'\n  };\n}",
+  "checkDescription": "Every event is at a real station and is a legal next step in time order, a denial happens exactly when prior auth is missing, an appeal only follows a denial, and the claim is paid only if eligible, authorized when required, and never denied or won on appeal.",
+  "expectAtDefaults": "m.finalState === 'paid' && !m.denied && m.events[m.events.length - 1].station === 'notify'",
+  "learnerPrompts": {
+    "predict": "Set prior authorization to Missing. Before you press play: which steps will the claim visit, and will the member's EOB show any payment?",
+    "explain": "Turn on missing information. Why does the claim go back to adjudication instead of being denied, and what does that mean for the provider?"
+  }
+}

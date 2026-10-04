@@ -1,0 +1,61 @@
+{
+  "title": "Which region is hiring fastest?",
+  "objective": "Learners compare two years of monthly new hires across three regions and identify the fastest-growing region by its growth rate, not by its size.",
+  "view": "2D",
+  "recommended": {
+    "library": "chartjs",
+    "why": "A standard multi-line chart with a legend and tooltips is the quickest, most familiar way to compare three monthly series."
+  },
+  "alternative": {
+    "library": "d3",
+    "why": "Standard configuration versus custom control: direct labels and an annotation versus a legend and a title."
+  },
+  "assumptions": [
+    "Hiring numbers are illustrative synthetic data from a seeded generator, not real company figures",
+    "Three regions with different sizes and underlying growth, plus a shared seasonal pattern (December dip, spring and autumn peaks)",
+    "Growth = hires in Jul–Dec 2025 divided by hires in Jul–Dec 2024, minus 1, computed on unsmoothed monthly counts",
+    "Smoothing is a trailing average; the months before Jan 2024 are generated so every shown month has a full window",
+    "Change vs same month last year = (this month ÷ same month a year earlier − 1), on the displayed series"
+  ],
+  "units": [
+    "hires: new employees per month",
+    "change: percent vs the same month one year earlier"
+  ],
+  "params": [
+    {
+      "id": "smoothing",
+      "label": "Smoothing",
+      "min": 0,
+      "max": 2,
+      "step": 1,
+      "value": 0,
+      "unit": "",
+      "labels": [
+        "None",
+        "3-month average",
+        "6-month average"
+      ]
+    },
+    {
+      "id": "show",
+      "label": "Show",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 0,
+      "unit": "",
+      "labels": [
+        "Monthly hires",
+        "Change vs last year"
+      ]
+    }
+  ],
+  "modelCode": "function model(p) {\n  // Illustrative synthetic data: monthly new hires for three regions, Jan 2024 to Dec 2025.\n  // A seeded generator (mulberry32) keeps the numbers identical on every run. Five warm-up months\n  // (Aug to Dec 2023) are generated but not shown, so every displayed month has a full smoothing window.\n  let seed = 20240101;\n  const rnd = () => { seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };\n  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];\n  const SEASON = [1.06, 1.0, 1.1, 1.04, 0.98, 0.95, 0.9, 0.93, 1.08, 1.05, 0.97, 0.8];\n  const WARM = 5, N = 24;\n  const DEFS = [\n    { name: 'North America', short: 'N. America', base: 118, growth: 0.004 },\n    { name: 'EMEA', short: 'EMEA', base: 84, growth: 0.012 },\n    { name: 'APAC', short: 'APAC', base: 46, growth: 0.028 }\n  ];\n  const months = [];\n  for (let i = 0; i < N; i++) months.push({ label: MON[i % 12] + ' ' + (2024 + Math.floor(i / 12)), short: MON[i % 12] });\n  const w = [1, 3, 6][Math.max(0, Math.min(2, Math.round(p.smoothing)))];\n  const view = Math.round(p.show) === 1 ? 'change' : 'monthly';\n  const regions = DEFS.map((d, r) => {\n    const all = [];\n    for (let k = 0; k < N + WARM; k++) {\n      const m = (k + 12 - WARM) % 12; // k = 0 is Aug 2023\n      all.push(Math.round(d.base * Math.pow(1 + d.growth, k - WARM) * SEASON[m] * (1 + (rnd() - 0.5) * 0.12)));\n    }\n    const raw = all.slice(WARM);\n    const smooth = raw.map((_, i) => { const win = all.slice(i + WARM - w + 1, i + WARM + 1); return win.reduce((a, b) => a + b, 0) / w; });\n    const change = smooth.map((v, i) => i >= 12 ? (v / smooth[i - 12] - 1) * 100 : null);\n    const last6 = raw.slice(18, 24).reduce((a, b) => a + b, 0), prev6 = raw.slice(6, 12).reduce((a, b) => a + b, 0);\n    return { name: d.name, short: d.short, index: r, raw, smooth, change, all, total: raw.reduce((a, b) => a + b, 0),\n      last6, prev6, growth: (last6 / prev6 - 1) * 100 };\n  });\n  const fastest = regions.reduce((b, r) => r.growth > b.growth ? r : b, regions[0]).index;\n  const shown = view === 'monthly' ? months.map((_, i) => i) : months.map((_, i) => i).filter(i => i >= 12);\n  const revealEnd = 10, annotateAt = 10.8, duration = 12;\n  const revealAt = shown.map((_, k) => +(0.4 + k * (revealEnd - 0.4) / (shown.length - 1)).toFixed(3));\n  const at = i => revealAt[shown.indexOf(i)];\n  const markers = view === 'monthly' ? [0.4, at(11), at(18), revealEnd, annotateAt] : [0.4, at(18), revealEnd, annotateAt];\n  const f = regions[fastest], others = regions.filter(r => r.index !== fastest).sort((a, b) => b.growth - a.growth);\n  const pct = v => (v >= 0 ? '+' : '') + Math.round(v) + '%';\n  const summary = f.short + ' is growing fastest: ' + pct(f.growth) + ' hires in Jul–Dec 2025 vs Jul–Dec 2024 (' +\n    others.map(r => r.short + ' ' + pct(r.growth)).join(', ') + ').';\n  return { months, regions, fastest, window: w, view, shown, revealAt, annotateAt, duration, markers, summary,\n    windowLabel: w === 1 ? 'no smoothing' : w + '-month average' };\n}",
+  "checkCode": "function check(p) {\n  const m = model(p), R = m.regions, w = m.window;\n  // 1. The highlighted region is the one with the highest computed growth (last 6 months vs same months a year earlier).\n  const g = R.map(r => { const a = r.raw.slice(18, 24).reduce((s, v) => s + v, 0), b = r.raw.slice(6, 12).reduce((s, v) => s + v, 0); return a / b - 1; });\n  const best = g.indexOf(Math.max(...g));\n  const highlightOk = m.fastest === best && R.every((r, i) => Math.abs(r.growth / 100 - g[i]) < 1e-9);\n  // 2. Each smoothed value is the mean of its window, so it lies between that window's lowest and highest month.\n  const smoothOk = R.every(r => r.smooth.every((v, i) => {\n    const win = r.all.slice(i + 5 - w + 1, i + 6), mean = win.reduce((s, x) => s + x, 0) / w;\n    return win.length === w && Math.abs(v - mean) < 1e-9 && v >= Math.min(...win) - 1e-9 && v <= Math.max(...win) + 1e-9;\n  }));\n  // 3. Smoothing does not change which region hires the most in total.\n  const order = a => R.map((r, i) => [a(r), i]).sort((x, y) => y[0] - x[0]).map(x => x[1]).join();\n  const orderOk = order(r => r.raw.reduce((s, v) => s + v, 0)) === order(r => r.smooth.reduce((s, v) => s + v, 0));\n  // 4. Change vs same month last year is computed from the displayed (smoothed) series.\n  const changeOk = R.every(r => r.change.every((v, i) => i < 12 ? v === null : Math.abs(v - (r.smooth[i] / r.smooth[i - 12] - 1) * 100) < 1e-9));\n  const f = R[m.fastest];\n  return { pass: highlightOk && smoothOk && orderOk && changeOk,\n    detail: f.short + ' has the highest growth (' + f.last6 + ' vs ' + f.prev6 + ' hires, ' + (g[m.fastest] * 100).toFixed(1) + '%) and is the one highlighted; with ' + (w === 1 ? 'raw months' : 'a ' + m.windowLabel) +\n      ' every smoothed month equals its window mean and the total-hires order (' + order(r => r.total).split(',').map(i => R[i].short).join(' > ') + ') is unchanged.' };\n}",
+  "checkDescription": "The highlighted region is the one with the highest growth (last 6 months vs the same months a year earlier); every smoothed month is its window mean, and smoothing never changes which region hires the most in total.",
+  "expectAtDefaults": "m.regions[m.fastest].short === 'APAC' && m.regions[m.fastest].total < m.regions[0].total && m.view === 'monthly'",
+  "learnerPrompts": {
+    "predict": "Before playing: which region do you expect to be growing fastest, the biggest one or one of the smaller ones?",
+    "explain": "Switch Show to 'Change vs last year'. Why does that view make the fastest-growing region obvious when the monthly view does not?"
+  }
+}

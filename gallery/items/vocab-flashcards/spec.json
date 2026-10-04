@@ -1,0 +1,58 @@
+{
+  "title": "Data privacy terms in plain English",
+  "objective": "Learners can explain 8 data privacy terms in plain English and recognise each one in a short workplace example, meeting them one at a time.",
+  "view": "2D",
+  "recommended": {
+    "library": "story",
+    "why": "One animated card at a time keeps attention on a single term, with an icon, a definition, a workplace example and a progress row that shows where the learner is."
+  },
+  "alternative": {
+    "library": "svg",
+    "why": "A guided one-at-a-time reveal versus everything at once: pacing versus overview."
+  },
+  "assumptions": [
+    "Definitions are simplified for a general workforce audience and are not legal advice",
+    "Each term's theme is the stage of the data lifecycle where it matters most: identify, collect, use, share, store, delete, respond",
+    "Lifecycle order follows those stages; A to Z sorts the terms alphabetically, ignoring case",
+    "Examples are typical workplace situations, not descriptions of real organisations"
+  ],
+  "units": [
+    "cards: one term per card, 3.5 s of playback each"
+  ],
+  "params": [
+    {
+      "id": "order",
+      "label": "Order",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 0,
+      "unit": "",
+      "labels": [
+        "Lifecycle order",
+        "A to Z"
+      ]
+    },
+    {
+      "id": "showExamples",
+      "label": "Show examples",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 1,
+      "unit": "",
+      "labels": [
+        "No",
+        "Yes"
+      ]
+    }
+  ],
+  "modelCode": "function model(p) {\n  // Eight data privacy terms in data lifecycle order, each with a plain-English definition, a workplace example,\n  // a Lucide icon name and a theme (the lifecycle stage where the term matters most).\n  const CARDS = [\n    ['PII', 'Identify', 'user-round', 'Personally identifiable information: any detail that can point to one specific person.',\n      'A support ticket holds a customer\\'s name, email address and account number.'],\n    ['Consent', 'Collect', 'hand', 'A clear, freely given yes to one specific use of someone\\'s data, which they can withdraw later.',\n      'A webinar sign-up form asks a separate yes before adding people to the marketing list.'],\n    ['Data minimisation', 'Collect', 'filter', 'Collect and keep only the data you really need for the task, and nothing extra.',\n      'The expense form asks for the city you travelled to, not your home address.'],\n    ['Purpose limitation', 'Use', 'target', 'Use data only for the reason it was collected, unless people agree to something new.',\n      'Emails gathered for order updates are not reused for a sales campaign without asking.'],\n    ['De-identification', 'Share', 'venetian-mask', 'Removing or masking the details that link data to a person, so they cannot easily be recognised.',\n      'HR shares engagement survey results by department, with names and employee IDs removed.'],\n    ['Retention', 'Store', 'archive', 'How long data is kept before it must be deleted, set by a written retention rule.',\n      'Applications from unsuccessful candidates are deleted 12 months after the role closes.'],\n    ['Right to erasure', 'Delete', 'trash-2', 'A person\\'s right to ask an organisation to delete the data it holds about them.',\n      'A former customer asks to be forgotten, and the team removes their record from the CRM.'],\n    ['Data breach', 'Respond', 'shield-alert', 'Personal data lost, stolen or seen by someone who should not see it, by accident or on purpose.',\n      'A laptop holding an unencrypted customer list is left on a train and reported the same day.']\n  ];\n  const ORDERS = ['Lifecycle order', 'A to Z'], ORDER_TEXT = ['data lifecycle', 'A to Z'];\n  const oi = Math.max(0, Math.min(1, Math.round(p.order)));\n  const showExamples = Math.round(p.showExamples) === 1;\n  const lifecycle = CARDS.map((c, i) => ({ c, step: i + 1 }));\n  const list = oi === 1 ? lifecycle.slice().sort((a, b) => a.c[0].localeCompare(b.c[0], 'en', { sensitivity: 'base' })) : lifecycle;\n  const per = 3.5, duration = +(list.length * per).toFixed(2);\n  const cards = list.map(({ c, step }, i) => ({\n    index: i + 1, term: c[0], theme: c[1], stage: c[1], icon: c[2], definition: c[3], example: showExamples ? c[4] : null,\n    lifecycleStep: step, start: +(i * per).toFixed(2), end: +((i + 1) * per).toFixed(2)\n  }));\n  const first = cards[0].term, last = cards[cards.length - 1].term;\n  const summary = cards.length + ' terms in ' + ORDER_TEXT[oi] + ' order, from ' + first + ' to ' + last +\n    (showExamples ? ', each with a workplace example.' : '; switch examples on to see each term at work.');\n  return { cards, order: ORDERS[oi], orderText: ORDER_TEXT[oi], showExamples, exampleCount: cards.filter(c => c.example).length,\n    perCard: per, duration, markers: cards.map(c => c.start), summary };\n}",
+  "checkCode": "function check(p) {\n  const m = model(p);\n  const TERMS = ['PII', 'Consent', 'Data minimisation', 'Purpose limitation', 'De-identification', 'Retention', 'Right to erasure', 'Data breach'];\n  const az = Math.round(p.order) === 1;\n  const expected = az ? TERMS.slice().sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' })) : TERMS;\n  const got = m.cards.map(c => c.term);\n  const onceEach = got.length === TERMS.length && TERMS.every(t => got.filter(g => g === t).length === 1);\n  const ordered = got.every((t, i) => t === expected[i]);\n  const timesOk = m.cards.every((c, i) => c.start < c.end && c.start >= 0 && c.end <= m.duration + 1e-9 && (i === 0 || c.start > m.cards[i - 1].start)) &&\n    m.markers.length === m.cards.length && m.markers.every((t, i) => t === m.cards[i].start);\n  return {\n    pass: onceEach && ordered && timesOk,\n    detail: got.length + ' cards, ' + new Set(got).size + ' distinct terms, ' + (ordered ? 'in' : 'NOT in') + ' ' + m.orderText +\n      ' order (' + got[0] + ' first, ' + got[got.length - 1] + ' last); card start times run from ' + m.cards[0].start + ' s to ' +\n      m.cards[m.cards.length - 1].start + ' s, ' + (timesOk ? 'increasing and within' : 'NOT all within') + ' the ' + m.duration + ' s playback.'\n  };\n}",
+  "checkDescription": "Every term appears exactly once, the cards follow the chosen ordering, and card start times increase and stay within the playback duration.",
+  "expectAtDefaults": "m.cards.length === 8 && m.cards[0].term === 'PII' && m.cards[7].term === 'Data breach' && m.exampleCount === 8",
+  "learnerPrompts": {
+    "predict": "Before the card appears: what do you think \"data minimisation\" asks a team to do?",
+    "explain": "Choose one workplace example and name another term on the cards it also touches, for instance how consent relates to purpose limitation."
+  }
+}

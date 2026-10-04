@@ -1,0 +1,56 @@
+{
+  "title": "How RAG finds the right policy passages",
+  "objective": "Learners see that retrieval-augmented generation embeds the question and every document chunk as directions in the same space, scores each chunk by cosine similarity to the question, and sends only the k highest-scoring chunks to the model, so top-k decides what the model can see.",
+  "view": "3D",
+  "recommended": {
+    "library": "three",
+    "why": "A 3D embedding space shows chunks and the question as directions on a sphere, so cosine similarity reads as the angle between them and the nearest neighbours light up."
+  },
+  "alternative": {
+    "library": "d3",
+    "why": "Whether depth adds useful information: does the 3D space explain retrieval better than a flat map next to a ranked list of scores?"
+  },
+  "assumptions": [
+    "The vectors are hand-placed synthetic 3D unit vectors chosen to illustrate the idea; they are not output of a real embedding model, which would use hundreds of dimensions",
+    "24 policy chunks in three topics (HR leave, travel expenses, IT security), eight each; one IT chunk about using a VPN in airports and hotels sits close to the travel topic on purpose",
+    "Similarity is cosine similarity: dot(q, c) / (|q| |c|); ties are broken by chunk order",
+    "Retrieval returns the k highest-scoring chunks with no minimum score and no re-ranking"
+  ],
+  "units": [
+    "cosine similarity: unitless, from -1 (opposite) to 1 (same direction)",
+    "top-k: number of chunks sent to the model"
+  ],
+  "params": [
+    {
+      "id": "question",
+      "label": "Question",
+      "min": 0,
+      "max": 2,
+      "step": 1,
+      "value": 1,
+      "unit": "",
+      "labels": [
+        "Parental leave weeks",
+        "Airport taxi expense",
+        "Clicked a phishing link"
+      ]
+    },
+    {
+      "id": "topK",
+      "label": "Top-k",
+      "min": 1,
+      "max": 6,
+      "step": 1,
+      "value": 3,
+      "unit": ""
+    }
+  ],
+  "modelCode": "function model(p) {\n  // Illustrative 3D \"embeddings\": hand-placed synthetic unit vectors, not output of a real embedding model\n  // (real ones have hundreds of dimensions). Each chunk is [title, topic, u, v]: a position on a map that is\n  // lifted onto the unit sphere, so nearby map positions mean similar directions.\n  const TOPICS = ['HR leave', 'Travel expenses', 'IT security'];\n  const CHUNKS = [\n    ['Parental leave: 16 weeks', 0, 0.05, 1.05], ['Annual leave allowance', 0, 0.25, 0.95], ['Sick leave and doctor\\u2019s note', 0, -0.22, 1.22],\n    ['Carrying over unused days', 0, 0.42, 1.18], ['Bereavement leave', 0, -0.42, 1.0], ['Booking leave in the HR portal', 0, 0.3, 0.68],\n    ['Unpaid sabbatical', 0, 0.05, 1.48], ['Public holiday calendar', 0, -0.3, 0.7],\n    ['Taxis and ride-share', 1, -0.72, -0.45], ['Receipts and claim deadline', 1, -0.62, -0.7], ['Mileage for your own car', 1, -0.87, -0.25],\n    ['Booking flights and hotels', 1, -1.17, -0.4], ['Daily meal allowance', 1, -0.92, -0.85], ['Travel insurance cover', 1, -0.74, 0.0],\n    ['When business class is allowed', 1, -1.32, -0.65], ['Client entertainment limits', 1, -1.17, -0.95],\n    ['Reporting phishing emails', 2, 0.77, -0.45], ['Security incident hotline', 2, 0.99, -0.35], ['Passwords and MFA', 2, 0.72, -0.78],\n    ['Lost or stolen laptop', 2, 1.17, -0.6], ['Approved software list', 2, 0.97, -0.95], ['Classifying confidential data', 2, 1.12, -0.12],\n    ['USB drives and removable media', 2, 1.32, -0.85], ['VPN on public Wi-Fi', 2, -0.24, -0.66]\n  ];\n  const QUESTIONS = [\n    ['How many weeks of parental leave do I get?', 0, 0.12, 1.0],\n    ['Can I expense a taxi from the airport?', 1, -0.68, -0.5],\n    ['I clicked a link in a phishing email. What now?', 2, 0.85, -0.42]\n  ];\n  const norm = v => { const l = Math.hypot(v[0], v[1], v[2]); return v.map(x => x / l); };\n  const n = norm([1, 1, 1]), e1 = norm([1, -1, 0]), e2 = [n[1] * e1[2] - n[2] * e1[1], n[2] * e1[0] - n[0] * e1[2], n[0] * e1[1] - n[1] * e1[0]];\n  const A = 0.9; // radians of arc per map unit\n  const lift = (u, v) => { const r = Math.hypot(u, v) || 1e-9, th = r * A; return [0, 1, 2].map(i => +(Math.cos(th) * n[i] + Math.sin(th) * (u * e1[i] + v * e2[i]) / r).toFixed(4)); };\n  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];\n  const cos = (a, b) => dot(a, b) / (Math.hypot(...a) * Math.hypot(...b));\n  // 2D view: orthographic projection onto the plane facing (1,1,1); it distorts distances a little\n  const proj = v => [+dot(v, e1).toFixed(4), +dot(v, e2).toFixed(4)];\n  const qi = Math.max(0, Math.min(2, Math.round(p.question)));\n  const [qText, qTopic, qu, qv] = QUESTIONS[qi];\n  const qvec = lift(qu, qv);\n  const chunks = CHUNKS.map(([title, topic, u, v], id) => {\n    const vec = lift(u, v);\n    return { id, title, topic, topicName: TOPICS[topic], vec, xy: proj(vec), sim: +cos(qvec, vec).toFixed(6) };\n  });\n  const ranked = chunks.slice().sort((a, b) => b.sim - a.sim || a.id - b.id);\n  ranked.forEach((ch, i) => { ch.rank = i + 1; });\n  const k = Math.max(1, Math.min(6, Math.round(p.topK)));\n  const context = ranked.slice(0, k);\n  const off = context.filter(ch => ch.topic !== qTopic);\n  const duration = 12, markers = [0, 2.2, 3.6, 7, 9];\n  const lower = ['HR leave', 'travel expenses', 'IT security'][qTopic];\n  const summary = 'Top ' + k + ': ' + (off.length ? (k - off.length) + ' about ' + lower + ' plus ' + off.length + ' off-topic (' + off.map(c => c.title).join(', ') + ')' : 'all about ' + lower) +\n    ', cosine ' + context[0].sim.toFixed(3) + (k > 1 ? ' to ' + context[k - 1].sim.toFixed(3) : '') + '. Only ' + (k > 1 ? 'these ' + k + ' passages reach' : 'this passage reaches') + ' the model.';\n  return {\n    topics: TOPICS, chunks, ranked, context, k, offTopic: off.length,\n    question: { index: qi, text: qText, topic: qTopic, topicName: TOPICS[qTopic], vec: qvec, xy: proj(qvec) },\n    basis: { e1: e1.map(x => +x.toFixed(6)), e2: e2.map(x => +x.toFixed(6)), n: n.map(x => +x.toFixed(6)) },\n    phases: { chunks: [0, 2.2], question: [2.2, 3.6], rank: [3.6, 7], topk: [7, 9], context: [9, 12] },\n    duration, markers, summary\n  };\n}",
+  "checkCode": "function check(p) {\n  const m = model(p), q = m.question.vec;\n  const cosine = (a, b) => { let d = 0, na = 0, nb = 0; for (let i = 0; i < a.length; i++) { d += a[i] * b[i]; na += a[i] * a[i]; nb += b[i] * b[i]; } return d / Math.sqrt(na * nb); };\n  const err = Math.max(...m.chunks.map(c => Math.abs(cosine(q, c.vec) - c.sim)));\n  const kept = new Set(m.context.map(c => c.id)), rest = m.chunks.filter(c => !kept.has(c.id));\n  const minKept = Math.min(...m.context.map(c => c.sim)), maxRest = Math.max(...rest.map(c => c.sim));\n  const topOk = m.context.length === Math.max(1, Math.min(6, Math.round(p.topK))) && minKept >= maxRest &&\n    m.context.every((c, i) => i === 0 || m.context[i - 1].sim >= c.sim);\n  const perQ = [0, 1, 2].map(i => { const mi = model(Object.assign({}, p, { question: i })); return mi.ranked[0].topic === mi.question.topic; });\n  return {\n    pass: err < 1e-5 && topOk && perQ.every(Boolean),\n    detail: 'All ' + m.chunks.length + ' similarities equal dot(q, c)/(|q||c|) to within ' + err.toExponential(1) + '; the ' + (m.k > 1 ? m.k + ' kept passages score ' : 'kept passage scores ') +\n      minKept.toFixed(3) + ' or more versus at most ' + maxRest.toFixed(3) + ' for the rest; the top hit is on-topic for ' + perQ.filter(Boolean).length + ' of 3 questions.'\n  };\n}",
+  "checkDescription": "Every similarity equals the true cosine dot(q, c)/(|q||c|), the k passages sent to the model are the k highest scores in order, and for each of the three questions the best match comes from the matching topic.",
+  "expectAtDefaults": "m.context.length === 3 && m.context.every(c => c.topic === m.question.topic) && m.ranked[0].title === 'Taxis and ride-share'",
+  "learnerPrompts": {
+    "predict": "On the taxi question, raise top-k from 3 to 5. Will every passage the model sees still be about travel expenses?",
+    "explain": "The VPN chunk is about IT security, yet it can outrank travel chunks for a taxi question. What does that tell you about choosing k and about how chunks are written?"
+  }
+}

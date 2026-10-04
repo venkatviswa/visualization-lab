@@ -1,0 +1,52 @@
+{
+  "title": "How an LLM picks the next word",
+  "objective": "Learners see how an LLM turns scores into probabilities over candidate next words, and how temperature and top-p change which words can be picked.",
+  "view": "2D",
+  "recommended": {
+    "library": "chartjs",
+    "why": "A bar chart shows exact probabilities for every candidate word and how temperature and top-p reshape them, step by step."
+  },
+  "alternative": {
+    "library": "story",
+    "why": "A probability chart versus a step-by-step story: which makes temperature intuitive?"
+  },
+  "assumptions": [
+    "Simplified illustration: the 12 candidate words and their scores are made up, not taken from a real model",
+    "Real models score tens of thousands of tokens, and a token is often part of a word",
+    "Temperature divides every score before softmax; top-p keeps the smallest set of most likely words whose probabilities reach top-p",
+    "The random draw uses a fixed seed, so the same settings always pick the same word"
+  ],
+  "units": [
+    "score: logit (unitless)",
+    "probability: percent",
+    "temperature and top-p: unitless"
+  ],
+  "params": [
+    {
+      "id": "temperature",
+      "label": "Temperature",
+      "min": 0.1,
+      "max": 2,
+      "step": 0.1,
+      "value": 0.7,
+      "unit": ""
+    },
+    {
+      "id": "topP",
+      "label": "Top-p",
+      "min": 0.5,
+      "max": 1,
+      "step": 0.05,
+      "value": 0.9,
+      "unit": ""
+    }
+  ],
+  "modelCode": "function model(p) {\n  // Simplified illustration: made-up scores (logits) for 12 candidate next words after one fixed context.\n  // Real models score tens of thousands of tokens; the steps are the same.\n  const context = 'The customer asked for a';\n  const RAW = [['refund', 3.1], ['discount', 2.5], ['receipt', 2.2], ['callback', 1.8], ['manager', 1.6], ['replacement', 1.3],\n    ['quote', 1.0], ['demo', 0.7], ['trial', 0.4], ['ticket', 0.1], ['coffee', -0.8], ['banana', -2.0]];\n  const T = Math.round(Math.min(2, Math.max(0.1, p.temperature)) * 10) / 10;\n  const topP = Math.round(Math.min(1, Math.max(0.5, p.topP)) * 100) / 100;\n  const softmax = xs => { const mx = Math.max(...xs), e = xs.map(x => Math.exp(x - mx)), s = e.reduce((a, b) => a + b, 0); return e.map(x => x / s); };\n  const base = softmax(RAW.map(r => r[1]));        // temperature 1\n  const prob = softmax(RAW.map(r => r[1] / T));    // after temperature; RAW is sorted, so prob is sorted too\n  // Top-p: the smallest set of most likely words whose probabilities add up to at least top-p (all words when top-p = 1).\n  let keptCount = RAW.length, cum = 0;\n  if (topP < 1) for (let i = 0; i < RAW.length; i++) { cum += prob[i]; if (cum >= topP - 1e-12) { keptCount = i + 1; break; } }\n  const keptMass = prob.slice(0, keptCount).reduce((a, b) => a + b, 0);\n  // One seeded draw u in [0, 1): walk the kept words' renormalised probabilities until they pass u.\n  let s = 42;\n  const rnd = () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };\n  const u = rnd();\n  let acc = 0, pick = keptCount - 1;\n  for (let i = 0; i < keptCount; i++) { const lo = acc; acc += prob[i] / keptMass; if (u >= lo && u < acc) { pick = i; break; } }\n  let c = 0;\n  const tokens = RAW.map(([text, score], i) => {\n    const t = { text, score, rank: i + 1, pBase: base[i], p: prob[i], cumBefore: c, kept: i < keptCount, pFinal: i < keptCount ? prob[i] / keptMass : 0, picked: i === pick };\n    c += prob[i];\n    return t;\n  });\n  const pc = v => (v * 100 < 1 ? (v * 100).toFixed(1) : Math.round(v * 100)) + '\\u00a0%';\n  const steps = [\n    { key: 'raw', t: 0, title: '1 · Raw scores', note: 'The model gives every candidate word a score (a logit). Higher means more likely, but these are not probabilities yet.' },\n    { key: 'softmax', t: 2.5, title: '2 · Softmax', note: 'Softmax turns scores into probabilities that add up to 100 %: \"' + RAW[0][0] + '\" gets ' + pc(base[0]) + '.' },\n    { key: 'temperature', t: 5, title: '3 · Temperature ' + T.toFixed(1), note: T < 1 ? 'Temperature ' + T.toFixed(1) + ' divides the scores before softmax: likely words grow, unlikely ones shrink. \"' + RAW[0][0] + '\" now has ' + pc(prob[0]) + '.'\n      : T > 1 ? 'Temperature ' + T.toFixed(1) + ' flattens the odds: unlikely words gain ground. \"' + RAW[0][0] + '\" drops to ' + pc(prob[0]) + '.' : 'Temperature 1.0 leaves the probabilities unchanged.' },\n    { key: 'topp', t: 7.5, title: '4 · Top-p ' + topP.toFixed(2), note: topP < 1 ? 'Keep the most likely words until their total reaches ' + Math.round(topP * 100) + ' %: ' + (keptCount === 1 ? 'only \"' + RAW[0][0] + '\" survives (' + pc(keptMass) + ').' : keptCount + ' of 12 words survive (' + pc(keptMass) + ').') : 'Top-p 1.00 keeps all 12 words in play.' },\n    { key: 'pick', t: 10, title: '5 · Sample one word', note: '' }\n  ];\n  const summary = 'Temperature ' + T.toFixed(1) + ' and top-p ' + topP.toFixed(2) + ' keep ' + keptCount + ' of 12 words; the seeded draw picked \"' + RAW[pick][0] + '\" (' + pc(tokens[pick].pFinal) + ' after renormalising).';\n  steps[4].note = 'A random number u = ' + u.toFixed(2) + ' lands on \"' + RAW[pick][0] + '\" among the kept words, renormalised to 100 %.';\n  return { context, temperature: T, topP, tokens, keptCount, keptMass, u, pick, picked: RAW[pick][0], topToken: RAW[0][0], topProb: prob[0],\n    steps, duration: 12.5, markers: steps.map(x => x.t), summary };\n}",
+  "checkCode": "function check(p) {\n  const m = model(p), t = m.tokens, sum = k => t.reduce((a, x) => a + x[k], 0);\n  const sumsOk = [sum('pBase'), sum('p'), sum('pFinal')].every(v => Math.abs(v - 1) < 1e-9);\n  const sorted = t.every((x, i) => i === 0 || t[i - 1].p >= x.p);\n  const mass = k => t.slice(0, k).reduce((a, x) => a + x.p, 0), k = m.keptCount;\n  const minimal = m.topP >= 1 ? k === t.length : mass(k) >= m.topP - 1e-12 && (k === 1 || mass(k - 1) < m.topP - 1e-12);\n  const flagsOk = t.every((x, i) => x.kept === (i < k));\n  const lo = m.temperature > 0.1 ? Math.round((m.temperature - 0.1) * 10) / 10 : 0.1, hi = lo === m.temperature ? m.temperature + 0.1 : m.temperature;\n  const pLo = model(Object.assign({}, p, { temperature: lo })).topProb, pHi = model(Object.assign({}, p, { temperature: hi })).topProb;\n  const pickOk = t[m.pick].kept && t[m.pick].picked && t.filter(x => x.picked).length === 1;\n  const pc = v => (v * 100).toFixed(1) + ' %';\n  return {\n    pass: sumsOk && sorted && minimal && flagsOk && pLo > pHi && pickOk,\n    detail: 'Probabilities sum to ' + sum('p').toFixed(3) + '; top-p ' + m.topP.toFixed(2) + ' keeps ' + (k === 1 ? 'only the most likely word' : 'the ' + k + ' most likely words') + ' (' + pc(mass(k)) + (k > 1 && m.topP < 1 ? ', ' + (k - 1) + ' would give only ' + pc(mass(k - 1)) : '') +\n      '); \"' + m.topToken + '\" has ' + pc(pLo) + ' at temperature ' + lo.toFixed(1) + ' versus ' + pc(pHi) + ' at ' + hi.toFixed(1) + '; the pick \"' + m.picked + '\" is in the kept set.'\n  };\n}",
+  "checkDescription": "Probabilities add up to 1, the kept set is the smallest group of most likely words whose mass reaches top-p, a lower temperature gives the top word a higher probability, and the picked word is in the kept set.",
+  "expectAtDefaults": "m.keptCount > 1 && m.keptCount < 12 && m.topProb > m.tokens[0].pBase && m.tokens[m.pick].kept",
+  "learnerPrompts": {
+    "predict": "If you raise the temperature to 1.5, will more or fewer words survive the top-p cut? Why?",
+    "explain": "Set temperature to 0.1. Why does top-p stop mattering, and why might a support chatbot still want some randomness?"
+  }
+}

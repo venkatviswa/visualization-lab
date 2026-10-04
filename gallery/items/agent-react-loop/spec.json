@@ -1,0 +1,73 @@
+{
+  "title": "Watch an agent resolve a billing dispute",
+  "objective": "Learners watch an AI agent work through a duplicate-charge complaint with the ReAct loop (think, call a tool, read the result, repeat) and see how it handles a tool timeout and a refund that needs human approval.",
+  "view": "2D",
+  "recommended": {
+    "library": "story",
+    "why": "A narrated scene puts the agent in the middle of its tools: the thought bubble, the tool that lights up and the result that flows back make each loop easy to follow, and the human approver visibly stops the refund."
+  },
+  "alternative": {
+    "library": "reactflow",
+    "why": "A narrated agent versus the loop diagram: which helps people trust what the agent did?"
+  },
+  "assumptions": [
+    "Fictional customer, account, amounts and IDs; a simplified, scripted agent rather than a live model",
+    "Policy: duplicate charges are refunded in full; the agent may refund up to $500 on its own, above that a billing supervisor must approve",
+    "When a tool times out the agent retries it once; a second failure would hand the case to a person (not shown)",
+    "Playback times are for the explainer, not real tool latencies",
+    "Hiding thoughts does not change what the agent does, only what a customer-facing view would show"
+  ],
+  "units": [
+    "amounts: US dollars",
+    "time: playback seconds"
+  ],
+  "params": [
+    {
+      "id": "billingTool",
+      "label": "Billing tool",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 1,
+      "unit": "",
+      "labels": [
+        "Works",
+        "Times out once"
+      ]
+    },
+    {
+      "id": "refundSize",
+      "label": "Refund size",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 1,
+      "unit": "",
+      "labels": [
+        "Under $50",
+        "Over $500"
+      ]
+    },
+    {
+      "id": "showThoughts",
+      "label": "Show thoughts",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 0,
+      "unit": "",
+      "labels": [
+        "Yes",
+        "No"
+      ]
+    }
+  ],
+  "modelCode": "function model(p) {\n  // A scripted ReAct trace: a support agent resolves a duplicate-charge complaint with five tools.\n  // Customer, amounts and IDs are fictional; times are playback seconds, not real latencies.\n  const timeout = Math.round(p.billingTool) === 1;   // 0 = Works, 1 = Times out once\n  const big = Math.round(p.refundSize) === 1;        // 0 = Under $50, 1 = Over $500\n  const showThoughts = Math.round(p.showThoughts) === 0; // labels: 0 = Yes, 1 = No\n  const limit = 500;\n  const amount = big ? 640 : 42.9;\n  const usd = v => '$' + v.toFixed(2);\n  const plan = big ? 'Business Fiber 1G' : 'Home Internet 300';\n  const tools = [\n    { id: 'crm', label: 'CRM lookup', fn: 'crm.lookup', icon: 'contact', detail: 'Finds the customer, account and plan.' },\n    { id: 'billing', label: 'Billing history', fn: 'billing.history', icon: 'receipt', detail: 'Lists charges and invoices for a month.' },\n    { id: 'policy', label: 'Policy search', fn: 'policy.search', icon: 'book-open', detail: 'Searches the refund policy for the rule that applies.' },\n    { id: 'refund', label: 'Refund API', fn: 'refund.create', icon: 'banknote', detail: 'Issues a refund to the card on file. Needs an approval ID above $' + limit + '.' },\n    { id: 'case', label: 'Case update', fn: 'case.update', icon: 'clipboard-check', detail: 'Writes the outcome to the support case and closes it.' }\n  ];\n  const DUR = { thought: 1.2, action: 0.9, observation: 1.1, human: 2.6, final: 2.4 };\n  const steps = [];\n  let t = 0.8, loop = 0;\n  const add = (kind, o) => {\n    const dur = o.dur || DUR[kind];\n    if (kind === 'thought') loop++;\n    steps.push(Object.assign({ i: steps.length, kind, tool: null, call: '', short: '', status: 'ok', retry: false, loop,\n      visible: kind !== 'thought' || showThoughts, start: +t.toFixed(2), dur }, o, { dur }));\n    t += dur;\n  };\n  const act = (tool, args, o) => add('action', Object.assign({ tool, call: tools.find(x => x.id === tool).fn + '(' + args + ')', text: 'Calls ' + tools.find(x => x.id === tool).label + '.' }, o || {}));\n  const obs = (tool, text, short, o) => add('observation', Object.assign({ tool, text, short }, o || {}));\n\n  add('thought', { text: 'Dana says she was charged twice. First: who is she and what plan is she on?' });\n  act('crm', 'name: \"Dana Reyes\"');\n  obs('crm', 'Account ACC-20417, ' + plan + ', ' + usd(amount) + ' a month, in good standing.', 'Found Dana');\n  add('thought', { text: 'Check October billing for two identical charges.' });\n  act('billing', 'account: \"ACC-20417\", month: \"2026-10\"');\n  if (timeout) {\n    obs('billing', 'Error: no response after 10 seconds (timeout).', 'Timed out', { status: 'error', dur: 1.3 });\n    add('thought', { text: 'The billing tool timed out. Retry once; if it fails again, hand the case to a person.' });\n    act('billing', 'account: \"ACC-20417\", month: \"2026-10\"', { retry: true, text: 'Retries Billing history (attempt 2).' });\n  }\n  obs('billing', 'Two charges of ' + usd(amount) + ' on Oct 1 for invoice INV-88213. One is a duplicate.', '2 charges');\n  add('thought', { text: 'Duplicate confirmed. What does the refund policy allow me to do?' });\n  act('policy', 'query: \"duplicate charge refund\"');\n  obs('policy', 'Refund duplicates in full. Agents may refund up to $' + limit + ' alone; above that, a billing supervisor must approve.', 'Limit $' + limit);\n  if (big) {\n    add('thought', { text: usd(amount) + ' is over the $' + limit + ' limit. I must ask a supervisor and wait before refunding.' });\n    add('human', { text: 'Asks Sam Okafor (billing supervisor) to approve a ' + usd(amount) + ' refund. The agent pauses; Sam approves (APR-311).',\n      short: 'Approved', call: 'request_approval(amount: ' + usd(amount) + ', reason: \"duplicate charge\")', status: 'approved' });\n  } else {\n    add('thought', { text: usd(amount) + ' is under the $' + limit + ' limit, so I can refund it myself.' });\n  }\n  act('refund', 'account: \"ACC-20417\", amount: ' + usd(amount) + ', invoice: \"INV-88213\"' + (big ? ', approval: \"APR-311\"' : ''));\n  obs('refund', 'Refund RF-55102 issued: ' + usd(amount) + ' to the card on file, 3 to 5 business days.', 'Refunded');\n  add('thought', { text: 'Refund done. Record it on the case, then reply to Dana.' });\n  act('case', 'case: \"CS-7781\", status: \"Resolved\"');\n  obs('case', 'Case CS-7781 closed as Resolved with the refund reference.', 'Closed');\n  const reply = 'Sorry about that, Dana. You were charged ' + usd(amount) + ' twice on Oct 1. I have refunded the extra ' + usd(amount) +\n    (big ? ' after a billing supervisor approved it' : '') + ' (ref RF-55102); it reaches your card in 3 to 5 business days.';\n  add('final', { text: reply, short: 'Resolved' });\n\n  const actions = steps.filter(s => s.kind === 'action');\n  const refunds = actions.filter(s => s.tool === 'refund');\n  const counts = {\n    toolCalls: actions.length, retries: actions.filter(s => s.retry).length, approvals: steps.filter(s => s.kind === 'human').length,\n    thoughts: steps.filter(s => s.kind === 'thought').length, errors: steps.filter(s => s.status === 'error').length, loops: loop\n  };\n  const duration = +t.toFixed(2);\n  return {\n    request: 'I was charged twice for my internet this month. Can you fix it?',\n    customer: 'Dana Reyes', plan, amount, amountText: usd(amount), limit, needsApproval: amount > limit, showThoughts,\n    tools, steps, counts, refundAmount: refunds.length ? amount : 0, refundCount: refunds.length, reply,\n    duration, markers: steps.map(s => s.start),\n    summary: counts.toolCalls + ' tool calls' + (counts.retries ? ' (1 retry after a timeout)' : '') + ', ' +\n      (counts.approvals ? '1 human approval, ' : 'no approval needed, ') + usd(amount) + ' refunded and the case closed.'\n  };\n}",
+  "checkCode": "function check(p) {\n  const m = model(p), s = m.steps, timeout = Math.round(p.billingTool) === 1;\n  const acts = s.filter(x => x.kind === 'action');\n  // 1. Every action is immediately followed by the observation from the same tool.\n  const paired = acts.every(a => s[a.i + 1] && s[a.i + 1].kind === 'observation' && s[a.i + 1].tool === a.tool);\n  // 2. The refund happens once, after the policy result and, above the limit, after a human approval.\n  const refundAt = s.findIndex(x => x.kind === 'action' && x.tool === 'refund');\n  const policyAt = s.findIndex(x => x.kind === 'observation' && x.tool === 'policy');\n  const humanAt = s.findIndex(x => x.kind === 'human' && x.status === 'approved');\n  const gateOk = m.amount > m.limit ? humanAt > policyAt && humanAt < refundAt : humanAt === -1;\n  const orderOk = m.refundCount === 1 && policyAt >= 0 && policyAt < refundAt && gateOk;\n  // 3. A timeout gets exactly one retry, and the retry is the next tool call after the error.\n  const errs = s.filter(x => x.status === 'error');\n  const retryOk = timeout\n    ? errs.length === 1 && m.counts.retries === 1 && acts.find(a => a.i > errs[0].i).retry === true\n    : errs.length === 0 && m.counts.retries === 0;\n  // 4. The final reply quotes the refund actually made, and the trace plays in order.\n  const fin = s[s.length - 1];\n  const replyOk = fin.kind === 'final' && fin.text.includes(m.amountText) && m.refundAmount === m.amount &&\n    fin.text.includes('approved') === (m.counts.approvals > 0);\n  const timed = s.every((x, k) => k === 0 || x.start > s[k - 1].start) && Math.abs(fin.start + fin.dur - m.duration) < 0.02;\n  return {\n    pass: paired && orderOk && retryOk && replyOk && timed,\n    detail: m.counts.toolCalls + ' tool calls, each followed by its observation; ' + (timeout ? '1 timeout, then exactly 1 retry; ' : 'no timeouts; ') +\n      'the ' + m.amountText + ' refund comes after the policy search' + (m.amount > m.limit ? ' and 1 human approval (over the $' + m.limit + ' limit)' : ' with no approval (under $' + m.limit + ')') +\n      ', and the final reply quotes ' + m.amountText + '.'\n  };\n}",
+  "checkDescription": "Every tool call is followed by its own observation; the refund happens once, only after the policy search and, above $500, only after a human approval; a timeout gets exactly one retry; the final reply quotes the amount actually refunded.",
+  "expectAtDefaults": "m.counts.retries === 1 && m.counts.approvals === 1 && m.counts.toolCalls === 6 && m.steps.some(s => s.kind === 'thought' && s.visible)",
+  "learnerPrompts": {
+    "predict": "The billing tool times out and the refund is $640. Before you press play: how many tool calls will the agent make, and where will it stop and wait?",
+    "explain": "Switch \"Show thoughts\" to No. What can you still tell about why the agent did each step, and what would a customer or auditor need to see to trust it?"
+  }
+}

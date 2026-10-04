@@ -1,0 +1,16 @@
+{
+  "slug": "regional-hires",
+  "category": "Data stories",
+  "title": "Which region is hiring fastest?",
+  "goal": "Compare monthly new-hire counts across three regions over two years and highlight which region is growing fastest.",
+  "a": {
+    "lib": "chartjs",
+    "explanation": "A standard Chart.js line chart with one line per region, a legend, hover tooltips and a title that turns into the finding at the end of playback. Months appear in order, and once all are shown the fastest-growing region gets a thicker line and a legend tag with its growth rate. Chart.js gives you axes, tooltips, a legend and responsive resizing with very little code. The weakness is that readers must match colours to the legend, and the chart cannot point at the growth window the claim is based on.",
+    "caveats": ["Identity relies on legend colours, which is harder for colour-blind readers", "The growth definition (last 6 months vs a year earlier) is only stated in text, not drawn"]
+  },
+  "b": {
+    "lib": "d3",
+    "explanation": "The same data drawn with D3, labelling each line at its end instead of using a legend. At the end of playback it shades the two six-month windows used to measure growth, fades the other regions and adds a callout with the fastest region's growth rate and hire counts. D3 gives full control over where labels and annotations go, which makes the story explicit. It costs more code than Chart.js, and every label and collision rule has to be written by hand.",
+    "caveats": ["Hover details are a simple custom crosshair rather than a full tooltip system", "Callout placement uses simple rules and may sit closer to a line with unusual data"]
+  }
+}

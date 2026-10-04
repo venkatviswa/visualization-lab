@@ -1,0 +1,69 @@
+{
+  "title": "From spaghetti to hub: why an integration layer",
+  "objective": "Learners see that point-to-point integrations grow with the square of the number of systems while a hub grows linearly, and that one API change breaks n-1 point-to-point integrations but only one hub adapter.",
+  "view": "2D",
+  "recommended": {
+    "library": "d3",
+    "why": "An animated network that grows year by year makes the spaghetti visible and lets the changed system and its broken links light up in place."
+  },
+  "alternative": {
+    "library": "chartjs",
+    "why": "Watching the spaghetti grow versus reading the curve: which convinces a steering committee?"
+  },
+  "assumptions": [
+    "Worst case: every system exchanges data with every other system; real estates connect fewer pairs, so the numbers are illustrative",
+    "The company starts with two systems in Year 1 and adds one system a year",
+    "A hub or event-driven layer counts one connection (adapter) per system; the hub itself is not counted as a system",
+    "The API change is Billing retiring its v1 API; each broken point-to-point link needs rework by the team on the other end",
+    "With Salesforce names, Salesforce clouds are counted as separate systems; in practice some share a platform and connect natively"
+  ],
+  "units": [
+    "integrations: count of point-to-point links or hub connections",
+    "time: one system added per year"
+  ],
+  "params": [
+    {
+      "id": "systems",
+      "label": "Systems",
+      "min": 4,
+      "max": 12,
+      "step": 1,
+      "value": 8,
+      "unit": ""
+    },
+    {
+      "id": "architecture",
+      "label": "Architecture",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 0,
+      "unit": "",
+      "labels": [
+        "Point-to-point",
+        "Integration hub"
+      ]
+    },
+    {
+      "id": "names",
+      "label": "System names",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 0,
+      "unit": "",
+      "labels": [
+        "Generic",
+        "Salesforce"
+      ]
+    }
+  ],
+  "modelCode": "function model(p) {\n  // A company adds one system a year. Worst case: every system exchanges data with every other one.\n  // Point-to-point needs a link per pair, n(n-1)/2; a hub needs one connection per system, n.\n  const n = Math.max(4, Math.min(12, Math.round(p.systems)));\n  const hub = Math.round(p.architecture) === 1, sf = Math.round(p.names) === 1;\n  const BASE = [['CRM', 'Health Cloud', 'Health Cloud'], ['Billing'], ['Claims'],\n    ['Member portal', 'Experience Cloud portal', 'Exp. Cloud portal'], ['Data warehouse', 'Data Cloud', 'Data Cloud'],\n    ['Marketing', 'Marketing Cloud', 'Mktg Cloud'], ['Care management', null, 'Care mgmt'], ['Pharmacy'],\n    ['Provider directory', null, 'Provider dir.'], ['Analytics', 'CRM Analytics', 'CRM Analytics'], ['ERP'],\n    ['Contact centre', 'Service Cloud contact centre', 'Service Cloud']];\n  const hubName = sf ? 'MuleSoft Anypoint' : 'Integration hub';\n  const Y = n - 1, growEnd = 9, step = growEnd / Y;\n  const yearAt = y => +((y - 1) * step).toFixed(3);\n  const systems = BASE.slice(0, n).map((b, i) => {\n    const native = sf && !!b[1], name = native ? b[1] : b[0];\n    const short = native ? b[2] : (b[0] === 'Care management' || b[0] === 'Provider directory') ? b[2] : name;\n    const year = Math.max(1, i);\n    return { id: 's' + i, index: i, name, short, salesforce: native, year, at: yearAt(year), team: name + ' team' };\n  });\n  const links = [];\n  systems.forEach((s, j) => {\n    const peers = hub ? ['hub'] : systems.slice(0, j).map(x => x.id);\n    if (!hub && j === 0) return;\n    const k = links.filter(l => l.year === s.year).length;\n    peers.forEach((pid, q) => {\n      const order = k + q, stagger = Math.min(0.12, step * 0.55 / Math.max(1, j));\n      links.push({ id: s.id + '-' + pid, a: s.id, b: pid, year: s.year, at: +(s.at + 0.25 + order * stagger).toFixed(3) });\n    });\n  });\n  const pts = c => c * (c - 1) / 2;\n  const cap = hub ? hubName : 'point-to-point';\n  const years = [];\n  for (let y = 1; y <= Y; y++) {\n    const c = y + 1, added = systems.filter(s => s.year === y);\n    const total = links.filter(l => l.year <= y).length, fresh = links.filter(l => l.year === y).length;\n    const names = added.map(s => s.name).join(' and ');\n    let caption;\n    if (y === 1) caption = hub\n      ? 'Year 1: ' + names + ' go live, each connected once to ' + hubName + ': 2 connections (point-to-point would need 1).'\n      : 'Year 1: ' + names + ' go live. One point-to-point link keeps customers and invoices in step.';\n    else caption = hub\n      ? 'Year ' + y + ': ' + names + ' joins with one connection to ' + hubName + '. +1, ' + total + ' in total (point-to-point: ' + pts(c) + ').'\n      : 'Year ' + y + ': ' + names + ' joins and needs a link to each of the ' + (c - 1) + ' existing systems. +' + fresh + ', ' + total + ' in total.';\n    years.push({ year: y, at: yearAt(y), systems: c, added: added.map(s => s.name), p2p: pts(c), hub: c, total, fresh, caption });\n  }\n  const changed = systems[1], changeAt = 9.6, soWhatAt = 11.8, duration = 14;\n  const hit = links.filter(l => l.a === changed.id || l.b === changed.id);\n  const impacted = hit.map((l, i) => ({ link: l.id, at: +(changeAt + 0.1 + i * Math.min(0.14, 1.4 / hit.length)).toFixed(3),\n    team: hub ? (sf ? 'MuleSoft team' : 'Integration team') : systems.find(s => s.id === (l.a === changed.id ? l.b : l.a)).team }));\n  const total = links.length, cnt = impacted.length;\n  const change = { systemId: changed.id, name: changed.name, year: Y + 1, at: changeAt, impacted, count: cnt,\n    p2pImpacted: n - 1, hubImpacted: 1, teams: impacted.map(x => x.team),\n    caption: hub\n      ? 'Year ' + (Y + 1) + ': ' + changed.name + ' retires its v1 API. Only the ' + changed.name + ' adapter in ' + hubName + ' changes: 1 integration, 1 team.'\n      : 'Year ' + (Y + 1) + ': ' + changed.name + ' retires its v1 API. Every system wired to it breaks: ' + cnt + ' integrations, ' + cnt + ' teams doing rework.' };\n  const soWhat = hub\n    ? 'So what: ' + hubName + ' grew by one connection per system (' + n + ', versus ' + pts(n) + ' point-to-point) and kept the API change inside one adapter. The trade-off: the hub is now critical infrastructure to fund, run and govern.'\n    : 'So what: ' + n + ' systems need ' + pts(n) + ' point-to-point integrations, and one API change breaks ' + (n - 1) + '. With a hub it is ' + n + ' connections and 1 fix. Effort grows with the square of the system count.';\n  const summary = hub\n    ? hubName + ': ' + n + ' systems, ' + total + ' connections; one API change touched 1 adapter.'\n    : 'Point-to-point: ' + n + ' systems, ' + total + ' integrations; one API change broke ' + cnt + ' of them.';\n  return {\n    n, architecture: hub ? 'Integration hub' : 'Point-to-point', hub, hubName, salesforceNames: sf, systems, links, years,\n    total, p2pTotal: pts(n), hubTotal: n, change, soWhat, soWhatAt, cap,\n    duration, markers: years.map(y => y.at).concat([changeAt, soWhatAt]), summary\n  };\n}",
+  "checkCode": "function check(p) {\n  const m = model(p), ids = new Set(m.systems.map(s => s.id).concat(m.hub ? ['hub'] : []));\n  const formula = c => m.hub ? c : c * (c - 1) / 2;\n  const yearsOk = m.years.every(y => y.total === formula(y.systems) && m.links.filter(l => l.year <= y.year).length === y.total);\n  const real = m.links.every(l => ids.has(l.a) && ids.has(l.b) && l.a !== l.b);\n  const unique = new Set(m.links.map(l => [l.a, l.b].sort().join('|'))).size === m.links.length;\n  const want = m.hub ? 1 : m.n - 1;\n  const impactOk = m.change.count === want && m.change.p2pImpacted === m.n - 1 && m.change.hubImpacted === 1;\n  return {\n    pass: yearsOk && real && unique && impactOk && m.total === formula(m.n),\n    detail: m.architecture + ' with ' + m.n + ' systems: ' + m.total + ' integrations (formula ' + (m.hub ? 'n = ' : 'n(n-1)/2 = ') + formula(m.n) +\n      '), every year matching its formula; ' + m.change.name + \"'s API change impacts \" + m.change.count + ' (expected ' + want + ', versus ' + (m.hub ? (m.n - 1) + ' point-to-point' : '1 with a hub') + ').'\n  };\n}",
+  "checkDescription": "For every year the number of links equals n(n-1)/2 (point-to-point) or n (hub), every link joins two real systems (or a system and the hub), and the API change impacts n-1 integrations point-to-point versus 1 with a hub.",
+  "expectAtDefaults": "m.architecture === 'Point-to-point' && m.total === 28 && m.change.count === 7 && m.hubTotal === 8",
+  "learnerPrompts": {
+    "predict": "Before you play it: with 8 systems wired point-to-point, how many integrations do you think the company runs, and how many break when Billing changes its API?",
+    "explain": "Switch to Integration hub. Why does the hub need more connections than point-to-point in Year 1, and from which year does it pay off?"
+  }
+}

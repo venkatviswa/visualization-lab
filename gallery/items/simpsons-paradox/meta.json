@@ -1,0 +1,16 @@
+{
+  "slug": "simpsons-paradox",
+  "category": "Data stories",
+  "title": "Simpson’s paradox in win rates",
+  "goal": "Show how a sales team can win more often in every deal size yet have a worse overall win rate: Simpson's paradox. Two teams, two deal sizes (small, large); large deals are harder to win.",
+  "a": {
+    "lib": "d3",
+    "explanation": "An annotated D3 story in four steps: overall win rates, then each team's bar splits into small and large deals, then the mix, then the weighted average. Segment widths show each team's share of deals and heights show win rates, so the overall bar is visibly the width-weighted average of its segments, marked with a dashed line and its formula. D3 makes this custom geometry and step-by-step annotation possible, with every frame computed from the playback time. It takes longer to read than a standard chart, and very thin segments (at extreme mixes) carry less visual weight than their labels.",
+    "caveats": ["Bar widths encode the mix, which some readers will not expect until the 'mix' step", "In the Overall view the bars merge back at the end, leaving the segments as dashed outlines"]
+  },
+  "b": {
+    "lib": "chartjs",
+    "explanation": "A standard Chart.js grouped bar chart: Team A and Team B side by side for small deals, large deals and all deals, with values printed on the bars and deal counts under each group. Playback grows the bars, reveals the deal-size groups and changes the caption at each step. Chart.js gives a clean, familiar chart quickly, and readers can see Team A winning both segments yet losing overall. What it cannot show is why: the mix appears only as tick-label counts, so the weighted-average explanation lives in the text.",
+    "caveats": ["The cause of the paradox (the mix) is shown as numbers, not as a visual", "In the Overall view only the all-deals bars are drawn"]
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "title": "The context window is the model's desk",
+  "objective": "Learners see that everything an AI assistant works with during a long session (instructions, messages, file reads and other tool results) has to fit in a fixed context window; when the next turn would push usage past a threshold, older turns are compacted into a much smaller summary that keeps only the gist of some facts and drops details, while facts saved to a notes file stay exact.",
+  "view": "2D",
+  "recommended": {
+    "library": "p5",
+    "why": "A desk that visibly fills with coloured blocks toward a red limit line, and gets squashed into a summary, makes the limit and compaction feel physical."
+  },
+  "alternative": {
+    "library": "chartjs",
+    "why": "A desk you can see filling up versus a usage chart: which makes compaction intuitive?"
+  },
+  "assumptions": [
+    "Illustrative sizes: a 200k-token limit, 12k tokens of fixed instructions, and seeded per-turn sizes for each message, tool result and reply; real assistants and models differ",
+    "Each turn is one user message, one tool result (a file read or search) and one reply; Small tool results are 1.2k to 4.8k tokens, Large ones 9k to 24k",
+    "Compaction is simplified: when the next turn would push usage past 90% of the limit, all but the 2 most recent turns (plus any earlier summary) are replaced by a summary 12% of their size. Many assistants compact older turns in some similar way",
+    "In a summary, headline facts survive as a gist, some survive as a gist only once, and details are lost; a summary of a summary keeps only headlines",
+    "With notes on, the assistant writes each fact to plan.md when it is mentioned and re-reads that small file after each compaction (300 tokens plus 150 per fact)"
+  ],
+  "units": [
+    "tokens (shown in thousands, k)",
+    "turns: one message, tool result and reply each"
+  ],
+  "params": [
+    {
+      "id": "turns",
+      "label": "Turns",
+      "min": 5,
+      "max": 40,
+      "step": 1,
+      "value": 28,
+      "unit": ""
+    },
+    {
+      "id": "toolSize",
+      "label": "Tool results",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 1,
+      "unit": "",
+      "labels": [
+        "Small",
+        "Large"
+      ]
+    },
+    {
+      "id": "notes",
+      "label": "Save notes to a file",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 0,
+      "unit": "",
+      "labels": [
+        "No",
+        "Yes"
+      ]
+    }
+  ],
+  "modelCode": "function model(p) {\n  // Illustrative working session with an AI assistant. Sizes are made up but deterministic (seeded),\n  // compaction is simplified: many assistants summarise older turns when the context nears its limit.\n  const LIMIT = 200000, THRESH = 0.9 * LIMIT, SYS = 12000, KEEP = 2, FRAC = 0.12;\n  const N = Math.max(5, Math.min(40, Math.round(p.turns)));\n  const large = Math.round(p.toolSize) === 1, notes = Math.round(p.notes) === 1;\n  let s = 20261003;\n  const rnd = () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };\n  const r100 = x => Math.round(x / 100) * 100;\n  const ALL = [];\n  for (let i = 1; i <= 40; i++) {\n    const user = r100(500 + rnd() * 1700), reply = r100(1500 + rnd() * 3500);\n    const small = r100(1200 + rnd() * 3600), big = r100(9000 + rnd() * 15000);\n    ALL.push({ turn: i, user, reply, tool: large ? big : small });\n  }\n  // level 2 = headline (a gist survives every summary), 1 = gist survives one summary, 0 = detail (lost when summarised)\n  const FACTS = [\n    { id: 'org', turn: 1, from: 'you', text: 'Use the staging org, never production', gist: 'Work in a test org', level: 2 },\n    { id: 'reports', turn: 3, from: 'you', text: 'Client wants weekly reports, sent Mondays', gist: 'Client wants regular reports', level: 2 },\n    { id: 'budget', turn: 5, from: 'file', text: 'Budget cap: $40k (from SOW.pdf)', gist: 'There is a budget cap', level: 1 },\n    { id: 'golive', turn: 8, from: 'you', text: 'Go-live date: 14 March', gist: null, level: 0 },\n    { id: 'label', turn: 11, from: 'file', text: 'Keep the field label \"Account Name\"', gist: null, level: 0 },\n    { id: 'approver', turn: 15, from: 'you', text: 'Priya approves every schema change', gist: 'Schema changes need approval', level: 1 },\n    { id: 'optout', turn: 19, from: 'file', text: 'Never email \"Do not contact\" records', gist: 'Respect contact opt-outs', level: 2 },\n    { id: 'region', turn: 25, from: 'you', text: 'Dashboard needs a region filter', gist: null, level: 0 }\n  ];\n  const factAt = t => { const f = FACTS.find(x => x.turn === t); return f ? f.id : null; };\n  const sum = a => a.reduce((x, b) => x + b.total, 0);\n  let live = [], summary = 0, gists = {}, notesBlock = 0, saved = [];\n  const compactions = [], records = [], snaps = [], series = [], events = [];\n  const usedNow = () => SYS + summary + notesBlock + sum(live);\n  const status = () => FACTS.map(f => {\n    if (f.turn > (live.length ? live[live.length - 1].turn : 0) && !gists[f.id]) return 'unsaid';\n    if (saved.includes(f.id)) return 'notes';\n    if (live.some(b => b.fact === f.id)) return 'verbatim';\n    return gists[f.id] !== undefined ? 'gist' : 'lost';\n  });\n  const snap = () => ({ sys: SYS, summary, notes: notesBlock, live: live.map(b => b.turn), used: usedNow(), saved: saved.length, facts: status() });\n  for (let t = 1; t <= N; t++) {\n    const d = ALL[t - 1], b = { turn: t, user: d.user, tool: d.tool, reply: d.reply, total: d.user + d.tool + d.reply, fact: factAt(t) };\n    const before = usedNow(), compacted = before + b.total > THRESH;\n    if (compacted) {\n      const fold = live.slice(0, -KEEP), keep = live.slice(-KEEP);\n      const foldedTurns = sum(fold), oldSummary = summary, oldNotes = notesBlock, folded = foldedTurns + oldSummary;\n      const ng = {};\n      for (const id in gists) if (gists[id] === Infinity) ng[id] = Infinity; // a gist of a gist only keeps headlines\n      fold.forEach(x => { const f = FACTS.find(y => y.id === x.fact); if (f && f.level > 0) ng[f.id] = f.level === 2 ? Infinity : 0; });\n      gists = ng; summary = Math.round(FRAC * folded); live = keep;\n      notesBlock = notes && saved.length ? 300 + 150 * saved.length : 0; // plan.md is re-read after compacting\n      const after = usedNow();\n      compactions.push({ n: compactions.length + 1, turn: t, before, foldedFrom: fold[0].turn, foldedTo: fold[fold.length - 1].turn, foldedTurns, oldSummary, oldNotes, summary, notesBlock, after, kept: keep.map(x => x.turn) });\n      events.push({ type: 'compact', turn: t, units: 4 });\n      snaps.push(snap());\n    }\n    live.push(b);\n    if (notes && b.fact) saved.push(b.fact);\n    records.push({ turn: t, before, size: b.total, compacted, after: usedNow() });\n    events.push({ type: 'turn', turn: t, units: 1 });\n    snaps.push(snap());\n    series.push({ turn: t, sys: SYS, summary, notes: notesBlock, user: live.reduce((a, x) => a + x.user, 0), tool: live.reduce((a, x) => a + x.tool, 0), reply: live.reduce((a, x) => a + x.reply, 0), compacted });\n  }\n  const totalUnits = events.reduce((a, e) => a + e.units, 0), u = 12 / totalUnits;\n  let acc = 0;\n  events.forEach((e, i) => { e.start = +(0.4 + acc * u).toFixed(3); e.dur = +(e.units * u).toFixed(3); e.snap = i; acc += e.units; });\n  const fin = status();\n  const facts = FACTS.map((f, i) => Object.assign({}, f, { status: fin[i] }));\n  const count = k => fin.filter(x => x === k).length;\n  const factCounts = { verbatim: count('verbatim') + count('notes'), notes: count('notes'), gist: count('gist'), lost: count('lost'), unsaid: count('unsaid') };\n  const said = FACTS.length - factCounts.unsaid, k = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');\n  const summaryText = k(N, 'turn') + ', ' + (compactions.length ? k(compactions.length, 'compaction') : 'no compaction') + ': ' +\n    (notes ? 'all ' + said + ' facts kept exact in plan.md' : factCounts.verbatim + ' of ' + said + ' facts kept word for word, ' + factCounts.gist + ' only as a gist, ' + factCounts.lost + ' lost') + '.';\n  const last = records[records.length - 1];\n  const markers = events.filter(e => e.type === 'compact').map(e => e.start).concat([12.4]);\n  return {\n    limit: LIMIT, threshold: THRESH, sysTokens: SYS, keepRecent: KEEP, summaryFraction: FRAC, turnsN: N, large, notesOn: notes,\n    turns: ALL.slice(0, N).map(d => ({ turn: d.turn, user: d.user, tool: d.tool, reply: d.reply, total: d.user + d.tool + d.reply, fact: factAt(d.turn) })),\n    compactions, records, snaps, series, events, facts, factCounts,\n    notesFile: notes ? facts.filter(f => f.turn <= N).map(f => ({ id: f.id, turn: f.turn, text: f.text })) : null,\n    finalUsed: last.after, peakUsed: Math.max(...records.map(r => Math.max(r.before, r.after))),\n    duration: 13, markers, summary: summaryText\n  };\n}",
+  "checkCode": "function check(p) {\n  const m = model(p), R = m.records, C = m.compactions;\n  // 1. The desk never overflows: usage stays at or below the limit after every turn.\n  const peakOk = m.peakUsed <= m.limit && R.every(r => r.after <= m.limit);\n  // 2. Compaction happens exactly when adding the next turn would cross the threshold, and only then.\n  const timingOk = R.every(r => r.compacted === (r.before + r.size > m.threshold)) && C.length === R.filter(r => r.compacted).length;\n  // 3. Token accounting adds up after each compaction.\n  const turnTok = t => m.turns[t - 1].total;\n  const acctOk = C.every(c => {\n    let folded = 0; for (let t = c.foldedFrom; t <= c.foldedTo; t++) folded += turnTok(t);\n    const kept = c.kept.reduce((a, t) => a + turnTok(t), 0);\n    return folded === c.foldedTurns && c.summary === Math.round(m.summaryFraction * (c.foldedTurns + c.oldSummary)) &&\n      c.after === c.before - c.foldedTurns - c.oldSummary - c.oldNotes + c.summary + c.notesBlock &&\n      c.after === m.sysTokens + c.summary + c.notesBlock + kept && c.after + turnTok(c.turn) <= m.threshold;\n  });\n  // 4. With notes on, no fact that was mentioned is lost or reduced to a gist.\n  const said = m.facts.filter(f => f.status !== 'unsaid');\n  const notesOk = !m.notesOn || said.every(f => f.status === 'notes');\n  const c0 = C[0];\n  return {\n    pass: peakOk && timingOk && acctOk && notesOk,\n    detail: (c0 ? C.length + ' compaction' + (C.length > 1 ? 's' : '') + ', the first at turn ' + c0.turn + ' (' + Math.round(c0.before / 1000) + 'k + ' + Math.round(turnTok(c0.turn) / 1000) + 'k would cross the ' + Math.round(m.threshold / 1000) + 'k threshold): ' + Math.round((c0.foldedTurns + c0.oldSummary) / 1000) + 'k folded into a summary of ' + Math.round(c0.summary / 1000) + 'k, leaving ' + Math.round(c0.after / 1000) + 'k'\n      : 'No compaction needed: ' + m.turnsN + ' turns peak at ' + Math.round(m.peakUsed / 1000) + 'k, under the ' + Math.round(m.threshold / 1000) + 'k threshold') +\n      '; peak ' + Math.round(m.peakUsed / 1000) + 'k of ' + m.limit / 1000 + 'k; ' +\n      (m.notesOn ? 'notes on, all ' + said.length + ' mentioned facts kept exact in plan.md.' : 'notes off, ' + m.factCounts.lost + ' of ' + said.length + ' mentioned facts lost.')\n  };\n}",
+  "checkDescription": "Usage never exceeds the limit, compaction happens exactly when the next turn would cross the 90% threshold, the tokens before and after each compaction add up (folded turns out, a 12% summary in), and with notes on no mentioned fact is lost or reduced to a gist.",
+  "expectAtDefaults": "m.compactions.length >= 2 && m.peakUsed <= m.limit && m.factCounts.lost > 0 && m.factCounts.gist > 0",
+  "learnerPrompts": {
+    "predict": "Before you play it: after 28 turns with large file reads, which of the eight facts do you expect the assistant still knows word for word?",
+    "explain": "Switch Save notes to a file to Yes. Why does a tiny plan.md protect every fact, while a summary many times its size still loses the go-live date?"
+  }
+}

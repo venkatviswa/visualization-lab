@@ -1,0 +1,62 @@
+{
+  "title": "Why a support backlog explodes",
+  "objective": "Learners see that a queue grows whenever tickets arrive faster than agents resolve them, that leftover backlog carries into the next day, and that one extra agent can flip a backlog that never clears into one that clears every night.",
+  "view": "2D",
+  "recommended": {
+    "library": "p5",
+    "why": "An animated queue makes tickets, waiting lines and busy agents tangible, so learners feel the backlog pile up hour by hour."
+  },
+  "alternative": {
+    "library": "chartjs",
+    "why": "Seeing the queue versus reading the trend: which explains why small changes matter?"
+  },
+  "assumptions": [
+    "A deterministic, illustrative model, not real support data: arrivals follow the same daily shape every day, scaled to the peak rate and a small weekday factor",
+    "Agents work every hour of the day at a steady pace (no breaks, shifts or absences)",
+    "Capacity per hour = agents × 60 ÷ handle time in minutes; every ticket takes the same handle time",
+    "The week runs Monday 00:00 to Friday 24:00 and starts with an empty queue",
+    "Backlog is counted at the end of each hour: backlog = max(0, previous backlog + arrivals − capacity)"
+  ],
+  "units": [
+    "arrivals and capacity: tickets per hour",
+    "backlog: tickets waiting",
+    "handle time: minutes per ticket"
+  ],
+  "params": [
+    {
+      "id": "agents",
+      "label": "Agents",
+      "min": 3,
+      "max": 8,
+      "step": 1,
+      "value": 5,
+      "unit": ""
+    },
+    {
+      "id": "peakPerHour",
+      "label": "Tickets per hour",
+      "min": 20,
+      "max": 80,
+      "step": 2,
+      "value": 54,
+      "unit": "/h peak"
+    },
+    {
+      "id": "handleMin",
+      "label": "Handle time",
+      "min": 6,
+      "max": 20,
+      "step": 1,
+      "value": 12,
+      "unit": "min"
+    }
+  ],
+  "modelCode": "function model(p) {\n  // Deterministic hourly support queue, Monday 00:00 to Friday 24:00 (120 hours), starting empty.\n  // Arrivals follow a fixed daily shape scaled to the peak rate; agents work every hour (simplification).\n  // Capacity = agents × 60 / handle minutes. backlog(t) = max(0, backlog(t−1) + arrivals(t) − capacity).\n  const SHAPE = [0.12, 0.10, 0.08, 0.08, 0.10, 0.15, 0.25, 0.45, 0.70, 0.90, 1.00, 1.00, 0.95, 0.95, 1.00, 0.90, 0.75, 0.60, 0.45, 0.35, 0.28, 0.22, 0.18, 0.15];\n  const DAY = [1.0, 0.98, 0.97, 0.99, 0.95], DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];\n  const agents = Math.round(p.agents), peak = p.peakPerHour, handle = p.handleMin;\n  const hours = [];\n  for (let d = 0; d < 5; d++) for (let h = 0; h < 24; h++) hours.push({ i: d * 24 + h, day: DAYS[d], d, h, arrivals: Math.round(peak * SHAPE[h] * DAY[d]) });\n  const run = a => {\n    const capacity = a * 60 / handle, backlog = [];\n    let b = 0, peakB = 0, peakAt = 0, resolved = 0;\n    hours.forEach(x => { const nb = Math.max(0, b + x.arrivals - capacity); resolved += b + x.arrivals - nb; b = nb; backlog.push(b); if (b > peakB) { peakB = b; peakAt = x.i; } });\n    const morning = [1, 2, 3, 4].map(d => backlog[d * 24 + 6]); // waiting at 07:00 Tue–Fri (end of hour 06)\n    return { agents: a, capacity, backlog, peak: peakB, peakAt, end: backlog[119], morning, resolved,\n      clearsNightly: morning.every(v => v === 0) };\n  };\n  const base = run(agents), plus = run(agents + 1);\n  const totalArrivals = hours.reduce((s, x) => s + x.arrivals, 0);\n  const util = totalArrivals / (base.capacity * 120);\n  const duration = 12, perHour = duration / 120;\n  const markers = [0, 2.4, 4.8, 7.2, 9.6].concat(base.peak > 0 ? [+((base.peakAt + 1) * perHour).toFixed(2)] : []).filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b);\n  const when = i => hours[i].day + ' ' + String(hours[i].h + 1).padStart(2, '0') + ':00';\n  const r = v => Math.round(v);\n  const summary = base.peak === 0\n    ? agents + ' agents (' + +base.capacity.toFixed(1) + ' tickets/h) keep up all week: the backlog never builds.'\n    : agents + ' agents' + (base.clearsNightly ? ' clear the backlog every night (peak ' + r(base.peak) + ')' : ' never catch up: ' + r(base.morning[3]) + ' tickets still wait at 07:00 Friday, peak ' + r(base.peak)) +\n      '; with ' + (agents + 1) + (plus.peak === 0 ? ' it never builds.' : ' the peak is ' + r(plus.peak) + (plus.clearsNightly ? ' and it clears every night.' : ' and it still carries over.'));\n  return { hours, base, plus, agents, handle, peakRate: peak, totalArrivals, util, duration, perHour, markers, summary,\n    peakWhen: when(base.peakAt), maxArrivals: Math.max(...hours.map(x => x.arrivals)) };\n}",
+  "checkCode": "function check(p) {\n  const m = model(p);\n  const verify = run => {\n    const cap = run.agents * 60 / p.handleMin;\n    let prev = 0, ok = Math.abs(run.capacity - cap) < 1e-9, mx = 0, at = 0;\n    m.hours.forEach((x, i) => {\n      const want = Math.max(0, prev + x.arrivals - cap);\n      if (Math.abs(run.backlog[i] - want) > 1e-9) ok = false;\n      if (want > mx) { mx = want; at = i; }\n      prev = want;\n    });\n    return ok && Math.abs(run.peak - mx) < 1e-9 && run.peakAt === at;\n  };\n  const okBase = verify(m.base), okPlus = verify(m.plus);\n  return { pass: okBase && okPlus,\n    detail: 'At every one of 120 hours backlog = max(0, previous + arrivals − ' + m.base.capacity.toFixed(1) + '/h); the reported peak of ' + Math.round(m.base.peak) +\n      ' tickets' + (m.base.peak > 0 ? ' (' + m.peakWhen + ')' : '') + ' matches, and with ' + (m.agents + 1) + ' agents (' + m.plus.capacity.toFixed(1) + '/h) the peak is ' + Math.round(m.plus.peak) + '.' };\n}",
+  "checkDescription": "At every hour the backlog equals max(0, previous backlog + arrivals − capacity), for both the chosen staffing and one more agent, and the reported peak and its hour match the series.",
+  "expectAtDefaults": "!m.base.clearsNightly && m.base.morning[3] > 0 && m.plus.clearsNightly && m.base.peak > 1.4 * m.plus.peak",
+  "learnerPrompts": {
+    "predict": "Five agents handle 25 tickets an hour and the busiest hour brings 54. Will the queue be empty again by Tuesday morning?",
+    "explain": "Add one agent. The capacity only rises by 5 tickets an hour, so why does the end-of-week backlog change so much?"
+  }
+}

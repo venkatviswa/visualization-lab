@@ -1,0 +1,74 @@
+{
+  "title": "How a model learns: nudging two dials",
+  "objective": "Learners see that training means repeatedly measuring the error and nudging each dial a little in the direction that shrinks it (gradient descent), that a well-chosen learning rate settles on the least-squares line once the error stops falling, and that a learning rate that is too big overshoots and makes the error explode.",
+  "view": "2D",
+  "recommended": {
+    "library": "p5",
+    "why": "Watching the line, its red error gaps and the two dials move step by step makes 'nudge the dials to shrink the error' something learners can see happen."
+  },
+  "alternative": {
+    "library": "chartjs",
+    "why": "Watching the line move versus reading the loss curve: which explains learning better?"
+  },
+  "assumptions": [
+    "Illustrative data: 20 weeks of seeded synthetic numbers, tickets = 60 + 22 × customers (thousands) plus noise, not real support data",
+    "The model is a straight line with two dials: slope (extra tickets per 1,000 customers) and intercept (tickets at zero customers)",
+    "Full-batch gradient descent on mean squared error; the customer count is standardized (mean 0, spread 1) before training so the learning rates behave the same in any units",
+    "Learning rates: Too small 0.001, Just right 0.2, Too big 1.02 (on the standardized scale, anything above 1 diverges)",
+    "Starting dials: Flat line = slope 0, intercept 120 tickets; Steep line = slope 48, intercept -80 tickets",
+    "Playback gives early steps more time than later ones (time grows with the square root of the step number)"
+  ],
+  "units": [
+    "x: active customers (thousands)",
+    "y: weekly support tickets",
+    "slope: tickets per 1,000 customers",
+    "intercept: tickets",
+    "error (loss): mean squared error, tickets²"
+  ],
+  "params": [
+    {
+      "id": "rate",
+      "label": "Learning rate",
+      "min": 0,
+      "max": 2,
+      "step": 1,
+      "value": 1,
+      "unit": "",
+      "labels": [
+        "Too small",
+        "Just right",
+        "Too big"
+      ]
+    },
+    {
+      "id": "steps",
+      "label": "Steps",
+      "min": 10,
+      "max": 200,
+      "step": 10,
+      "value": 80,
+      "unit": ""
+    },
+    {
+      "id": "start",
+      "label": "Starting dials",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 0,
+      "unit": "",
+      "labels": [
+        "Flat line",
+        "Steep line"
+      ]
+    }
+  ],
+  "modelCode": "function model(p) {\n  // Illustrative, seeded synthetic data: 20 weeks of active customers (thousands) vs weekly support tickets.\n  // A line with two dials (slope, intercept) is trained by full-batch gradient descent on mean squared error.\n  // The dials are trained on a standardized customer count z = (x - mean) / sd, so learning rates behave the same\n  // whatever the units; slope and intercept are converted back to real units for display.\n  let s = 20261003 >>> 0;\n  const rnd = () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };\n  const n = 20, points = [];\n  for (let i = 0; i < n; i++) {\n    const x = +(2 + 18 * (i + 0.15 + 0.7 * rnd()) / n).toFixed(1);\n    const noise = 46 * (rnd() + rnd() + rnd() - 1.5);\n    points.push({ x, y: Math.round(60 + 22 * x + noise) });\n  }\n  const mx = points.reduce((a, q) => a + q.x, 0) / n, my = points.reduce((a, q) => a + q.y, 0) / n;\n  const sx = Math.sqrt(points.reduce((a, q) => a + (q.x - mx) ** 2, 0) / n);\n  const z = points.map(q => (q.x - mx) / sx);\n  const lossAt = (w, b) => points.reduce((a, q, i) => a + (w * z[i] + b - q.y) ** 2, 0) / n;\n  const toReal = (w, b) => ({ slope: w / sx, intercept: b - w * mx / sx });\n  // Closed-form least squares (normal equations) for comparison\n  const lsSlope = points.reduce((a, q) => a + (q.x - mx) * (q.y - my), 0) / points.reduce((a, q) => a + (q.x - mx) ** 2, 0);\n  const ls = { slope: lsSlope, intercept: my - lsSlope * mx, loss: lossAt(lsSlope * sx, my) };\n  const RATES = [0.001, 0.2, 1.02], RATE_NAMES = ['Too small', 'Just right', 'Too big'];\n  const ri = Math.max(0, Math.min(2, Math.round(p.rate))), lr = RATES[ri];\n  const steps = Math.max(1, Math.round(p.steps));\n  const STARTS = [{ name: 'Flat line', slope: 0, intercept: 120 }, { name: 'Steep line', slope: 48, intercept: -80 }];\n  const start = STARTS[Math.max(0, Math.min(1, Math.round(p.start)))];\n  let w = start.slope * sx, b = start.intercept + start.slope * mx;\n  const history = [];\n  for (let k = 0; k <= steps; k++) {\n    let gw = 0, gb = 0;\n    points.forEach((q, i) => { const r = w * z[i] + b - q.y; gw += 2 * r * z[i] / n; gb += 2 * r / n; });\n    const real = toReal(w, b);\n    history.push({ step: k, w, b, slope: real.slope, intercept: real.intercept, loss: lossAt(w, b), gw, gb });\n    w -= lr * gw; b -= lr * gb;\n  }\n  const L = history.map(h => h.loss), first = L[0], last = L[steps];\n  // \"Stops falling\": first step after which the loss improves by less than 0.1% per step\n  let stallStep = null;\n  for (let k = 1; k <= steps; k++) if ((L[k - 1] - L[k]) / L[k - 1] < 0.001 && L[k] <= L[k - 1]) { stallStep = k; break; }\n  const grew = last > first;\n  const outcome = grew ? 'diverged' : (last - ls.loss) / ls.loss < 0.01 ? 'converged' : 'slow';\n  // Playback: hold the start, then step through; early steps get more time (time grows with sqrt of step)\n  const duration = +Math.min(14, Math.max(6, 5 + steps * 0.045)).toFixed(2), lead = 0.6, tail = 0.8, span = duration - lead - tail;\n  const timeOf = k => +(lead + span * Math.sqrt(k / steps)).toFixed(3);\n  const ms = [1, 3, 10, 30, 100].filter(k => k < steps);\n  if (stallStep && outcome === 'converged') ms.push(stallStep);\n  ms.push(steps);\n  const markerSteps = [...new Set(ms)].sort((a, b) => a - b);\n  const fin = history[steps], f1 = v => v.toFixed(1), f0 = v => Math.round(v).toLocaleString('en-US');\n  const big = v => v >= 1e9 ? +(v / 1e9).toPrecision(3) + ' billion' : v >= 1e6 ? +(v / 1e6).toPrecision(3) + ' million' : v >= 100 ? f0(v) : f1(v);\n  const summary = outcome === 'converged'\n    ? 'Converged: slope ' + f1(fin.slope) + ', intercept ' + f0(fin.intercept) + ' matches least squares; ' + (stallStep ? 'the error stopped falling around step ' + stallStep + '.' : 'the error is within ' + ((last / ls.loss - 1) * 100).toFixed(1) + '% of the best possible.')\n    : outcome === 'slow'\n      ? 'Too small: after ' + steps + ' steps the error is ' + (last / ls.loss).toFixed(1) + '× the best possible; the line is only creeping towards the data.'\n      : 'Too big: every nudge overshoots, the line flips side to side and the error grows ' + big(last / first) + '×.';\n  const yMax = Math.ceil(Math.max(...points.map(q => q.y)) * 1.15 / 100) * 100;\n  return {\n    points, n, meanX: mx, meanY: my, sdX: sx, ls, lr, rateName: RATE_NAMES[ri], start: start.name, steps, history,\n    firstLoss: first, finalLoss: last, growth: last / first, stallStep, outcome, summary,\n    xDomain: [0, 22], yDomain: [0, yMax], slopeRange: [-20, 60], interceptRange: [-300, 300],\n    timing: { lead, span, tail }, duration, markerSteps, markers: markerSteps.map(timeOf)\n  };\n}",
+  "checkCode": "function check(p) {\n  const m = model(p), H = m.history, pts = m.points, n = pts.length;\n  // 1. The recorded gradient equals the analytic gradient (central finite differences of the MSE) at every step,\n  //    and each step moves the dials by exactly -learning rate x gradient.\n  const z = pts.map(q => (q.x - m.meanX) / m.sdX);\n  const loss = (w, b) => pts.reduce((a, q, i) => a + (w * z[i] + b - q.y) ** 2, 0) / n;\n  let gradErr = 0, stepErr = 0;\n  H.forEach((h, k) => {\n    const hw = 1e-3 * (1 + Math.abs(h.w)), hb = 1e-3 * (1 + Math.abs(h.b));\n    const nw = (loss(h.w + hw, h.b) - loss(h.w - hw, h.b)) / (2 * hw), nb = (loss(h.w, h.b + hb) - loss(h.w, h.b - hb)) / (2 * hb);\n    const sc = 1 + Math.abs(nw) + Math.abs(nb);\n    gradErr = Math.max(gradErr, Math.abs(h.gw - nw) / sc, Math.abs(h.gb - nb) / sc);\n    if (k > 0) { const g = H[k - 1]; stepErr = Math.max(stepErr, Math.abs(h.w - (g.w - m.lr * g.gw)) / (1 + Math.abs(h.w)), Math.abs(h.b - (g.b - m.lr * g.gb)) / (1 + Math.abs(h.b))); }\n  });\n  const gradOk = gradErr < 1e-6 && stepErr < 1e-9;\n  const L = H.map(h => h.loss), last = H[H.length - 1];\n  const nonInc = L.every((v, k) => k === 0 || v <= L[k - 1] * (1 + 1e-12));\n  // Largest vertical gap between the trained line and the least-squares line over the plotted range\n  const gap = Math.max(...m.xDomain.map(x => Math.abs(last.slope * x + last.intercept - (m.ls.slope * x + m.ls.intercept))));\n  const gtxt = ' Gradient matches finite differences at all ' + H.length + ' recorded steps (max rel. error ' + gradErr.toExponential(0) + ').';\n  if (m.rateName === 'Just right') {\n    const ok = gradOk && nonInc && gap < 5;\n    return { pass: ok, detail: 'Learning rate ' + m.lr + ': the error falls at every step (' + Math.round(L[0]) + ' to ' + Math.round(last.loss) + ' tickets², least squares ' + Math.round(m.ls.loss) + ') and the final line is within ' + gap.toFixed(2) + ' tickets of the least-squares line.' + gtxt };\n  }\n  if (m.rateName === 'Too small') {\n    const ok = gradOk && nonInc && last.loss > 1.5 * m.ls.loss;\n    return { pass: ok, detail: 'Learning rate ' + m.lr + ': the error falls at every step but only from ' + Math.round(L[0]) + ' to ' + Math.round(last.loss) + ' tickets² (least squares ' + Math.round(m.ls.loss) + '), so after ' + m.steps + ' steps the line is still up to ' + Math.round(gap) + ' tickets off.' + gtxt };\n  }\n  const grows = L.every((v, k) => k === 0 || v > L[k - 1]);\n  const flips = H.every((h, k) => k === 0 || Math.sign(h.slope - m.ls.slope) !== Math.sign(H[k - 1].slope - m.ls.slope));\n  return { pass: gradOk && grows && flips, detail: 'Learning rate ' + m.lr + ': it oscillates and diverges, the slope jumping to the other side of the best fit at every step while the error grows at every step from ' + Math.round(L[0]).toLocaleString('en-US') + ' to ' + (last.loss >= 1e9 ? +(last.loss / 1e9).toPrecision(3) + ' billion' : last.loss >= 1e6 ? +(last.loss / 1e6).toPrecision(3) + ' million' : Math.round(last.loss).toLocaleString('en-US')) + ' tickets².' + gtxt };\n}",
+  "checkDescription": "At every recorded step the stored gradient equals the analytic gradient of the mean squared error (central finite differences) and each step moves the dials by exactly minus learning rate times gradient. With Just right the error never rises and the final line is within 5 tickets of the closed-form least-squares line; with Too small the error falls every step but stays well above the minimum; with Too big the error grows every step while the slope jumps to the other side of the best fit (oscillating divergence).",
+  "expectAtDefaults": "m.outcome === 'converged' && m.history.length === 81 && m.stallStep !== null && Math.abs(m.history[80].slope - m.ls.slope) < 0.01",
+  "learnerPrompts": {
+    "predict": "Before you press play: if the model takes bigger nudges, will it find the best line faster, slower, or not at all?",
+    "explain": "Switch the learning rate to Too big. Why does a bigger nudge make the error grow instead of shrink?"
+  }
+}

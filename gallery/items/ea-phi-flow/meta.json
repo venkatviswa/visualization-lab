@@ -1,0 +1,16 @@
+{
+  "slug": "ea-phi-flow",
+  "category": "Enterprise architecture",
+  "title": "Where does PHI travel?",
+  "goal": "Tell the story of a new analytics use case that wants claims data. Follow the data hop by hop from the claims system to a dashboard and an outside care-management vendor, and show which safeguards (minimum necessary filtering, de-identification, a consent and BAA check) stop protected health information from going where it isn't needed.",
+  "a": {
+    "lib": "story",
+    "explanation": "A product owner asks for a readmission risk dashboard, then a card holding three claim records slides in at each hop while a station track along the top fills in. Each field chip shows what happens to it at that hop: cut by the filter, swapped for a token, age band or region, turned red when it is present but not needed, or locked when the vendor gate stops the opted-out member. A running exposure score and per-station badges add up as you go, and the last scene breaks the score down by hop with the so-what for architects. GSAP's paused timeline makes the chip-by-chip choreography easy to scrub, and Lucide icons make the hops and checkpoints readable at a glance. The cost: you only see one hop at a time, so comparing hops means scrubbing back and forth.",
+    "caveats": ["The three records share one card until the vendor gate, so differences between members appear only at the last hop", "On a phone the panel is tight, so the vendor hop drops the per-record breakdown line"]
+  },
+  "b": {
+    "lib": "svg",
+    "explanation": "A hand-built SVG matrix puts the hops in columns and the seven fields in rows. The vendor gets two columns, one for the consented records and one for the opted-out record. As playback advances, each column fills top to bottom: fields arrive, then get marked dropped, tokenised or blocked at the checkpoint, then needed or exposed, with a weighted exposure total under each column. Every cell's state is worked out directly from the playback time, so scrubbing is exact and the whole flow can be audited in one view, which is the format a privacy officer or design authority expects. It is less of a story than version A: there are no people or moving parts, and on a phone the cells shrink to symbols explained by a legend.",
+    "caveats": ["On phones, column headers are rotated and cells show short codes (cut, tok, age, reg, stop)", "The fan-out from the data platform is shown only by a thin bracket above the headers"]
+  }
+}

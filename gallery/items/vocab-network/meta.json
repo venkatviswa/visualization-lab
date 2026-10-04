@@ -1,0 +1,22 @@
+{
+  "slug": "vocab-network",
+  "category": "Vocabulary",
+  "title": "Data governance terms and how they connect",
+  "goal": "Introduce 14 data governance terms and show how they connect, so new team members see which roles, processes and safeguards depend on each other.",
+  "a": {
+    "lib": "d3",
+    "explanation": "A network map: every term is a pill coloured by theme (People, Processes, Safeguards), and every link is an arrow that reads as a sentence, such as \"Classification drives Access control\". Term positions are hand-tuned fractions of the map area, so the map is identical on every load and only one pair of links crosses; D3 draws and redraws the pills, arrows and labels from the model at each seek. Playback reveals the terms theme by theme with their definitions in a side panel, then the links one by one, then dims everything except the focus term and its direct neighbours and shows the focus term's definition and links as sentences. Its weakness is that the map shows structure better than meaning: definitions live in the panel, and on a phone the map is small.",
+    "caveats": [
+      "On a phone, link labels on short arrows sit close to the arrowheads, and the panel shows only the latest term's definition during the reveal.",
+      "Hover tooltips with definitions are not available on touch screens."
+    ]
+  },
+  "b": {
+    "lib": "svg",
+    "explanation": "A tidy glossary: one card per term, grouped under People, Processes and Safeguards, each with its definition and \"related terms\" chips built from the same links. With link labels on, a chip reads as half a sentence, such as \"maintains Data catalog\" or \"Data owner appoints\". Playback fills in the cards theme by theme, then the chips link by link, and at the focus step the focus card turns orange and its related cards keep a coloured border while everything else fades. Plain SVG keeps every word crisp and readable, but learners must assemble the relationships from the chips, because no lines show the overall shape of the system.",
+    "caveats": [
+      "On a phone the cards stack in one scrolling column; playback scrolls to the focus card, so related cards in other themes can be off screen.",
+      "On wide screens the larger theme takes two columns, which can read as two separate groups."
+    ]
+  }
+}

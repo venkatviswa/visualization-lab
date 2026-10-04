@@ -1,0 +1,89 @@
+{
+  "title": "Where does PHI travel?",
+  "objective": "Learners follow claims data hop by hop from the claims system to analytics and an outside care-management vendor, and see which safeguards keep protected health information away from hops that do not need it.",
+  "view": "2D",
+  "recommended": {
+    "library": "story",
+    "why": "A record card travelling hop by hop makes the flow concrete: unneeded fields light up red, get cut or tokenised at checkpoints, and the opted-out member is stopped at the vendor gate."
+  },
+  "alternative": {
+    "library": "svg",
+    "why": "A travelling record versus the data-flow matrix: which would you show a privacy officer?"
+  },
+  "assumptions": [
+    "Illustrative teaching example, not legal or compliance advice; which fields each hop needs is a simplified judgement",
+    "The HIPAA minimum necessary principle in plain words: use or share only the protected health information a task actually needs (the real rule has exceptions, for example for treatment)",
+    "A field exposure is a raw field present at a hop whose purpose does not need it; the score counts one per field, hop and member record",
+    "Three fictional members travel together; Member 3 has opted out of care-management outreach, and the vendor has a signed business associate agreement (BAA)",
+    "The sandbox, dashboard and vendor export each receive data from the data platform",
+    "Without de-identification, filtering has to keep member ID, date of birth and address on the analytics path, because they are the only source of a member key, age band and region; they still count as exposures",
+    "De-identification replaces name and member ID with a token, date of birth with an age band and address with a region; these derived values are not counted as exposures",
+    "Salesforce names show where each hop could live; they are not a reference architecture. Times are playback seconds"
+  ],
+  "units": [
+    "exposure score: count of field exposures (field x hop x member record)",
+    "time: playback seconds"
+  ],
+  "params": [
+    {
+      "id": "minNecessary",
+      "label": "Minimum necessary filtering",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 0,
+      "unit": "",
+      "labels": [
+        "Off",
+        "On"
+      ]
+    },
+    {
+      "id": "deidentify",
+      "label": "De-identification for analytics",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 0,
+      "unit": "",
+      "labels": [
+        "Off",
+        "On"
+      ]
+    },
+    {
+      "id": "consentCheck",
+      "label": "Consent and BAA check",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 0,
+      "unit": "",
+      "labels": [
+        "Off",
+        "On"
+      ]
+    },
+    {
+      "id": "systemNames",
+      "label": "System names",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 0,
+      "unit": "",
+      "labels": [
+        "Generic",
+        "Salesforce"
+      ]
+    }
+  ],
+  "modelCode": "function model(p) {\n  // Illustrative PHI flow for a readmission-risk use case. Three fictional members travel from the claims system\n  // to analytics and an outside care-management vendor. A field exposure is a raw field present at a hop whose\n  // purpose does not need it. Times are playback seconds for the explainer.\n  const on = k => Math.round(p[k]) === 1;\n  const SF = on('systemNames');\n  const FIELDS = [\n    { id: 'name', label: 'Member name', short: 'Name' }, { id: 'mid', label: 'Member ID', short: 'ID' },\n    { id: 'dob', label: 'Date of birth', short: 'DOB' }, { id: 'addr', label: 'Address', short: 'Address' },\n    { id: 'dx', label: 'Diagnosis codes', short: 'Diagnosis' }, { id: 'amt', label: 'Claim amount', short: 'Amount' },\n    { id: 'prov', label: 'Provider', short: 'Provider' }\n  ];\n  const DEID = { name: 'token', mid: 'token', dob: 'age band', addr: 'region' };\n  const MEMBERS = [\n    { id: 1, name: 'Member 1', optedOut: false, token: '#7F3A', band: '65-69', region: 'North' },\n    { id: 2, name: 'Member 2', optedOut: false, token: '#C21D', band: '70-74', region: 'Coast' },\n    { id: 3, name: 'Member 3', optedOut: true, token: '#09BE', band: '60-64', region: 'Valley' }\n  ];\n  const ALL = FIELDS.map(f => f.id), UP = ['mid', 'dob', 'addr', 'dx', 'amt', 'prov'];\n  // needs: raw fields the purpose uses; sources: raw fields kept only to derive a key, age band or region when not de-identified\n  const HOPS = [\n    { id: 'claims', g: 'Claims system', s: 'Health Cloud claims', gs: 'Claims', ss: 'Health Cloud', icon: 'file-text', from: -1,\n      purpose: 'Adjudicate and pay the claim', needs: ALL, sources: [], role: 'the claims system' },\n    { id: 'integration', g: 'Integration layer', s: 'MuleSoft', gs: 'Integration', ss: 'MuleSoft', icon: 'git-merge', from: 0,\n      purpose: 'Carry claims to the data platform', needs: UP, sources: [], role: 'the integration layer' },\n    { id: 'platform', g: 'Data platform', s: 'Data Cloud', gs: 'Platform', ss: 'Data Cloud', icon: 'database', from: 1,\n      purpose: 'Unify claims for analytics and outreach', needs: UP, sources: [], role: 'the data platform' },\n    { id: 'sandbox', g: 'Data science sandbox', s: 'Data science sandbox', gs: 'Sandbox', ss: 'Sandbox', icon: 'flask-conical', from: 2,\n      purpose: 'Train the readmission risk model', needs: ['dx', 'amt', 'prov'], sources: ['mid', 'dob', 'addr'], analytics: true,\n      derived: 'a member key, age band and region', role: 'the sandbox' },\n    { id: 'dashboard', g: 'Analytics dashboard', s: 'CRM Analytics / Tableau', gs: 'Dashboard', ss: 'Tableau', icon: 'chart-column', from: 2,\n      purpose: 'Show readmission risk by age band, region, diagnosis and provider', needs: ['dx', 'prov'], sources: ['dob', 'addr'], analytics: true,\n      derived: 'an age band and region', role: 'the dashboard' },\n    { id: 'vendor', g: 'Care-management vendor', s: 'Care-management vendor', gs: 'Vendor', ss: 'Vendor', icon: 'building-2', from: 2,\n      purpose: 'Reach out to high-risk members under a business associate agreement', needs: ['mid', 'dx'], sources: [], gate: true, role: 'the vendor export' }\n  ];\n  function run(filt, deid, consent) {\n    const hops = HOPS.map(h => ({ id: h.id, generic: h.g, label: SF ? h.s : h.g, short: SF ? h.ss : h.gs, icon: h.icon, purpose: h.purpose, from: h.from,\n      analytics: !!h.analytics, gate: !!h.gate, derived: h.derived || '', role: h.role, needs: h.needs.join(' ') }));\n    HOPS.forEach((h, i) => {\n      hops[i].records = MEMBERS.map((mb, k) => {\n        const up = h.from < 0 ? null : hops[h.from].records[k];\n        const blocked = !!h.gate && consent && mb.optedOut;\n        const need = h.gate && mb.optedOut ? [] : h.needs;   // no consent: outreach has no purpose for this member\n        const cells = {};\n        let exposures = 0;\n        for (const f of ALL) {\n          const c = { present: false, needed: need.includes(f), exposed: false, action: 'none', as: '' };\n          if (up && !up.cells[f].present) c.action = 'absent';\n          else if (blocked) c.action = 'blocked';\n          else if (h.analytics && deid && DEID[f]) { c.action = 'tokenised'; c.as = DEID[f]; }\n          else if (filt && !h.needs.includes(f) && !h.sources.includes(f)) c.action = 'dropped';\n          else { c.present = true; c.exposed = !c.needed; }\n          if (c.exposed) exposures++;\n          cells[f] = c;\n        }\n        return { member: mb.id, optedOut: mb.optedOut, blocked, cells, exposures };\n      });\n      const groups = [];\n      hops[i].records.forEach(r => {\n        const sig = JSON.stringify(r.cells), g = groups.find(x => x.sig === sig);\n        if (g) { g.members.push(r.member); g.count++; } else groups.push({ sig, members: [r.member], count: 1, cells: r.cells, exposures: r.exposures, blocked: r.blocked, optedOut: r.optedOut });\n      });\n      hops[i].groups = groups.map(g => ({ members: g.members.join(', '), count: g.count, cells: g.cells, exposures: g.exposures, weighted: g.exposures * g.count, blocked: g.blocked, optedOut: g.optedOut }));\n      hops[i].exposures = hops[i].records.reduce((a, r) => a + r.exposures, 0);\n    });\n    return { hops, score: hops.reduce((a, h) => a + h.exposures, 0) };\n  }\n  const filt = on('minNecessary'), deid = on('deidentify'), consent = on('consentCheck');\n  const R = run(filt, deid, consent), base = run(false, false, false).score;\n  const hops = R.hops, fl = id => FIELDS.find(f => f.id === id).label.toLowerCase().replace(' id', ' ID');\n  const list = ids => ids.length < 2 ? ids.join('') : ids.slice(0, -1).join(', ') + ' and ' + ids[ids.length - 1];\n  const exposedIn = g => list(ALL.filter(f => g.cells[f].exposed).map(fl));\n  const n = (k, w) => k + ' ' + w + (k === 1 ? '' : 's');\n  function note(h, i) {\n    const g = h.groups[0];\n    if (i === 0) return 'The claims system pays the claim, so all 7 fields are needed here. Nothing is exposed.';\n    if (h.gate) {\n      const ok = h.groups.find(x => !x.optedOut), out = h.groups.find(x => x.optedOut);\n      const a = ok.exposures ? 'Members 1 and 2 arrive with ' + n(ok.exposures, 'unneeded field') + '. ' : 'Members 1 and 2 arrive with only member ID and diagnosis. ';\n      return a + (out.blocked ? 'The consent and BAA check stops Member 3, who opted out.' : 'Member 3 opted out, yet ' + n(out.exposures, 'field') + ' reach the vendor.');\n    }\n    if (h.analytics && filt && !deid) return 'Filtering keeps ' + exposedIn(g) + ' only to derive ' + h.derived + ': still ' + n(g.exposures, 'exposure') + ' per record.';\n    const tok = ALL.some(f => g.cells[f].action === 'tokenised');\n    if (!g.exposures) return (tok ? 'De-identified on arrival, so it' : 'Filtering means it') + ' receives only what its purpose needs. No exposure.';\n    return (tok ? 'De-identified, but ' : 'Unneeded: ') + exposedIn(g) + (g.exposures === 1 ? ' still rides along' : ' ride along') + ', ' + n(g.exposures, 'exposure') + ' per record.';\n  }\n  const events = [];\n  let t = 0;\n  const add = (kind, hop, title, text, dur) => { events.push({ i: events.length, kind, hop, title, note: text, start: +t.toFixed(2), dur, checkAt: +(t + 0.55).toFixed(2), revealAt: +(t + 1.25).toFixed(2) }); t += dur; };\n  add('intro', -1, 'A new use case asks for claims data', 'A product owner wants a readmission risk dashboard. Follow three claim records hop by hop.', 2.2);\n  hops.forEach((h, i) => add('hop', i, (i + 1) + ' · ' + h.label, note(h, i), h.gate ? 3.2 : 2.7));\n  const score = R.score;\n  const worst = hops.reduce((a, h) => h.exposures > a.exposures ? h : a, hops[0]);\n  const none = !filt && !deid && !consent;\n  const summary = 'Exposure score ' + score + (none ? ' with every safeguard off' : ' (' + base + ' with no safeguards)') +\n    (score ? '; most unneeded fields reach ' + worst.role + '.' : ': every hop gets only what its purpose needs.');\n  add('finale', -1, 'Exposure score ' + score, summary, 3.4);\n  let cum = 0;\n  events.forEach(e => { if (e.kind === 'hop') cum += hops[e.hop].exposures; e.scoreAfter = cum; });\n  const vend = hops[hops.length - 1].records.find(r => r.optedOut);\n  return {\n    fields: FIELDS, members: MEMBERS, hops, events, score, baseline: base,\n    safeguards: { minNecessary: filt, deidentify: deid, consentCheck: consent }, systemNames: SF ? 'Salesforce' : 'Generic',\n    optedOutReachesVendor: !vend.blocked,\n    soWhat: 'Design minimum necessary into the pipeline, not the dashboard: filter at the first hand-off, de-identify before analytics, gate every export.',\n    duration: +t.toFixed(2), markers: events.map(e => e.start), summary\n  };\n}",
+  "checkCode": "function check(p) {\n  const m = model(p), keys = ['minNecessary', 'deidentify', 'consentCheck'];\n  // 1. at every hop and for every record, exposures are exactly the fields present but not needed\n  let setOk = true, total = 0;\n  m.hops.forEach(h => h.records.forEach(r => {\n    let k = 0;\n    m.fields.forEach(f => { const c = r.cells[f.id], e = c.present && !c.needed; if (c.exposed !== e) setOk = false; if (e) k++; });\n    if (k !== r.exposures) setOk = false;\n    total += k;\n  }));\n  setOk = setOk && total === m.score;\n  // 2. switching any one safeguard on never raises exposure, at any hop, whatever the other two are\n  let comps = 0, mono = true;\n  keys.forEach(k => [0, 1, 2, 3].forEach(c => {\n    const others = keys.filter(x => x !== k), base = Object.assign({}, p, { [others[0]]: c & 1, [others[1]]: c >> 1 & 1 });\n    const off = model(Object.assign({}, base, { [k]: 0 })), onm = model(Object.assign({}, base, { [k]: 1 }));\n    comps++;\n    if (onm.score > off.score || onm.hops.some((h, i) => h.exposures > off.hops[i].exposures)) mono = false;\n  }));\n  // 3. all three on leaves no exposure anywhere\n  const all = model(Object.assign({}, p, { minNecessary: 1, deidentify: 1, consentCheck: 1 }));\n  const zero = all.score === 0 && all.hops.every(h => h.exposures === 0);\n  // 4. with the consent check on, the opted-out member never reaches the vendor\n  const out = mm => mm.hops[mm.hops.length - 1].records.find(r => r.optedOut);\n  const gateOk = [m, all].every(mm => !mm.safeguards.consentCheck || (out(mm).blocked && m.fields.every(f => !out(mm).cells[f.id].present)));\n  const consent = m.safeguards.consentCheck;\n  return {\n    pass: setOk && mono && zero && gateOk,\n    detail: 'Exposures equal present minus needed for all ' + m.hops.length * 3 + ' hop records (score ' + m.score + ' of ' + m.baseline +\n      '), no safeguard raises exposure in ' + comps + ' on/off comparisons, all three on gives ' + all.score +\n      ', and the opted-out member ' + (consent ? 'is blocked at the vendor gate.' : 'reaches the vendor only because the consent check is off.')\n  };\n}",
+  "checkDescription": "At every hop and for every record, exposures are exactly the fields present but not needed; switching any safeguard on never raises exposure at any hop; all three on gives zero; and with the consent check on the opted-out member never reaches the vendor.",
+  "expectAtDefaults": "m.score === m.baseline && m.score > 0 && m.optedOutReachesVendor",
+  "learnerPrompts": {
+    "predict": "Before you switch anything on: which single safeguard will remove the most exposure, and which hop will still leak with only that one on?",
+    "explain": "Turn on minimum necessary filtering alone. Why does the dashboard still see date of birth and address, and which second safeguard fixes that?"
+  }
+}
