@@ -1,0 +1,1436 @@
+<title>Visualization Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: three-pane workbench — setup (spec) | stage (controls + versions) | Claude chat. Stacks on narrow screens. */
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --sunk:#eef1f5; --ink:#1b2130; --muted:#5b6475; --line:#dbe0e8;
+  --accent:#2b59c3; --accent-ink:#ffffff; --a:#2b59c3; --b:#b4530f; --c:#0f766e;
+  --good:#1f7a4d; --bad:#b42318; --warn:#9a5b00; --focus:#2b59c3;
+  --hl-kw:#7a3e9d; --hl-str:#a3412a; --hl-num:#1f6f8b; --hl-com:#6b7280; --hl-fn:#2b59c3; --hl-def:#1b2130;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1217; --surface:#171b23; --sunk:#12161d; --ink:#e5e8ee; --muted:#9aa3b2; --line:#2a303b;
+  --accent:#7ea2ff; --accent-ink:#0b1020; --a:#7ea2ff; --b:#f0a35e; --c:#4fd1c5; --good:#5cc28d; --bad:#ff8a80; --warn:#f2b54f; --focus:#9db8ff; color-scheme:dark;
+  --hl-kw:#c9a7ff; --hl-str:#f2a98c; --hl-num:#7fd1e8; --hl-com:#8b93a7; --hl-fn:#9db8ff; --hl-def:#e5e8ee}}
+:root[data-theme="dark"]{
+  --bg:#0f1217; --surface:#171b23; --sunk:#12161d; --ink:#e5e8ee; --muted:#9aa3b2; --line:#2a303b;
+  --accent:#7ea2ff; --accent-ink:#0b1020; --a:#7ea2ff; --b:#f0a35e; --c:#4fd1c5; --good:#5cc28d; --bad:#ff8a80; --warn:#f2b54f; --focus:#9db8ff; color-scheme:dark;
+  --hl-kw:#c9a7ff; --hl-str:#f2a98c; --hl-num:#7fd1e8; --hl-com:#8b93a7; --hl-fn:#9db8ff; --hl-def:#e5e8ee}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--sans);padding-inline:16px;padding-block:0 32px}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+h1,h2,h3{margin:0;text-wrap:balance}
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding-block:16px 14px;max-width:1680px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:12px}
+.mark{width:30px;height:30px;border-radius:7px;background:var(--accent);position:relative;flex:none}
+.mark::before{content:"";position:absolute;left:7px;bottom:7px;width:16px;height:12px;border:2px solid var(--accent-ink);border-top:none;border-right:none}
+.mark::after{content:"";position:absolute;left:9px;top:8px;width:14px;height:10px;border-top:2px solid var(--accent-ink);border-radius:50% 50% 0 0}
+.brand h1{font-size:19px;font-weight:600;letter-spacing:-.01em}
+.brand p{margin:0;color:var(--muted);font-size:13px}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+.grid{display:grid;gap:16px;max-width:1680px;margin:0 auto;grid-template-columns:330px minmax(0,1fr) 340px;align-items:start}
+@media (max-width:1280px){.grid{grid-template-columns:320px minmax(0,1fr)}.chat{grid-column:1 / -1}}
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.step{display:flex;flex-direction:column;gap:8px;padding-block:0 16px}
+.step + .step{border-top:1px solid var(--line);padding-top:14px}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
+.num{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--sunk);border:1px solid var(--line);font-size:10px;color:var(--ink);letter-spacing:0}
+textarea,input[type=text],select{width:100%;background:var(--sunk);border:1px solid var(--line);border-radius:7px;padding:8px 10px}
+textarea{resize:vertical;min-height:84px}
+#goal{max-height:300px;overflow:auto;font-size:13.5px;line-height:1.45}
+#goal.tall{max-height:none}
+.goal-tools{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.pages{min-width:220px}
+.pages button{padding:7px 14px;font-weight:500}
+.inspire{max-width:1680px;margin:0 auto;display:flex;flex-direction:column;gap:12px;padding-bottom:32px}
+.inspire[hidden],main.grid[hidden],.top-actions[hidden]{display:none}
+.inspire-head{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between}
+.inspire-head h2{font-size:18px;font-weight:600;margin-bottom:4px}
+.inspire-head .note{max-width:760px;font-size:13px}
+.inspire-filters{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chip .n{opacity:.7;margin-left:4px;font-family:var(--mono);font-size:11px}
+.ggrid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr))}
+.gcard{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow:hidden;min-width:0;transition:box-shadow .2s,border-color .2s}
+.gcard:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.gcard.pulse{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent)}
+.gthumb{display:block;width:100%;aspect-ratio:560/311;object-fit:cover;object-position:top left;background:#fff;border-bottom:1px solid var(--line)}
+.gthumb.missing{display:grid;place-items:center;color:var(--muted);font-size:13px;background:var(--sunk)}
+.gbody{display:flex;flex-direction:column;gap:8px;padding:12px 14px 14px;flex:1}
+.gbody h3{font-size:15px;font-weight:600}
+.ggoal{margin:0;font-size:13px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.glibs{display:flex;flex-wrap:wrap;gap:6px}
+.glib{display:inline-flex;align-items:center;gap:6px;font-size:12px;border:1px solid var(--line);border-radius:6px;padding:2px 8px 2px 2px}
+.glib .tag{width:18px;height:18px;font-size:11px}
+.gteach{margin:0;font-size:12.5px}
+.gteach b{font-weight:600}
+.gact{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:4px}
+.chip{border:1px solid var(--line);background:transparent;border-radius:999px;padding:3px 10px;font-size:12px;color:var(--muted);cursor:pointer}
+.chip:hover{color:var(--ink);border-color:var(--muted)}
+.seg{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{flex:1;border:none;background:transparent;padding:6px 0;cursor:pointer;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:6px 12px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:500}
+.btn.small{padding:3px 9px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.note{font-size:12px;color:var(--muted);margin:0}
+.spec{display:flex;flex-direction:column;gap:10px}
+.spec h3{font-size:16px;font-weight:600}
+.spec dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:13px}
+.spec dt{color:var(--muted)}
+.spec dd{margin:0;min-width:0}
+.spec ul{margin:0;padding-left:18px;font-size:13px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:500;padding:2px 8px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.pill.good{color:var(--good)}.pill.bad{color:var(--bad)}.pill.warn{color:var(--warn)}.pill.idle{color:var(--muted)}
+.gen-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+.stage{display:flex;flex-direction:column;gap:16px;min-width:0}
+.controls{display:flex;flex-direction:column;gap:12px}
+.controls-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline}
+.controls-head h2{font-size:15px;font-weight:600}
+.sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px 20px}
+.slider label{display:flex;justify-content:space-between;font-size:13px;gap:8px}
+.slider output{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--accent)}
+.slider input{width:100%;accent-color:var(--accent)}
+.timeline{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;padding:8px 10px;background:var(--sunk);border-radius:8px}
+.timeline input[type=range]{flex:1 1 160px;min-width:0;accent-color:var(--accent)}
+.sync{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);white-space:nowrap}
+.transport{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid var(--line);background:var(--surface)}
+.transport input[type=range]{flex:1 1 140px;min-width:0;accent-color:var(--accent)}
+.transport output{font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap}
+.transport select{width:auto;padding:3px 6px}
+.tbtn{width:34px;height:30px;display:inline-grid;place-items:center;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink);cursor:pointer;padding:0}
+.tbtn:hover{border-color:var(--muted)}
+.tbtn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.ico{display:inline-grid;place-items:center}
+body.has-max{overflow:hidden}
+.pane.max{position:fixed;inset:0;z-index:80;border-radius:0;border:0;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.pane.max,.pane:fullscreen{display:flex;flex-direction:column;background:var(--surface);width:100%;height:100%}
+.pane.max .view,.pane:fullscreen .view{flex:1 1 auto;min-height:0}
+.pane.max .frame,.pane:fullscreen .frame{height:100%}
+.pane.max .tabs,.pane.max [data-r=check],.pane.max [data-r=problems],.pane.max [data-r=console],.pane.max .pane-foot,
+.pane:fullscreen .tabs,.pane:fullscreen [data-r=check],.pane:fullscreen [data-r=problems],.pane:fullscreen [data-r=console],.pane:fullscreen .pane-foot{display:none}
+.timeline output{font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap}
+.timeline select{width:auto;padding:3px 6px}
+.prompts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px}
+.prompt{font-size:13px;background:var(--sunk);border-radius:7px;padding:8px 10px}
+.prompt b{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:block}
+.compare{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:13px}
+.versions{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))}
+.pane{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;background:var(--surface);min-width:0;overflow:hidden}
+.pane-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
+.tag{font-family:var(--mono);font-weight:500;font-size:12px;width:22px;height:22px;display:inline-grid;place-items:center;border-radius:5px;color:#fff}
+.tag.A{background:var(--a)}.tag.B{background:var(--b)}.tag.C{background:var(--c)}
+:root[data-theme="dark"] .tag,.tag{color:var(--surface)}
+.pane-title{font-weight:600}
+.pane-sub{color:var(--muted);font-size:12px}
+.spacer{flex:1}
+.tabs{display:flex;gap:2px;padding:6px 8px 0;border-bottom:1px solid var(--line)}
+.tabs button{border:none;background:transparent;padding:6px 10px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.view{position:relative;min-height:440px}
+.frame{display:block;width:100%;height:440px;border:0;background:#fff}
+.busy{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:color-mix(in srgb,var(--surface) 88%,transparent);text-align:center;padding:16px}
+.spinner{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--accent);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spinner{animation:none}}
+.code{margin:0;height:440px;overflow:auto;padding:12px 14px;font:12px/1.55 var(--mono);background:var(--sunk);white-space:pre;tab-size:2}
+.explain{height:440px;overflow:auto;padding:14px 16px;font-size:13.5px;display:flex;flex-direction:column;gap:10px}
+.explain h4{margin:0;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.explain p,.explain ul{margin:0}
+.explain pre{margin:0;font:11.5px/1.5 var(--mono);background:var(--sunk);padding:8px 10px;border-radius:6px;overflow:auto;white-space:pre}
+.problems{border-top:1px solid var(--line);padding:8px 12px;font-size:12.5px;display:flex;flex-direction:column;gap:6px}
+.problems ul{margin:0;padding-left:18px;font-family:var(--mono);font-size:11.5px;color:var(--bad);max-height:110px;overflow:auto}
+.frame[hidden]{display:block;position:absolute;inset:0 auto auto 0;visibility:hidden;pointer-events:none}
+.srcwrap{display:flex;flex-direction:column;height:440px}
+.srcbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line);background:var(--surface)}
+.srcbar .spacer{flex:1}
+.edhost{flex:1;min-height:0;overflow:hidden;background:var(--sunk)}
+.edhost .cm-editor{height:100%}
+.code-ta{display:block;width:100%;height:100%;box-sizing:border-box;border:0;resize:none;padding:12px 14px;font:12px/1.55 var(--mono);background:var(--sunk);color:var(--ink);tab-size:2;white-space:pre;overflow:auto}
+.linkbtn{margin-left:8px;border:1px solid currentColor;background:transparent;color:inherit;border-radius:5px;padding:0 6px;font:inherit;font-size:11px;cursor:pointer}
+.console{border-top:1px solid var(--line);padding:6px 12px;font-size:12.5px}
+.console summary{cursor:pointer;color:var(--muted)}
+.console[open] summary{margin-bottom:6px}
+.console .ccount{font-family:var(--mono);font-size:11.5px}
+.clog{max-height:150px;overflow:auto;font:11.5px/1.5 var(--mono);background:var(--sunk);border-radius:6px;padding:6px 8px;margin-bottom:6px}
+.cl{white-space:pre-wrap;word-break:break-word;border-bottom:1px solid color-mix(in srgb, var(--line) 60%, transparent);padding:1px 0}
+.cl:last-child{border-bottom:0}
+.cl.error{color:var(--bad)}.cl.warn{color:var(--warn)}.cl.muted,.cl.debug{color:var(--muted)}
+.check{font-size:12.5px;padding:8px 12px;border-top:1px solid var(--line);color:var(--muted)}
+.pane-foot{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-top:1px solid var(--line);background:var(--sunk)}
+.refine{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.refine input{background:var(--surface)}
+.foot-actions{display:flex;flex-wrap:wrap;gap:6px}
+.empty{border:1px dashed var(--line);border-radius:10px;padding:28px 20px;text-align:center;color:var(--muted);display:flex;flex-direction:column;gap:10px;align-items:center}
+.chat{display:flex;flex-direction:column;gap:10px;position:sticky;top:env(safe-area-inset-top,0px);max-height:calc(100vh - 24px)}
+@media (max-width:1280px){.chat{position:static;max-height:none}}
+.chat h2{font-size:15px;font-weight:600}
+.msgs{flex:1;overflow:auto;display:flex;flex-direction:column;gap:10px;min-height:220px;max-height:60vh;padding-right:2px}
+.msg{font-size:13.5px;padding:8px 11px;border-radius:9px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.user{background:var(--accent);color:var(--accent-ink);align-self:flex-end;max-width:88%}
+.msg.assistant{background:var(--sunk);align-self:flex-start;max-width:100%}
+.msg .applies{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;white-space:normal}
+.chat form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.chat textarea{min-height:60px}
+.banner{font-size:13px;border:1px solid var(--line);background:var(--sunk);border-radius:8px;padding:8px 12px}
+.banner.bad{color:var(--bad)}
+.flag{font-size:12.5px;border:1px solid var(--warn);border-left-width:4px;border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;background:var(--sunk)}
+.flag[hidden]{display:none}
+.learn{display:flex;flex-direction:column;gap:4px;margin-top:8px;font-size:13px}
+.learn b{font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+#lessonLines{display:flex;flex-direction:column;gap:2px}
+table.pairs{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+table.pairs th,table.pairs td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+table.pairs th{color:var(--muted);font-weight:500}
+.flag b{color:var(--warn)}
+.flag .foot-actions{display:flex;flex-wrap:wrap;gap:6px}
+.json{font:12px/1.5 var(--mono);min-height:220px}
+details summary{cursor:pointer;color:var(--muted);font-size:12.5px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+
+<header class="top">
+  <div class="brand">
+    <span class="mark" aria-hidden="true"></span>
+    <div><h1>Visualization Lab</h1><p>Describe a concept, generate it with a library, then compare versions side by side.</p></div>
+  </div>
+  <div class="seg pages" role="group" aria-label="Page" id="pageSeg">
+    <button type="button" data-page="lab" aria-pressed="true">Lab</button>
+    <button type="button" data-page="inspire" aria-pressed="false">Get inspired</button>
+  </div>
+  <div class="top-actions" id="topActions">
+    <button class="btn" id="btnExample" type="button">Projectile example</button>
+    <button class="btn" id="btnRocket" type="button">Rocket example</button>
+    <button class="btn" id="btnPipeline" type="button">Pipeline example</button>
+    <button class="btn" id="btnTerms" type="button">Key terms example</button>
+    <button class="btn" id="btnNew" type="button">New lab</button>
+  </div>
+</header>
+
+<main class="grid">
+  <section class="panel" aria-label="Lesson setup">
+    <div class="step">
+      <div class="eyebrow"><span class="num">1</span>Describe the goal</div>
+      <textarea id="goal" aria-label="What should learners understand?" placeholder="What should learners understand? Paste notes, Markdown or a numbered list as is."></textarea>
+      <div class="goal-tools"><span class="note" id="goalCount"></span><button class="btn small" type="button" id="btnGoalSize" aria-pressed="false">Expand</button></div>
+      <div class="chips" id="starters"></div>
+    </div>
+    <div class="step">
+      <div class="eyebrow"><span class="num">2</span>Choose a view and library</div>
+      <div class="seg" role="group" aria-label="View" id="viewSeg">
+        <button type="button" data-v="Auto" aria-pressed="true">Auto</button>
+        <button type="button" data-v="2D" aria-pressed="false">2D</button>
+        <button type="button" data-v="3D" aria-pressed="false">3D</button>
+      </div>
+      <select id="libChoice" aria-label="Library"></select>
+      <div class="flag" id="viewWarn" role="status" hidden></div>
+      <button class="btn primary" id="btnSpec" type="button">Draft spec</button>
+      <p class="note" id="genNote" hidden></p>
+    </div>
+    <div class="step" id="specStep">
+      <div class="eyebrow"><span class="num">3</span>Review the spec</div>
+      <div id="specBox"></div>
+    </div>
+  </section>
+
+  <section class="stage" aria-label="Preview and compare">
+    <div class="panel controls" id="controlsPanel" hidden>
+      <div class="controls-head">
+        <h2>Explore</h2>
+        <div class="foot-actions">
+          <label class="sync" title="Look for 3D stories">Look
+            <select id="themeSel" aria-label="Look for 3D stories"><option value="night">Night sky</option><option value="studio">Studio</option><option value="blueprint">Blueprint</option></select></label>
+          <button class="btn small" id="btnReplay" type="button">Replay</button>
+          <button class="btn small" id="btnReset" type="button">Reset values</button>
+        </div>
+      </div>
+      <div class="sliders" id="sliders"></div>
+      <div class="timeline" id="timeline" hidden>
+        <button class="btn small" id="tlPrev" type="button" title="Previous step" aria-label="Previous step">‹ Step</button>
+        <button class="btn small" id="tlPlay" type="button">Pause</button>
+        <button class="btn small" id="tlNext" type="button" title="Next step" aria-label="Next step">Step ›</button>
+        <input type="range" id="tlScrub" min="0" max="1000" value="0" aria-label="Playback position">
+        <output id="tlTime" aria-live="off">0.0 / 0.0 s</output>
+        <select id="tlSpeed" aria-label="Playback speed"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="4">4×</option></select>
+        <label class="sync"><input type="checkbox" id="tlSync" checked> Keep versions in sync</label>
+      </div>
+      <div class="prompts" id="prompts"></div>
+    </div>
+    <div class="banner" id="compareBanner" hidden></div>
+    <div class="versions" id="versions"></div>
+  </section>
+
+  <aside class="panel chat" aria-label="Ask Claude">
+    <h2>Ask Claude</h2>
+    <p class="note">Claude sees the spec, both versions' code, errors and check results.</p>
+    <div class="chips" id="chatChips"></div>
+    <div class="msgs" id="msgs" aria-live="polite"></div>
+    <form id="chatForm">
+      <textarea id="chatInput" aria-label="Message to Claude" placeholder="What isn't working? How could this teach better?"></textarea>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button class="btn primary" type="submit" id="btnSend">Send</button>
+        <button class="btn small" type="button" id="btnStopChat" hidden>Stop</button>
+      </div>
+    </form>
+  </aside>
+</main>
+
+<section class="inspire" id="inspire" hidden aria-labelledby="inspireTitle">
+  <div class="inspire-head">
+    <div>
+      <h2 id="inspireTitle">Get inspired</h2>
+      <p class="note">Finished lessons built from one prompt, each drawn with two or three different libraries from the same spec. Open one to explore, change or compare it, or reuse its prompt with your own library choice.</p>
+    </div>
+    <button class="btn primary" type="button" id="btnSurprise">Surprise me</button>
+  </div>
+  <div class="inspire-filters">
+    <div class="chips" id="galCats" role="group" aria-label="Filter by subject"></div>
+    <label class="sync">Library <select id="galLib" aria-label="Filter by library"></select></label>
+  </div>
+  <p class="note" id="galCount" aria-live="polite"></p>
+  <div class="ggrid" id="galGrid"></div>
+</section>
+
+<script type="text/plain" id="rfcss">/*@RFCSS@*/</script>
+
+<script>
+(() => {
+"use strict";
+
+/* ---------- Libraries: pinned versions + generation notes ---------- */
+const JSD = "https://cdn.jsdelivr.net/npm/";
+/*@LIBS@*/
+/*@STORY3D_KIT@*/
+/*@LIBS_STORY3D_AND_RUNTIME@*/
+const LIB_IDS = Object.keys(LIBS);
+const RF_CSS = document.getElementById("rfcss").textContent;
+
+/*@STARTERS@*/
+
+/* ---------- Built-in example: projectile, p5.js (2D) vs three.js (3D) ---------- */
+/*@EXAMPLES@*/
+
+/* ---------- State ---------- */
+const STORE = "vislab:v1";
+let state = load() || Object.assign(clone(EXAMPLE), { source: "example" });
+let params = {};
+const panes = {};            // id -> {iframe, errors[], check, booted, hasContent, busy, ctl, tab}
+let sample = null;
+let chatCtl = null;
+
+function clone(o) { return JSON.parse(JSON.stringify(o)); }
+function load() { try { const s = localStorage.getItem(STORE); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
+function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} }
+function $(id) { return document.getElementById(id); }
+function el(tag, attrs, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === "class") n.className = v; else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else if (k === "text") n.textContent = v; else n.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat()) if (c != null && c !== false) n.append(c.nodeType ? c : String(c));
+  return n;
+}
+function slug(s) { return String(s || "lab").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "lab"; }
+function libName(id) { return LIBS[id] ? LIBS[id].name : id; }
+/*@PAIRS@*/
+const TRAITS = { p5: "a hand-drawn 2D sketch", three: "a free-camera 3D scene", chartjs: "a standard chart set up by configuration", plotly: "declarative scientific plots",
+  reactflow: "ready-made interactive diagram components", wordcloud: "a word cloud with size for importance", svg: "hand-built SVG with full flexibility", d3: "custom data graphics with full control",
+  story: "an authored animated 2D story", story3d: "a guided 3D story" };
+function lessonFor(a, b) {
+  const p = PAIRS.find(x => (x.a === a && x.b === b) || (x.a === b && x.b === a));
+  if (p) return p.learn;
+  const s = state.spec;
+  if (s && s.alternative?.why && ((s.recommended?.library === a && s.alternative.library === b) || (s.recommended?.library === b && s.alternative.library === a))) return s.alternative.why;
+  if (a === b) return "Two takes with the same library: how much the design, not the library, changes what learners notice.";
+  const da = dimOf(a), db = dimOf(b);
+  const lead = da !== db && !da.includes("/") && !db.includes("/") ? "Whether depth adds useful information: " : "";
+  const txt = (TRAITS[a] || libName(a)) + " versus " + (TRAITS[b] || libName(b)) + ".";
+  return lead ? lead + txt : txt.charAt(0).toUpperCase() + txt.slice(1);
+}
+// A library conflicts with the view when the view is 2D or 3D and the library cannot draw in it (Plotly does both)
+function dimOf(lib) { return LIBS[lib] ? LIBS[lib].dim : null; }
+function viewConflict(lib) { const d = dimOf(lib); return d && state.view !== "Auto" && !d.split("/").includes(state.view) ? d : null; }
+function setView(v) { state.view = v; save(); renderSetup(); renderSpec(); }
+function checkViewMismatch() {
+  const box = $("viewWarn"); box.innerHTML = "";
+  const lib = state.libChoice, d = lib && lib !== "recommend" ? viewConflict(lib) : null;
+  box.hidden = !d;
+  if (!d) return;
+  const other = state.view;
+  box.append(
+    el("div", {}, el("b", { text: "View and library don't match. " }), `${libName(lib)} draws in ${d}, but the view is set to ${other}. The spec will be drafted for ${other} and the code generated in ${d}.`),
+    el("div", { class: "foot-actions" },
+      el("button", { class: "btn small", type: "button", text: `Switch view to ${d}`, onclick: () => setView(d) }),
+      el("button", { class: "btn small", type: "button", text: `Recommend a ${other} library`, onclick: () => { state.libChoice = "recommend"; save(); renderSetup(); } })));
+}
+
+/* ---------- Sandboxed preview document ---------- */
+const HARNESS = `(function(){
+  var post=function(m){try{m.__lab=1;parent.postMessage(m,'*')}catch(e){}};
+  var fmt=function(a){return Array.prototype.map.call(a,function(x){if(x&&x.stack)return String(x.stack).split('\\n').slice(0,2).join(' | ');if(typeof x==='object'){try{return JSON.stringify(x)}catch(e){}}return String(x)}).join(' ')};
+  window.addEventListener('error',function(e){var t=e.target;if(t&&t!==window&&(t.src||t.href)){var u=String(t.src||t.href);if(/fonts\.(googleapis|gstatic)\.com/.test(u))return;post({type:'error',message:'Failed to load '+u});return}post({type:'error',message:(e.message||'Script error'),line:e.lineno||lineOf(e.error)})},true);
+  window.addEventListener('unhandledrejection',function(e){post({type:'error',message:'Unhandled rejection: '+fmt([e.reason]),line:lineOf(e.reason)})});
+  var ce=console.error.bind(console);console.error=function(){post({type:'error',message:fmt(arguments)});ce.apply(null,arguments)};
+  var lineOf=function(e){var m=String(e&&e.stack||'').match(/about:srcdoc:(\\d+)/);return m?Number(m[1]):0};
+  var nLog=0;['log','info','warn','debug'].forEach(function(k){var o=(console[k]||console.log).bind(console);console[k]=function(){if(nLog<200)post({type:'log',level:k,message:fmt(arguments).slice(0,2000)});else if(nLog===200)post({type:'log',level:'warn',message:'Console output stopped after 200 messages.'});nLog++;o.apply(null,arguments)}});
+  var P=null,mounted=false,reduce=false;try{reduce=matchMedia('(prefers-reduced-motion: reduce)').matches}catch(e){}
+  var root=function(){return document.getElementById('root')};
+  var runCheck=function(p){if(typeof window.check!=='function')return;try{var r=window.check(p);post({type:'check',pass:!!(r&&r.pass),detail:String((r&&r.detail)||'')})}catch(e){post({type:'check',pass:false,detail:'check() threw: '+e.message})}};
+  var probe=function(p){if(typeof window.model!=='function'){post({type:'probe',issues:['model() is not defined']});return}try{var m=window.model(p),seen={},issues=[];
+    var add=function(x){if(!seen[x]&&issues.length<6){seen[x]=1;issues.push(x)}};
+    if(m==null||typeof m!=='object')add('model() returned no data object');
+    (function walk(v,path,d){if(d>5)return;if(Array.isArray(v)){if(!v.length)add(path+' is empty');else if(v.length===1&&d<2)add(path+' has only one entry');for(var i=0;i<Math.min(v.length,400);i++)walk(v[i],path+'[]',d+1);return}if(typeof v==='number'){if(!isFinite(v))add(path+' contains '+v)}else if(v&&typeof v==='object'){for(var k in v)walk(v[k],path+'.'+k,d+1)}})(m,'result',0);
+    post({type:'probe',issues:issues})}catch(e){post({type:'probe',issues:['model() threw: '+e.message]})}};
+  var TL={on:false,frac:0,playing:false,speed:1,last:0,lastPost:0};
+  var dur=function(){var d=Number(window.lab&&window.lab.duration);return d>0?d:10};
+  var apply=function(){try{window.lab.seek(TL.frac*dur())}catch(e){TL.playing=false;post({type:'error',message:'seek() failed: '+e.message,line:lineOf(e)})}};
+  var mk=function(){try{var m=window.lab&&window.lab.markers;return Array.isArray(m)?m.map(Number).filter(isFinite):[]}catch(e){return[]}};
+  var tlStart=function(){TL.on=!!(window.lab&&typeof window.lab.seek==='function');if(TL.on){TL.frac=reduce?1:0;TL.playing=!reduce;apply()}post({type:'timeline',on:TL.on,duration:dur(),frac:TL.frac,playing:TL.playing,markers:mk()})};
+  var tick=function(now){if(TL.on&&TL.playing){var dt=TL.last?Math.min(0.1,(now-TL.last)/1000):0;TL.frac=Math.min(1,TL.frac+dt*TL.speed/dur());apply();if(TL.frac>=1)TL.playing=false}TL.last=now;if(TL.on&&now-TL.lastPost>120){TL.lastPost=now;post({type:'time',frac:TL.frac,playing:TL.playing,duration:dur()})}requestAnimationFrame(tick)};
+  requestAnimationFrame(tick);
+  window.__labUpdate=function(p){P=p;if(!mounted)return;try{if(typeof window.lab.update==='function')window.lab.update(p);else{if(window.lab.destroy)window.lab.destroy();root().innerHTML='';window.lab.mount(root(),p)}runCheck(p);tlStart()}catch(e){post({type:'error',message:'update() failed: '+e.message,line:lineOf(e)})}};
+  window.__boot=function(p){P=p;probe(p);
+    if(!window.lab||typeof window.lab.mount!=='function'){post({type:'error',message:'The code did not define window.lab.mount(root, params).'});return}
+    try{window.lab.mount(root(),p);mounted=true}catch(e){post({type:'error',message:'mount() failed: '+(e&&e.message),line:lineOf(e)});return}
+    runCheck(p);tlStart();
+    setTimeout(function(){var r=root(),n=r&&r.querySelector('canvas,svg,div,table'),b=n?n.getBoundingClientRect():{width:0,height:0};post({type:'ready',hasContent:!!n&&b.width>20&&b.height>20})},1800);
+  };
+  window.addEventListener('message',function(e){var d=e.data||{};if(d.__host!==1)return;
+    if(d.type==='params')window.__labUpdate(d.params);
+    if(d.type==='replay'){if(TL.on){TL.frac=0;TL.playing=true;apply()}else{try{if(window.lab.destroy)window.lab.destroy();root().innerHTML='';window.lab.mount(root(),P)}catch(err){post({type:'error',message:'Replay failed: '+err.message})}}}
+    if(d.type==='play'&&TL.on){if(TL.frac>=1)TL.frac=0;TL.playing=true}
+    if(d.type==='pause')TL.playing=false;
+    if(d.type==='seek'&&TL.on){TL.frac=Math.max(0,Math.min(1,Number(d.frac)||0));TL.playing=false;apply()}
+    if(d.type==='speed')TL.speed=Number(d.speed)||1;
+    // Report the new position at once, not on the next animation frame (frames pause while a preview is scrolled out of view)
+    if(TL.on&&/^(play|pause|seek|replay)$/.test(d.type)){TL.lastPost=performance.now();post({type:'time',frac:TL.frac,playing:TL.playing,duration:dur()})}
+  });
+  post({type:'boot'});
+})();`;
+
+function esc(code) { return String(code || "").replace(/<\/script/gi, "<\\/script"); }
+
+function buildDoc(lib, code, spec, p, standalone) {
+  const L = LIBS[lib] || LIBS.svg;
+  const type = L.module ? "module" : "text/javascript";
+  const ctrlCss = standalone ? "body{display:flex;flex-direction:column}.ctl{display:flex;flex-wrap:wrap;gap:8px 20px;padding:10px 14px;border-bottom:1px solid #dbe0e8;font:13px system-ui,sans-serif}.ctl label{display:flex;gap:8px;align-items:center}.ctl output{font-family:ui-monospace,monospace;color:#2b59c3;min-width:5ch}#root{flex:1}" : "";
+  const ctrls = standalone ? `<div class="ctl"><strong>${escHtml(spec.title)}</strong><button type="button" onclick="window.postMessage({__host:1,type:'replay'},'*')">Replay</button>${spec.params.map(q => `<label>${escHtml(q.label)} <input type="range" data-p="${escHtml(q.id)}" min="${q.min}" max="${q.max}" step="${q.step}" value="${p[q.id]}"><output>${escHtml(paramText(q, p[q.id]))}</output></label>`).join("")}</div>` : "";
+  const ctrlJs = standalone ? `<script>(function(){var P=${JSON.stringify(p)};document.querySelectorAll('[data-p]').forEach(function(i){i.addEventListener('input',function(){P[i.dataset.p]=Number(i.value);var q=(${JSON.stringify(Object.fromEntries(spec.params.map(q => [q.id, { min: q.min, step: q.step, unit: q.unit || "", labels: q.labels || null }])))})[i.dataset.p];var v=Number(i.value);i.nextElementSibling.textContent=q.labels&&q.labels[Math.round((v-q.min)/q.step)]!=null?q.labels[Math.round((v-q.min)/q.step)]:v+(q.unit?' '+q.unit:'');window.__labUpdate(Object.assign({},P))})})})();<\/script>` : "";
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escHtml(spec.title)} — ${L.name}</title>
+<style>html,body{margin:0;height:100%;background:#fff;color:#1d2433;font:13px/1.4 system-ui,sans-serif}#root{position:relative;width:100%;height:100%;overflow:hidden}${ctrlCss}</style>
+<script>window.LAB_THEME=${JSON.stringify(state.theme || "night")};<\/script><script>${HARNESS}<\/script>${L.head}${lib === "reactflow" ? "<style>" + RF_CSS + "</style>" : ""}
+</head><body>${ctrls}<div id="root"></div>
+<script>${esc(spec.modelCode)}\n${esc(spec.checkCode || "")}<\/script>
+<script type="${type}">${esc(code)}<\/script>
+<script type="${type}">window.__boot(${JSON.stringify(p)});<\/script>${ctrlJs}
+</body></html>`;
+}
+function escHtml(s) { return String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+/* ---------- Messages from previews ---------- */
+window.addEventListener("message", e => {
+  const d = e.data || {};
+  if (d.__lab !== 1) return;
+  if (specTest && e.source === specTest.frame.contentWindow) { specTest.onMsg(d); return; }
+  const id = Object.keys(panes).find(k => panes[k].iframe && panes[k].iframe.contentWindow === e.source);
+  if (!id) return;
+  const pn = panes[id];
+  if (d.type === "time") { pn.time = { frac: d.frac, playing: d.playing, duration: d.duration }; renderTimeline(); renderPaneTransport(id); return; }
+  if (d.type === "timeline") {
+    pn.timeline = d.on; pn.time = { frac: d.frac, playing: d.playing, duration: d.duration }; pn.markers = d.markers || [];
+    const sp = pn.speed || tlSpeed;
+    if (d.on && sp !== 1) e.source.postMessage({ __host: 1, type: "speed", speed: sp }, "*");
+    renderTimeline(); renderPaneTransport(id); return;
+  }
+  if (d.type === "probe") return;
+  if (d.type === "boot") pn.booted = true;
+  if (d.type === "log") { pushLog(id, d.level, d.message); return; }
+  if (d.type === "error") {
+    if (!pn.errors.includes(d.message)) pn.errors.push(d.message); pn.errors = pn.errors.slice(-12);
+    const n = codeLine(id, d.line); if (n) pn.errLine[d.message] = n;
+    pushLog(id, "error", d.message + (n ? "  (line " + n + ")" : ""));
+    if (pn.editor) markErrors(id);
+  }
+  if (d.type === "check") pn.check = { pass: d.pass, detail: d.detail };
+  if (d.type === "ready") pn.hasContent = d.hasContent;
+  renderPaneStatus(id);
+});
+
+function sendParams() {
+  for (const id in panes) {
+    const w = panes[id].iframe && panes[id].iframe.contentWindow;
+    if (w) w.postMessage({ __host: 1, type: "params", params: Object.assign({}, params) }, "*");
+  }
+}
+let paramFrame = 0;
+function queueParams() { cancelAnimationFrame(paramFrame); paramFrame = requestAnimationFrame(sendParams); }
+
+/* ---------- Setup panel ---------- */
+function renderSetup() {
+  $("goal").value = state.goal || "";
+  $("tlSync").checked = state.sync !== false;
+  $("themeSel").value = state.theme || "night";
+  requestAnimationFrame(sizeGoal);
+  for (const b of $("viewSeg").querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.v === state.view));
+  const sel = $("libChoice"); sel.innerHTML = "";
+  sel.append(el("option", { value: "recommend", text: "Recommend for me" }));
+  for (const id of LIB_IDS) sel.append(el("option", { value: id, text: LIBS[id].name + " · " + LIBS[id].dim }));
+  sel.value = state.libChoice || "recommend";
+  checkViewMismatch();
+  const st = $("starters"); st.innerHTML = "";
+  for (const [label, text] of STARTERS) st.append(el("button", { class: "chip", type: "button", text: label, onclick: () => { state.goal = text; $("goal").value = text; save(); } }));
+}
+function sizeGoal() {
+  const g = $("goal");
+  g.style.height = "auto";
+  g.style.height = Math.min(g.scrollHeight + 2, g.classList.contains("tall") ? 4000 : 300) + "px";
+  const lines = (g.value.match(/\n/g) || []).length + (g.value ? 1 : 0);
+  $("goalCount").textContent = g.value ? lines + (lines === 1 ? " line" : " lines") + " \u00b7 " + g.value.length + " characters" : "";
+}
+$("goal").addEventListener("input", e => { state.goal = e.target.value; save(); sizeGoal(); });
+$("btnGoalSize").addEventListener("click", () => {
+  const g = $("goal"), tall = g.classList.toggle("tall");
+  $("btnGoalSize").textContent = tall ? "Collapse" : "Expand";
+  $("btnGoalSize").setAttribute("aria-pressed", String(tall));
+  sizeGoal();
+});
+$("viewSeg").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; setView(b.dataset.v); });
+$("libChoice").addEventListener("change", e => { state.libChoice = e.target.value; save(); checkViewMismatch(); });
+
+function renderSpec() {
+  const box = $("specBox"); box.innerHTML = "";
+  const s = state.spec;
+  if (!s) { box.append(el("p", { class: "note", text: "Draft a spec to set the learning objective, model, controls and a check before any code is generated." })); return; }
+  const checkPill = !state.specCheck ? el("span", { class: "pill idle", text: "Check not run" })
+    : state.specCheck.pass ? el("span", { class: "pill good", text: "Model check passed" }) : el("span", { class: "pill bad", text: "Model check failed" });
+  const editing = !!state.editingSpec;
+  const libSel = (val, id) => { const sel = el("select", { id, "aria-label": "Library" }); for (const k of LIB_IDS) sel.append(el("option", { value: k, text: LIBS[k].name + " · " + LIBS[k].dim })); sel.value = LIB_IDS.includes(val) ? val : "p5"; return sel; };
+  const has = id => state.versions.some(v => v.id === id);
+  const selA = libSel((state.pickA && state.pickA.title === s.title && state.pickA.lib) || versionLib("A") || s.recommended?.library, "libA");
+  const selB = libSel(versionLib("B") || s.alternative?.library, "libB");
+  const libAv = versionLib("A") || s.recommended?.library, libBv = versionLib("B") || s.alternative?.library;
+  const selC = libSel(versionLib("C") || (libAv === "story" ? "story3d" : LIB_IDS.find(k => k !== libAv && k !== libBv)), "libC");
+  box.append(el("div", { class: "spec" },
+    el("h3", { text: s.title }),
+    el("p", { style: "margin:0", text: s.objective }),
+    el("div", { class: "chips" }, el("span", { class: "pill idle", text: s.view }), checkPill),
+    state.specCheck ? el("p", { class: "note", text: state.specCheck.detail }) : null,
+    state.specProbe && state.specProbe.length ? el("div", { class: "banner", role: "status" },
+      el("b", { text: "At the default values the model " }), "returned suspicious data:",
+      el("ul", { style: "margin:4px 0 0;padding-left:18px" }, state.specProbe.map(x => el("li", { text: x })))) : null,
+    (state.specProbe && state.specProbe.length) || (state.specCheck && !state.specCheck.pass)
+      ? el("button", { class: "btn small primary", type: "button", "data-gen": "1", id: "btnFixModel", text: "Ask Claude to fix the model", onclick: fixModel }) : null,
+    el("dl", {},
+      el("dt", { text: "Suggested" }), el("dd", {}, el("b", { text: libName(s.recommended?.library) }), " — " + (s.recommended?.why || "")),
+      el("dt", { text: "Compare with" }), el("dd", {}, el("b", { text: libName(s.alternative?.library) }), " — " + (s.alternative?.why || "")),
+      el("dt", { text: "Controls" }), el("dd", { text: s.params.map(q => q.labels ? `${q.label} (${q.labels.join(" / ")})` : `${q.label} (${q.min}–${q.max} ${q.unit || ""})`).join(", ") }),
+      el("dt", { text: "Check" }), el("dd", { text: s.checkDescription || "Runs check() against a known result" })
+    ),
+    el("details", {}, el("summary", { text: "Assumptions and units" }),
+      el("ul", {}, (s.assumptions || []).map(a => el("li", { text: a })), (s.units || []).map(u => el("li", { text: u })))),
+    editing ? el("div", { class: "spec" },
+      el("textarea", { id: "specJson", class: "json", "aria-label": "Spec JSON" }),
+      el("div", { class: "foot-actions" },
+        el("button", { class: "btn small primary", type: "button", text: "Apply spec", onclick: applySpecJson }),
+        el("button", { class: "btn small", type: "button", text: "Cancel", onclick: () => { state.editingSpec = false; renderSpec(); } })),
+      el("p", { class: "note", text: "Editing the model updates every version at once, because renderers call model() instead of copying it." }))
+      : el("button", { class: "btn small", type: "button", text: "Edit spec and model", onclick: () => { state.editingSpec = true; renderSpec(); } }),
+    el("div", { class: "eyebrow", style: "margin-top:6px" }, el("span", { class: "num", text: "4" }), "Generate and compare"),
+    el("div", { class: "gen-row" }, selA, el("button", { class: "btn primary", type: "button", id: "btnGenA", text: has("A") ? "Regenerate A" : "Generate A", onclick: () => generate("A", $("libA").value) })),
+    el("div", { class: "flag", id: "flagA", role: "status", hidden: true }),
+    el("div", { class: "gen-row" }, selB, el("button", { class: "btn", type: "button", id: "btnGenB", text: has("B") ? "Regenerate B" : "Add version B", onclick: () => generate("B", $("libB").value) })),
+    el("div", { class: "gen-row" }, selC, el("button", { class: "btn", type: "button", id: "btnGenC", text: has("C") ? "Regenerate C" : "Add version C", onclick: () => generate("C", $("libC").value) })),
+    el("p", { class: "note", id: "lessonLines" }),
+    el("p", { class: "note", text: "All versions share the same spec, model, controls and check, so differences come from the library alone." }),
+    el("details", {}, el("summary", { text: "Default comparisons" }),
+      el("table", { class: "pairs" }, el("tr", {}, ["Concept", "A", "B", "What it teaches"].map(h => el("th", { text: h }))),
+        PAIRS.map(p => el("tr", {}, el("td", { text: p.kind }), el("td", { text: libName(p.a) }), el("td", { text: libName(p.b) }), el("td", { text: p.learn })))))
+  ));
+  const lessonLines = () => {
+    const box = $("lessonLines"); if (!box) return; box.innerHTML = "";
+    const a = $("libA").value;
+    for (const id of ["B", "C"]) box.append(el("div", {}, el("b", { text: "A vs " + id + ": " }), lessonFor(a, $("lib" + id).value)));
+  };
+  for (const id of ["libA", "libB", "libC"]) $(id).addEventListener("change", lessonLines);
+  lessonLines();
+  if (editing) $("specJson").value = JSON.stringify(s, null, 2);
+  const flagA = () => {
+    const box = $("flagA"), lib = $("libA").value, d = viewConflict(lib);
+    box.innerHTML = ""; box.hidden = !d;
+    if (d) box.append(
+      el("div", {}, el("b", { text: "Version A doesn't match the view. " }), `${libName(lib)} draws in ${d}, but the view is set to ${state.view}. Versions B and C are meant for comparing dimensions, so they aren't flagged.`),
+      el("div", { class: "foot-actions" }, el("button", { class: "btn small", type: "button", text: `Switch view to ${d}`, onclick: () => setView(d) })));
+  };
+  $("libA").addEventListener("change", () => { state.pickA = { title: s.title, lib: $("libA").value }; save(); flagA(); }); flagA();
+  syncGenButtons();
+}
+function versionLib(id) { const v = state.versions.find(x => x.id === id); return v && v.lib; }
+
+function validateSpec(s) {
+  if (!s || typeof s !== "object") throw new Error("The spec is not a JSON object.");
+  for (const k of ["title", "objective", "modelCode"]) if (!s[k]) throw new Error("The spec is missing " + k + ".");
+  if (!/function\s+model\s*\(/.test(s.modelCode)) throw new Error("modelCode must define function model(p).");
+  if (!Array.isArray(s.params) || !s.params.length) throw new Error("The spec needs at least one control in params.");
+  s.params = s.params.slice(0, 4).map(q => {
+    const n = x => Number(x);
+    const out = { id: String(q.id || "p").replace(/[^A-Za-z0-9_]/g, ""), label: String(q.label || q.id), min: n(q.min), max: n(q.max), step: n(q.step) || 1, value: n(q.value), unit: String(q.unit || "") };
+    if (Array.isArray(q.labels) && q.labels.length) out.labels = q.labels.map(String);
+    if (![out.min, out.max, out.value].every(Number.isFinite) || out.min >= out.max) throw new Error("Control " + out.label + " has an invalid range.");
+    out.value = Math.min(out.max, Math.max(out.min, out.value));
+    return out;
+  });
+  if (!["2D", "3D"].includes(s.view)) s.view = "2D";
+  s.recommended = s.recommended || {}; s.alternative = s.alternative || {};
+  if (!LIB_IDS.includes(s.recommended.library)) s.recommended.library = "p5";
+  if (!LIB_IDS.includes(s.alternative.library) || s.alternative.library === s.recommended.library) s.alternative.library = s.recommended.library === "three" ? "p5" : "three";
+  const pair = PAIRS.find(x => x.a === s.recommended.library);
+  if (pair) s.alternative = { library: pair.b, why: pair.learn };
+  s.assumptions = Array.isArray(s.assumptions) ? s.assumptions.map(String) : [];
+  s.units = Array.isArray(s.units) ? s.units.map(String) : [];
+  s.learnerPrompts = s.learnerPrompts || {};
+  return s;
+}
+
+function applySpecJson() {
+  try {
+    const s = validateSpec(JSON.parse($("specJson").value));
+    state.spec = s; state.editingSpec = false; resetParams(); save();
+    runSpecCheck(); renderAll();
+  } catch (e) { flashSpecError(e.message); }
+}
+function flashSpecError(msg) {
+  const box = $("specBox"); const old = box.querySelector(".banner.bad"); if (old) old.remove();
+  box.prepend(el("div", { class: "banner bad", role: "alert", text: msg }));
+}
+
+/* Runs model() + check() in a hidden sandbox to validate the spec before generating code. */
+let specTest = null;
+function runSpecCheck() {
+  if (specTest) specTest.frame.remove();
+  const s = state.spec; if (!s) return;
+  const p = Object.fromEntries(s.params.map(q => [q.id, q.value]));
+  const frame = el("iframe", { sandbox: "allow-scripts", title: "Spec check", style: "display:none" });
+  let done = false;
+  const finish = r => { if (done) return; done = true; state.specCheck = r; save(); renderSpec(); frame.remove(); specTest = null; };
+  state.specProbe = null;
+  specTest = { frame, onMsg: d => {
+    if (d.type === "probe") { state.specProbe = d.issues || []; save(); }
+    if (d.type === "check") finish({ pass: d.pass, detail: d.detail });
+    if (d.type === "error") finish({ pass: false, detail: "Model error: " + d.message });
+  } };
+  frame.srcdoc = buildDoc("svg", "window.lab={mount(){},update(){},destroy(){}};", s, p, false);
+  document.body.append(frame);
+  setTimeout(() => finish(s.checkCode ? { pass: false, detail: "The check did not finish within 6 seconds." } : { pass: true, detail: "No check was defined for this spec." }), 6000);
+}
+
+/* ---------- Explore controls ---------- */
+function paramText(q, v) {
+  if (q.labels) { const l = q.labels[Math.round((v - q.min) / q.step)]; if (l != null) return l; }
+  return v + (q.unit ? " " + q.unit : "");
+}
+function resetParams() { params = state.spec ? Object.fromEntries(state.spec.params.map(q => [q.id, q.value])) : {}; }
+function renderControls() {
+  const s = state.spec;
+  $("controlsPanel").hidden = !s || !state.versions.length;
+  if (!s) return;
+  const box = $("sliders"); box.innerHTML = "";
+  for (const q of s.params) {
+    const id = "p-" + q.id;
+    const out = el("output", { for: id, text: paramText(q, params[q.id]) });
+    const inp = el("input", { type: "range", id, min: q.min, max: q.max, step: q.step, value: params[q.id],
+      oninput: e => { params[q.id] = Number(e.target.value); out.textContent = paramText(q, params[q.id]); queueParams(); } });
+    box.append(el("div", { class: "slider" }, el("label", { for: id }, el("span", { text: q.label }), out), inp));
+  }
+  const pr = $("prompts"); pr.innerHTML = "";
+  if (s.learnerPrompts?.predict) pr.append(el("div", { class: "prompt" }, el("b", { text: "Predict" }), s.learnerPrompts.predict));
+  if (s.learnerPrompts?.explain) pr.append(el("div", { class: "prompt" }, el("b", { text: "Explain" }), s.learnerPrompts.explain));
+}
+$("btnReset").addEventListener("click", () => { resetParams(); renderControls(); sendParams(); });
+$("themeSel").addEventListener("change", e => {
+  state.theme = e.target.value; save();
+  for (const id in panes) { const v = state.versions.find(x => x.id === id); if (v && v.lib === "story3d") loadPreview(id); }
+});
+function broadcast(msg) { for (const id in panes) panes[id].iframe?.contentWindow?.postMessage(Object.assign({ __host: 1 }, msg), "*"); }
+$("btnReplay").addEventListener("click", () => broadcast({ type: "replay" }));
+let tlSpeed = 1, scrubbing = false;
+function leadId() { return ["A", "B", "C"].find(i => panes[i] && panes[i].timeline); }
+function leadPane() { const i = leadId(); return i ? panes[i] : null; }
+function renderTimeline() {
+  const lead = leadPane();
+  $("timeline").hidden = !lead;
+  if (!lead) return;
+  const t = lead.time || { frac: 0, playing: false, duration: 0 };
+  if (!scrubbing) $("tlScrub").value = String(Math.round(t.frac * 1000));
+  $("tlPlay").textContent = t.playing ? "Pause" : (t.frac >= 1 ? "Play again" : "Play");
+  $("tlTime").textContent = (t.frac * t.duration).toFixed(1) + " / " + Number(t.duration || 0).toFixed(1) + " s";
+}
+const SPEEDS = [0.25, 0.5, 0.75, 1, 1.5, 2, 4];
+const ICONS = {
+  play: '<path d="M8 5.5v13l11-6.5z" fill="currentColor"/>',
+  pause: '<rect x="6.5" y="5" width="4" height="14" rx="1" fill="currentColor"/><rect x="13.5" y="5" width="4" height="14" rx="1" fill="currentColor"/>',
+  prev: '<rect x="5" y="6" width="2.5" height="12" rx="1" fill="currentColor"/><path d="M19 6v12l-9-6z" fill="currentColor"/>',
+  next: '<rect x="16.5" y="6" width="2.5" height="12" rx="1" fill="currentColor"/><path d="M5 6v12l9-6z" fill="currentColor"/>'
+};
+function svgIcon(k) { const sp = document.createElement("span"); sp.className = "ico"; sp.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">' + ICONS[k] + "</svg>"; return sp; }
+function sendTo(id, msg) {
+  if (state.sync !== false) broadcast(msg);
+  else panes[id]?.iframe?.contentWindow?.postMessage(Object.assign({ __host: 1 }, msg), "*");
+}
+function togglePane(id) { const t = panes[id] && panes[id].time; sendTo(id, { type: t && t.playing ? "pause" : "play" }); }
+function stepPane(id, dir) {
+  const pn = panes[id]; if (!pn || !pn.time) return;
+  const d = pn.time.duration || 0, cur = pn.time.frac * d;
+  const ms = (pn.markers || []).slice().sort((a, b) => a - b);
+  let target;
+  if (ms.length) {
+    target = dir > 0 ? ms.find(m => m > cur + 0.05) : ms.slice().reverse().find(m => m < cur - 0.3);
+    if (target == null) target = dir > 0 ? d : 0;
+  } else target = Math.max(0, Math.min(d, cur + dir * d / 10));
+  const frac = d ? target / d : 0;
+  sendTo(id, { type: "seek", frac });
+  for (const k in panes) if ((state.sync !== false || k === id) && panes[k].time) { panes[k].time.frac = frac; panes[k].time.playing = false; renderPaneTransport(k); }
+  renderTimeline();
+}
+function setSpeed(id, v) {
+  if (state.sync !== false) { tlSpeed = v; for (const k in panes) panes[k].speed = v; broadcast({ type: "speed", speed: v }); }
+  else { panes[id].speed = v; panes[id].iframe?.contentWindow?.postMessage({ __host: 1, type: "speed", speed: v }, "*"); }
+  syncSpeedSelects();
+}
+function syncSpeedSelects() {
+  $("tlSpeed").value = String(tlSpeed);
+  for (const k in panes) { const sel = panes[k].node && panes[k].node.querySelector("[data-r=tspeed]"); if (sel) sel.value = String(panes[k].speed || tlSpeed); }
+}
+async function toggleFull(id) {
+  const pn = panes[id], n = pn && pn.node; if (!n) return;
+  if (document.fullscreenElement === n) { try { await document.exitFullscreen(); } catch (e) {} return; }
+  if (n.classList.contains("max")) { n.classList.remove("max"); document.body.classList.remove("has-max"); updateFsBtn(id); return; }
+  if (pn.tab !== "preview") { pn.tab = "preview"; renderPaneBody(id); }
+  try { if (n.requestFullscreen) { await n.requestFullscreen(); updateFsBtn(id); return; } } catch (e) {}
+  n.classList.add("max"); document.body.classList.add("has-max"); updateFsBtn(id);
+}
+function updateFsBtn(id) {
+  const n = panes[id] && panes[id].node, b = n && n.querySelector("[data-r=fs]"); if (!b) return;
+  const on = document.fullscreenElement === n || n.classList.contains("max");
+  b.textContent = on ? "Exit full screen" : "Full screen";
+}
+document.addEventListener("fullscreenchange", () => { for (const k in panes) updateFsBtn(k); });
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  for (const k in panes) if (panes[k].node && panes[k].node.classList.contains("max")) { panes[k].node.classList.remove("max"); document.body.classList.remove("has-max"); updateFsBtn(k); }
+});
+function renderPaneTransport(id) {
+  const pn = panes[id], n = pn && pn.node; if (!n) return;
+  const tr = n.querySelector("[data-r=transport]");
+  tr.hidden = !pn.timeline || pn.tab !== "preview";
+  if (tr.hidden) return;
+  const t = pn.time || { frac: 0, playing: false, duration: 0 };
+  if (!pn.scrubbing) n.querySelector("[data-r=tscrub]").value = String(Math.round(t.frac * 1000));
+  const pb = n.querySelector("[data-r=tplay]"), k = t.playing ? "pause" : "play";
+  if (pb.dataset.k !== k) { pb.dataset.k = k; pb.innerHTML = ""; pb.append(svgIcon(k)); pb.setAttribute("aria-label", t.playing ? "Pause" : "Play"); }
+  n.querySelector("[data-r=ttime]").textContent = (t.frac * t.duration).toFixed(1) + " / " + Number(t.duration || 0).toFixed(1) + " s";
+  const steps = (pn.markers || []).length;
+  n.querySelector("[data-r=tprev]").title = steps ? "Previous step" : "Back a little";
+  n.querySelector("[data-r=tnext]").title = steps ? "Next step" : "Forward a little";
+}
+$("tlPlay").addEventListener("click", () => { const i = leadId(); if (i) togglePane(i); });
+$("tlPrev").addEventListener("click", () => { const i = leadId(); if (i) stepPane(i, -1); });
+$("tlNext").addEventListener("click", () => { const i = leadId(); if (i) stepPane(i, 1); });
+$("tlSync").addEventListener("change", e => { state.sync = e.target.checked; save(); if (state.sync) { broadcast({ type: "speed", speed: tlSpeed }); for (const k in panes) panes[k].speed = tlSpeed; syncSpeedSelects(); } });
+document.addEventListener("keydown", e => {
+  const tag = (e.target && e.target.tagName) || "";
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || e.metaKey || e.ctrlKey || e.altKey) return;
+  const i = leadId(); if (!i) return;
+  if (e.key === " " && tag !== "BUTTON") { e.preventDefault(); togglePane(i); }
+  else if (e.key === "ArrowRight") { e.preventDefault(); stepPane(i, 1); }
+  else if (e.key === "ArrowLeft") { e.preventDefault(); stepPane(i, -1); }
+});
+$("tlScrub").addEventListener("input", e => { scrubbing = true; const i = leadId(); if (i) sendTo(i, { type: "seek", frac: Number(e.target.value) / 1000 }); });
+$("tlScrub").addEventListener("change", () => { scrubbing = false; });
+$("tlSpeed").addEventListener("change", e => { const i = leadId(); if (i) setSpeed(i, Number(e.target.value) || 1); });
+
+/* ---------- Version panes ---------- */
+function renderVersions() {
+  const box = $("versions");
+  for (const id of Object.keys(panes)) if (!state.versions.some(v => v.id === id) && !panes[id].busy) { panes[id].node?.remove(); delete panes[id]; }
+  if (!state.versions.length && !Object.values(panes).some(p => p.busy)) {
+    box.innerHTML = "";
+    box.append(el("div", { class: "empty" },
+      el("b", { text: state.spec ? "Spec ready" : "No versions yet" }),
+      el("span", { text: state.spec ? "Choose a library under step 4 and generate version A." : "Describe a goal and draft a spec, or load one of the examples." })));
+    return;
+  }
+  box.querySelector(".empty")?.remove();
+  for (const id of ["A", "B", "C"]) {
+    const v = state.versions.find(x => x.id === id);
+    const pn = panes[id];
+    if (!v && !(pn && pn.busy)) continue;
+    if (!pn || !pn.node) buildPane(id);
+    else if (v && pn.renderedCode !== v.code + "|" + v.lib + "|" + state.spec.modelCode) loadPreview(id);
+    renderPaneBody(id);
+  }
+  renderCompare();
+}
+
+function buildPane(id) {
+  const pn = panes[id] = panes[id] || { errors: [], check: null, tab: "preview" };
+  const node = el("article", { class: "pane", "aria-label": "Version " + id });
+  pn.node = node;
+  node.innerHTML = "";
+  node.append(
+    el("div", { class: "pane-head" },
+      el("span", { class: "tag " + id, text: id }),
+      el("div", {}, el("div", { class: "pane-title", "data-r": "title" }), el("div", { class: "pane-sub", "data-r": "sub" })),
+      el("span", { class: "spacer" }),
+      el("span", { "data-r": "status" }),
+      el("button", { class: "btn small", type: "button", "data-r": "fs", title: "Show this version full screen (Esc to exit)", onclick: () => toggleFull(id) }, "Full screen")),
+    el("div", { class: "tabs", role: "tablist" },
+      ["preview", "source", "how"].map(t => el("button", { type: "button", role: "tab", "data-tab": t, text: { preview: "Preview", source: "Edit code", how: "How it works" }[t],
+        onclick: () => { pn.tab = t; renderPaneBody(id); } }))),
+    el("div", { class: "view", "data-r": "view" }),
+    el("div", { class: "transport", "data-r": "transport", hidden: true },
+      el("button", { class: "tbtn", type: "button", "data-r": "tprev", title: "Previous step", "aria-label": "Previous step", onclick: () => stepPane(id, -1) }, svgIcon("prev")),
+      el("button", { class: "tbtn primary", type: "button", "data-r": "tplay", "aria-label": "Play", onclick: () => togglePane(id) }, svgIcon("play")),
+      el("button", { class: "tbtn", type: "button", "data-r": "tnext", title: "Next step", "aria-label": "Next step", onclick: () => stepPane(id, 1) }, svgIcon("next")),
+      el("input", { type: "range", min: 0, max: 1000, value: 0, "data-r": "tscrub", "aria-label": "Playback position for version " + id,
+        oninput: e => { pn.scrubbing = true; sendTo(id, { type: "seek", frac: Number(e.target.value) / 1000 }); }, onchange: () => { pn.scrubbing = false; } }),
+      el("output", { "data-r": "ttime", text: "0.0 / 0.0 s" }),
+      el("select", { "data-r": "tspeed", "aria-label": "Playback speed for version " + id, onchange: e => setSpeed(id, Number(e.target.value)) },
+        SPEEDS.map(v => el("option", { value: String(v), text: v + "\u00d7", selected: v === 1 })))),
+    el("div", { class: "check", "data-r": "check" }),
+    el("div", { class: "problems", "data-r": "problems", hidden: true }),
+    el("details", { class: "console", "data-r": "console" },
+      el("summary", {}, "Console ", el("span", { class: "ccount", "data-r": "ccount", text: "(empty)" })),
+      el("div", { class: "clog", "data-r": "clog", role: "log", "aria-live": "off" }),
+      el("button", { class: "btn small", type: "button", text: "Clear", onclick: () => { pn.logs = []; renderConsole(id); } })),
+    el("div", { class: "pane-foot" },
+      el("form", { class: "refine", onsubmit: e => { e.preventDefault(); const i = node.querySelector("[data-r=refine]"); if (i.value.trim()) { refine(id, i.value.trim()); i.value = ""; } } },
+        el("input", { type: "text", "data-r": "refine", "aria-label": "Describe a change to version " + id, placeholder: "Describe a change, e.g. label the peak height" }),
+        el("button", { class: "btn", type: "submit", "data-gen": "1", text: "Refine" })),
+      el("div", { class: "foot-actions" },
+        el("button", { class: "btn small", type: "button", "data-r": "repair", hidden: true, "data-gen": "1", text: "Fix errors", onclick: () => repair(id) }),
+        el("button", { class: "btn small", type: "button", text: "Reload preview", onclick: () => loadPreview(id) }),
+        el("button", { class: "btn small", type: "button", "data-r": "dl", text: "Download HTML", onclick: () => download(id) }),
+        el("button", { class: "btn small", type: "button", "data-r": "undo", text: "Undo last change", onclick: () => undo(id) }),
+        id !== "A" ? el("button", { class: "btn small", type: "button", text: "Remove " + id, onclick: () => removeVersion(id) }) : null))
+  );
+  node.dataset.vid = id;
+  const box = $("versions");
+  const after = [...box.children].find(n => n.dataset && n.dataset.vid && n.dataset.vid > id);
+  if (after) box.insertBefore(node, after); else box.append(node);
+  const iframe = el("iframe", { class: "frame", sandbox: "allow-scripts", title: "Preview of version " + id });
+  pn.iframe = iframe;
+  node.querySelector("[data-r=view]").append(iframe);
+  if (state.versions.some(v => v.id === id)) loadPreview(id);
+}
+
+function loadPreview(id) {
+  const v = state.versions.find(x => x.id === id), pn = panes[id];
+  if (!v || !pn) return;
+  pn.errors = []; pn.check = null; pn.booted = false; pn.hasContent = null; pn.timeline = false; pn.time = null; pn.markers = [];
+  const trn = pn.node && pn.node.querySelector("[data-r=transport]"); if (trn) trn.hidden = true;
+  pn.renderedCode = v.code + "|" + v.lib + "|" + state.spec.modelCode;
+  const doc = buildDoc(v.lib, v.code, state.spec, Object.assign({}, params), false);
+  const at = doc.indexOf(esc(v.code));
+  pn.codeStart = at >= 0 ? doc.slice(0, at).split("\n").length : 0; pn.codeLines = v.code.split("\n").length;
+  pn.errLine = {}; pn.logs = []; renderConsole(id);
+  pn.iframe.srcdoc = doc;
+  clearTimeout(pn.bootTimer);
+  pn.bootTimer = setTimeout(() => { if (!pn.booted) { pn.errors.push("The preview did not start. This viewer may block embedded previews; try Download HTML and open the file in Chrome."); renderPaneStatus(id); } }, 7000);
+  renderPaneStatus(id);
+}
+
+function renderPaneBody(id) {
+  const pn = panes[id], v = state.versions.find(x => x.id === id), node = pn.node;
+  if (!node) return;
+  node.querySelector("[data-r=title]").textContent = v ? libName(v.lib) : "Generating…";
+  node.querySelector("[data-r=sub]").textContent = v ? (LIBS[v.lib]?.dim || "") + (v.history?.length ? " · revision " + (v.history.length + 1) : "") : "";
+  for (const b of node.querySelectorAll(".tabs button")) b.setAttribute("aria-selected", String(b.dataset.tab === pn.tab));
+  markSourceTab(id);
+  const view = node.querySelector("[data-r=view]");
+  pn.iframe.hidden = pn.tab !== "preview";
+  renderPaneTransport(id);
+  view.querySelectorAll(".code,.explain,.busy,.copybtn,.srcwrap").forEach(n => n.remove());
+  if (pn.editor) { pn.editor.destroy(); pn.editor = null; }
+  pn.ta = null;
+  if (pn.tab === "source" && v) buildSource(id, view);
+  if (pn.tab === "how" && v) {
+    view.append(el("div", { class: "explain" },
+      el("h4", { text: "What this version does" }), el("p", { text: v.explanation || "No explanation returned." }),
+      v.caveats?.length ? [el("h4", { text: "Caveats" }), el("ul", {}, v.caveats.map(c => el("li", { text: c })))] : null,
+      el("h4", { text: "Shared model (same for every version)" }), el("pre", { text: state.spec.modelCode }),
+      state.spec.checkCode ? [el("h4", { text: "Check" }), el("pre", { text: state.spec.checkCode })] : null));
+  }
+  if (pn.busy) {
+    const stop = el("button", { class: "btn small", type: "button", text: "Stop", onclick: () => pn.ctl?.abort() });
+    view.append(el("div", { class: "busy", role: "status" }, el("div", { class: "spinner" }), el("div", { "data-r": "busytext", text: pn.busyText || "Working…" }), el("div", { class: "note", text: "Generation usually takes 30–90 seconds." }), stop));
+  }
+  renderPaneStatus(id);
+}
+
+/* ---------- Editable source + console ---------- */
+let cmLoad = null;
+function loadCM() {
+  if (window.CM) return Promise.resolve(window.CM);
+  if (!cmLoad) cmLoad = new Promise(res => {
+    const sc = document.createElement("script"); sc.src = "vendor/codemirror.min.js";
+    sc.onload = () => res(window.CM || null); sc.onerror = () => res(null);
+    document.head.append(sc);
+  });
+  return cmLoad;
+}
+function codeLine(id, docLine) {
+  const pn = panes[id], n = Number(docLine) - (pn.codeStart || 0) + 1;
+  return pn.codeStart && docLine && n >= 1 && n <= (pn.codeLines || 0) ? n : 0;
+}
+function pushLog(id, level, message) {
+  const pn = panes[id]; pn.logs = pn.logs || [];
+  pn.logs.push({ level, message }); if (pn.logs.length > 300) pn.logs.splice(0, pn.logs.length - 300);
+  cancelAnimationFrame(pn.logFrame); pn.logFrame = requestAnimationFrame(() => renderConsole(id));
+}
+function renderConsole(id) {
+  const pn = panes[id], node = pn && pn.node; if (!node) return;
+  const logs = pn.logs || [], box = node.querySelector("[data-r=clog]");
+  const errs = logs.filter(l => l.level === "error").length;
+  node.querySelector("[data-r=ccount]").textContent = logs.length ? "(" + logs.length + (errs ? ", " + errs + (errs === 1 ? " error" : " errors") : "") + ")" : "(empty)";
+  const atEnd = box.scrollTop + box.clientHeight >= box.scrollHeight - 4;
+  box.innerHTML = "";
+  if (!logs.length) box.append(el("div", { class: "cl muted", text: "Output from console.log and errors appears here." }));
+  for (const l of logs) box.append(el("div", { class: "cl " + l.level, text: l.message }));
+  if (atEnd) box.scrollTop = box.scrollHeight;
+}
+function isEdited(id) { const pn = panes[id], v = state.versions.find(x => x.id === id); return !!(pn && v && pn.draft != null && pn.draft !== v.code); }
+function markSourceTab(id) {
+  const pn = panes[id], b = pn && pn.node && pn.node.querySelector('.tabs [data-tab="source"]'); if (!b) return;
+  b.textContent = isEdited(id) ? "Edit code •" : "Edit code";
+  b.title = isEdited(id) ? "You have edits that haven't been run yet" : "";
+  const st = pn.node.querySelector("[data-r=srcstate]");
+  if (st) st.textContent = isEdited(id) ? "Edited, not run yet" : "Matches the running preview";
+  const rb = pn.node.querySelector("[data-r=run]"); if (rb) rb.textContent = isEdited(id) ? "Run edits" : "Run";
+  const db = pn.node.querySelector("[data-r=discard]"); if (db) db.hidden = !isEdited(id);
+}
+function runEdit(id) {
+  const pn = panes[id], v = state.versions.find(x => x.id === id); if (!v) return;
+  if (isEdited(id)) {
+    v.history = (v.history || []).concat([{ lib: v.lib, code: v.code, explanation: v.explanation, caveats: v.caveats }]).slice(-5);
+    v.code = pn.draft; v.handEdited = true; state.source = null;
+    save();
+  }
+  pn.draft = null; pn.tab = "preview";
+  loadPreview(id); renderPaneBody(id); renderCompare();
+}
+function goToLine(id, n) {
+  const pn = panes[id]; pn.gotoLine = n;
+  if (pn.tab !== "source") { pn.tab = "source"; renderPaneBody(id); return; }
+  applyGoto(id);
+}
+function applyGoto(id) {
+  const pn = panes[id], n = pn.gotoLine; if (!n) return;
+  if (pn.editor) {
+    const d = pn.editor.state.doc, line = d.line(Math.min(Math.max(1, n), d.lines));
+    pn.editor.dispatch({ selection: { anchor: line.from, head: line.to }, effects: CM.EditorView.scrollIntoView(line.from, { y: "center" }) });
+    pn.editor.focus(); pn.gotoLine = 0;
+  } else if (pn.ta) {
+    const lines = pn.ta.value.split("\n"), k = Math.min(Math.max(1, n), lines.length);
+    const from = lines.slice(0, k - 1).join("\n").length + (k > 1 ? 1 : 0);
+    pn.ta.focus(); pn.ta.setSelectionRange(from, from + lines[k - 1].length);
+    pn.ta.scrollTop = Math.max(0, (k - 6) * 18); pn.gotoLine = 0;
+  }
+}
+let cmExt = null;
+function cmExtensions() {
+  if (cmExt) return cmExt;
+  const setErrs = CM.StateEffect.define();
+  const errField = CM.StateField.define({
+    create: () => CM.Decoration.none,
+    update(d, tr) { d = d.map(tr.changes); for (const e of tr.effects) if (e.is(setErrs)) d = CM.Decoration.set(e.value, true); return d; },
+    provide: f => CM.EditorView.decorations.from(f)
+  });
+  const t = CM.tags;
+  const hl = CM.HighlightStyle.define([
+    { tag: [t.keyword, t.controlKeyword, t.moduleKeyword, t.operatorKeyword, t.definitionKeyword], color: "var(--hl-kw)" },
+    { tag: [t.string, t.special(t.string), t.regexp], color: "var(--hl-str)" },
+    { tag: [t.number, t.bool, t.null, t.atom], color: "var(--hl-num)" },
+    { tag: [t.lineComment, t.blockComment, t.comment], color: "var(--hl-com)", fontStyle: "italic" },
+    { tag: [t.function(t.variableName), t.function(t.propertyName)], color: "var(--hl-fn)" },
+    { tag: [t.definition(t.variableName)], color: "var(--hl-def)" }
+  ]);
+  const theme = CM.EditorView.theme({
+    "&": { height: "100%", fontSize: "12px", backgroundColor: "var(--sunk)", color: "var(--ink)" },
+    ".cm-scroller": { fontFamily: "var(--mono)", lineHeight: "1.55" },
+    ".cm-content": { caretColor: "var(--ink)" },
+    ".cm-gutters": { backgroundColor: "var(--sunk)", color: "var(--muted)", border: "none" },
+    ".cm-activeLine, .cm-activeLineGutter": { backgroundColor: "color-mix(in srgb, var(--accent) 9%, transparent)" },
+    "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection": { backgroundColor: "color-mix(in srgb, var(--accent) 28%, transparent) !important" },
+    ".cm-errline": { backgroundColor: "color-mix(in srgb, var(--bad) 16%, transparent)" },
+    "&.cm-focused": { outline: "2px solid var(--focus)", outlineOffset: "-2px" }
+  });
+  cmExt = { setErrs, list: [CM.basicSetup, CM.javascript(), CM.syntaxHighlighting(hl), theme, errField] };
+  return cmExt;
+}
+function markErrors(id) {
+  const pn = panes[id], ed = pn.editor; if (!ed || isEdited(id)) return;
+  const d = ed.state.doc, lines = [...new Set(Object.values(pn.errLine || {}))].filter(n => n >= 1 && n <= d.lines).sort((a, b) => a - b);
+  ed.dispatch({ effects: cmExtensions().setErrs.of(lines.map(n => CM.Decoration.line({ class: "cm-errline" }).range(d.line(n).from))) });
+}
+function buildSource(id, view) {
+  const pn = panes[id], v = state.versions.find(x => x.id === id);
+  const text = pn.draft != null ? pn.draft : v.code;
+  const host = el("div", { class: "edhost" });
+  const copy = el("button", { class: "btn small", type: "button", text: "Copy",
+    onclick: async () => { try { await navigator.clipboard.writeText(pn.draft != null ? pn.draft : v.code); copy.textContent = "Copied"; } catch (e) { copy.textContent = "Copy failed"; } setTimeout(() => { copy.textContent = "Copy"; }, 1800); } });
+  const wrap = el("div", { class: "srcwrap" },
+    el("div", { class: "srcbar" },
+      el("button", { class: "btn small primary", type: "button", "data-r": "run", text: "Run", title: "Run this code in the preview (Ctrl+Enter or ⌘+Enter)", onclick: () => runEdit(id) }),
+      el("button", { class: "btn small", type: "button", "data-r": "discard", text: "Discard edits", hidden: true, onclick: () => { pn.draft = null; renderPaneBody(id); } }),
+      copy,
+      el("span", { class: "note", "data-r": "srcstate" }),
+      el("span", { class: "spacer" }),
+      el("span", { class: "note", text: "Ctrl+Enter runs" })),
+    host);
+  view.append(wrap);
+  const onChange = val => { pn.draft = val; markSourceTab(id); };
+  const fallback = () => {
+    if (!wrap.isConnected || pn.tab !== "source") return;
+    host.innerHTML = "";
+    const ta = el("textarea", { class: "code-ta", spellcheck: "false", "aria-label": "Code for version " + id });
+    ta.value = text; pn.ta = ta;
+    ta.addEventListener("input", () => onChange(ta.value));
+    ta.addEventListener("keydown", e => {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); runEdit(id); }
+      else if (e.key === "Tab" && !e.shiftKey && !e.altKey) { e.preventDefault(); ta.setRangeText("  ", ta.selectionStart, ta.selectionEnd, "end"); onChange(ta.value); }
+    });
+    host.append(ta); applyGoto(id);
+  };
+  markSourceTab(id);
+  host.append(el("div", { class: "note", style: "padding:12px", text: "Loading the editor…" }));
+  loadCM().then(cm => {
+    if (!wrap.isConnected || pn.tab !== "source") return;
+    if (!cm) { fallback(); return; }
+    host.innerHTML = "";
+    const ext = cmExtensions();
+    pn.editor = new CM.EditorView({
+      parent: host,
+      state: CM.EditorState.create({ doc: text, extensions: [
+        CM.Prec.highest(CM.keymap.of([{ key: "Mod-Enter", run: () => { runEdit(id); return true; } }])),
+        CM.keymap.of([CM.indentWithTab]),
+        ext.list,
+        CM.EditorView.contentAttributes.of({ "aria-label": "Code for version " + id }),
+        CM.EditorView.updateListener.of(u => { if (u.docChanged) onChange(u.state.doc.toString()); })
+      ] })
+    });
+    markErrors(id); applyGoto(id);
+  });
+}
+
+function renderPaneStatus(id) {
+  const pn = panes[id], node = pn?.node; if (!node) return;
+  const v = state.versions.find(x => x.id === id);
+  const st = node.querySelector("[data-r=status]"); st.innerHTML = "";
+  let pill;
+  if (pn.busy) pill = el("span", { class: "pill idle", text: "Generating" });
+  else if (!v) pill = null;
+  else if (pn.errors.length) pill = el("span", { class: "pill bad", text: pn.errors.length + (pn.errors.length === 1 ? " error" : " errors") });
+  else if (pn.hasContent === false) pill = el("span", { class: "pill warn", text: "Preview looks empty" });
+  else if (pn.check) pill = el("span", { class: "pill " + (pn.check.pass ? "good" : "warn"), text: pn.check.pass ? "Check passed" : "Check failed" });
+  else pill = el("span", { class: "pill idle", text: "Running" });
+  if (pill) st.append(pill);
+  const ck = node.querySelector("[data-r=check]");
+  ck.textContent = pn.check ? pn.check.detail : (v ? "Waiting for the model check…" : "");
+  ck.hidden = !v;
+  const pr = node.querySelector("[data-r=problems]");
+  pr.hidden = !pn.errors.length; pr.innerHTML = "";
+  if (pn.errors.length) pr.append(el("b", { text: "Problems" }), el("ul", {}, pn.errors.map(m => el("li", {}, m,
+    pn.errLine && pn.errLine[m] ? el("button", { class: "linkbtn", type: "button", text: "Line " + pn.errLine[m], title: "Show this line in the Source tab", onclick: () => goToLine(id, pn.errLine[m]) }) : null))));
+  node.querySelector("[data-r=repair]").hidden = !pn.errors.length && !(pn.check && !pn.check.pass) && pn.hasContent !== false;
+  node.querySelector("[data-r=undo]").hidden = !(v && v.history && v.history.length);
+  syncGenButtons();
+}
+
+function renderCompare() {
+  const b = $("compareBanner");
+  const vs = ["A", "B", "C"].map(i => state.versions.find(v => v.id === i)).filter(Boolean);
+  b.hidden = vs.length < 2;
+  if (vs.length < 2) return;
+  b.innerHTML = "";
+  const names = vs.map(v => v.id).join(vs.length > 2 ? ", " : " and ");
+  b.append(el("div", { class: "compare" },
+    vs.map((v, k) => [k ? el("span", { class: "note", text: "vs" }) : null,
+      el("span", {}, el("span", { class: "tag " + v.id, text: v.id }), " " + libName(v.lib) + " \u00b7 " + LIBS[v.lib].dim)]).flat(),
+    el("span", { class: "spacer" }),
+    el("button", { class: "btn small", type: "button", text: "Ask which teaches better", onclick: () => askChat("Compare versions " + names + " against the learning objective. Which teaches it best, what does each do better, and does the extra dimension or library add real information?") })),
+    el("div", { class: "learn" }, el("b", { text: "What this comparison teaches" }),
+      vs.slice(1).map(v => el("div", {}, el("span", { class: "tag " + vs[0].id, text: vs[0].id }), " vs ", el("span", { class: "tag " + v.id, text: v.id }), " " + lessonFor(vs[0].lib, v.lib)))),
+    el("p", { class: "note", style: "margin-top:6px", text: "Same spec, model, controls and check in every version, so the differences come from the library alone. Keyboard: Space plays or pauses, \u2190 and \u2192 step." }));
+}
+
+function removeVersion(id) {
+  state.versions = state.versions.filter(v => v.id !== id);
+  if (panes[id]) { panes[id].node?.remove(); delete panes[id]; }
+  save(); renderAll();
+}
+
+function syncGenButtons() {
+  const anyBusy = Object.values(panes).some(p => p.busy) || specBusy;
+  document.querySelectorAll("[data-gen]").forEach(b => b.disabled = !sample || anyBusy);
+  ["btnGenA", "btnGenB", "btnGenC"].forEach(i => { const b = $(i); if (b) b.disabled = !sample || anyBusy; });
+  $("btnSpec").disabled = !sample || anyBusy;
+}
+
+/* ---------- Claude calls ---------- */
+const ERR_COPY = {
+  not_granted: "Claude access was declined for this page, so generation is off. You can still explore and edit.",
+  sampling_disabled: "Claude isn't available for this account.",
+  rate_limited: "Too many requests right now. Wait a minute and try again.",
+  session_expired: "Your session expired. Sign in again, then retry.",
+  invalid_json: "Claude's reply couldn't be read as code. Try again, or simplify the request.",
+  refused: "Claude declined this request. Rephrase the goal and try again.",
+  prompt_too_large: "The request is too large. Shorten the goal or the code.",
+  cancelled: "Stopped."
+};
+const errText = e => ERR_COPY[e && e.code] || ("Something went wrong (" + ((e && (e.code || e.message)) || "unknown") + "). Try again.");
+
+const SPEC_PROMPT = `You are the design engine of Visualization Lab, a tool for educators and L&D designers who build interactive lessons.
+Turn the request into a teaching spec. Reply with ONLY one JSON object with exactly these keys:
+{
+ "title": "short name",
+ "objective": "one sentence: what the learner should understand",
+ "view": "2D" or "3D" (use the requested view unless it is "Auto"; on Auto choose 3D only when depth or spatial relationships are the lesson),
+ "recommended": {"library": id, "why": "one sentence"},
+ "alternative": {"library": a different id that makes an instructive comparison, "why": "one sentence on what comparing the two teaches"},
+ "assumptions": ["..."],
+ "units": ["quantity: unit"],
+ "params": [{"id": "camelCase", "label": "...", "min": n, "max": n, "step": n, "value": n, "unit": "..."}] (1 to 4 learner controls),
+ "modelCode": "JavaScript source that defines exactly function model(p) { ... }. Pure and deterministic, no DOM, no randomness. Takes the params object and returns plain data a renderer needs: arrays of points with units, steps, series. Simulations integrate with a fixed time step and return it. Processes return ordered steps and nodes with ids, labels and next/branch links. Charts return the series.",
+ "checkCode": "JavaScript source that defines function check(p) { ... }. It calls model(p) and compares with a known result, formula or invariant. Returns {pass: boolean, detail: one sentence with numbers}.",
+ "checkDescription": "one sentence describing the check",
+ "learnerPrompts": {"predict": "question to ask before exploring", "explain": "question to ask after"}
+}
+@@SPEC_RULES@@
+If the user picked a specific library, set recommended.library to it and say honestly how well it fits.`;
+
+function renderPrompt(v, lib, mode, extra) {
+  const s = state.spec, L = LIBS[lib];
+  const specLite = { title: s.title, objective: s.objective, view: s.view, assumptions: s.assumptions, units: s.units, params: s.params, learnerPrompts: s.learnerPrompts };
+  let p = `You write the renderer for one version of a Visualization Lab lesson. Reply with ONLY one JSON object: {"code": "full JavaScript source", "explanation": "3 to 5 plain sentences: how it works and what this library contributes", "caveats": ["..."]}.
+@@RENDER_CONTRACT@@
+Library: ${L.name}. ${L.notes}${(() => { const pr = PAIRS.find(x => x.a === s.recommended?.library); const f = pr && (lib === pr.a ? pr.formA : lib === pr.b ? pr.formB : null); return f ? "\nDraw this version as " + f + ", so it compares cleanly with the other version of the pair." : ""; })()}
+View for this version: ${lib === "three" ? "3D" : lib === "plotly" ? s.view : "2D"}.
+Spec: ${JSON.stringify(specLite)}
+model source:
+${s.modelCode}
+check source:
+${s.checkCode || "(none)"}`;
+  if (mode === "refine") p += `\n\nCurrent code:\n${v.code}\n\nChange requested by the designer: ${extra}\nReturn the full updated code, keeping everything that already works.`;
+  if (mode === "repair") p += `\n\nCurrent code:\n${v.code}\n\nThis code fails in the preview. Problems reported:\n${extra}\nFix the cause with the smallest change and return the full corrected code.`;
+  return p;
+}
+
+let specBusy = false;
+$("btnSpec").addEventListener("click", draftSpec);
+async function draftSpec() {
+  if (!sample) return;
+  const goal = (state.goal || "").trim();
+  if (!goal) { $("goal").focus(); flashSpecError("Describe what learners should understand first."); return; }
+  specBusy = true; syncGenButtons();
+  const btn = $("btnSpec"); btn.textContent = "Drafting spec…";
+  const box = $("specBox"); box.innerHTML = ""; box.append(el("div", { class: "empty" }, el("div", { class: "spinner" }), el("span", { text: "Claude is writing the objective, model and check. This usually takes 20–60 seconds." })));
+  try {
+    const raw = await sample.json(SPEC_PROMPT + "\n\nRequest: " + JSON.stringify({ goal, view: state.view, library: state.libChoice }), { cache: false });
+    const s = validateSpec(raw);
+    state.spec = s; state.specCheck = null; state.editingSpec = false; state.source = null;
+    state.versions = []; for (const id in panes) { panes[id].node?.remove(); delete panes[id]; }
+    resetParams(); save(); renderAll(); runSpecCheck();
+  } catch (e) {
+    renderSpec(); flashSpecError(e && e.code ? errText(e) : (e.message || String(e)));
+  } finally { specBusy = false; btn.textContent = "Draft spec"; syncGenButtons(); }
+}
+
+async function fixModel() {
+  if (!sample || !state.spec) return;
+  const issues = [...(state.specProbe || [])];
+  if (state.specCheck && !state.specCheck.pass) issues.push("check failed: " + state.specCheck.detail);
+  specBusy = true; syncGenButtons();
+  const b = $("btnFixModel"); if (b) b.textContent = "Fixing the model\u2026";
+  try {
+    const raw = await sample.json(SPEC_PROMPT + "\n\nThis spec has problems at its default values:\n- " + issues.join("\n- ") +
+      "\n\nCurrent spec:\n" + JSON.stringify(state.spec) + "\n\nReturn the corrected full spec as one JSON object with the same keys. Keep the title, objective and control ids unless they cause the problem.", { cache: false });
+    state.spec = validateSpec(raw); state.specCheck = null; resetParams(); save(); renderAll(); runSpecCheck();
+  } catch (e) { renderSpec(); flashSpecError(e && e.code ? errText(e) : (e.message || String(e))); }
+  finally { specBusy = false; syncGenButtons(); }
+}
+
+async function callRenderer(id, lib, mode, extra, busyText) {
+  if (!sample || !state.spec) return;
+  const pn = panes[id] = panes[id] || { errors: [], check: null, tab: "preview" };
+  const prev = state.versions.find(v => v.id === id);
+  let failMsg = "";
+  pn.busy = true; pn.busyText = busyText; pn.ctl = new AbortController(); pn.tab = "preview";
+  if (!pn.node) buildPane(id);
+  renderPaneBody(id); renderVersions();
+  try {
+    const out = await sample.json(renderPrompt(prev, lib, mode, extra), { signal: pn.ctl.signal, cache: false });
+    if (!out || typeof out.code !== "string" || !/window\.lab\s*=/.test(out.code)) throw new Error("The reply didn't include code that defines window.lab.");
+    const v = { id, lib, code: out.code, explanation: String(out.explanation || ""), caveats: Array.isArray(out.caveats) ? out.caveats.map(String) : [], history: [] };
+    if (prev && mode !== "fresh") v.history = (prev.history || []).concat([{ lib: prev.lib, code: prev.code, explanation: prev.explanation, caveats: prev.caveats }]).slice(-5);
+    state.versions = state.versions.filter(x => x.id !== id).concat(v).sort((a, b) => a.id.localeCompare(b.id));
+    pn.draft = null; state.source = null;
+    save();
+    pn.busy = false;
+    loadPreview(id);
+  } catch (e) {
+    pn.busy = false;
+    if (!(e && e.code === "cancelled")) failMsg = (e && e.code) ? errText(e) : (e.message || String(e));
+    if (failMsg && prev) pn.errors = [failMsg];
+  } finally {
+    pn.busy = false; renderAll();
+    if (failMsg && !prev) flashSpecError("Version " + id + " wasn't generated. " + failMsg);
+  }
+}
+function generate(id, lib) { callRenderer(id, lib, "fresh", "", "Generating version " + id + " with " + libName(lib) + "…"); }
+function refine(id, instruction) { const v = state.versions.find(x => x.id === id); if (v) callRenderer(id, v.lib, "refine", instruction, "Applying: " + instruction); }
+function repair(id) {
+  const v = state.versions.find(x => x.id === id), pn = panes[id]; if (!v) return;
+  const issues = pn.errors.slice();
+  if (pn.check && !pn.check.pass) issues.push("Model check failed: " + pn.check.detail);
+  if (pn.hasContent === false) issues.push("Nothing visible was drawn in root after 2 seconds.");
+  callRenderer(id, v.lib, "repair", issues.join("\n") || "Unknown failure", "Fixing version " + id + "…");
+}
+function undo(id) {
+  const v = state.versions.find(x => x.id === id); if (!v || !v.history?.length) return;
+  const last = v.history.pop();
+  Object.assign(v, last); if (panes[id]) panes[id].draft = null; save(); loadPreview(id); renderAll();
+}
+
+/* ---------- Download a standalone file ---------- */
+let downloads = null;
+async function download(id) {
+  const v = state.versions.find(x => x.id === id); if (!v) return;
+  const html = buildDoc(v.lib, v.code, state.spec, Object.assign({}, params), true);
+  const name = slug(state.spec.title) + "-" + id + "-" + v.lib + ".html";
+  const btn = panes[id].node.querySelector("[data-r=dl]");
+  if (!downloads) { btn.textContent = "Download unavailable here"; return; }
+  try { const r = await downloads.save({ filename: name, data: html }); btn.textContent = r.status === "saved" ? "Saved" : "Download HTML"; }
+  catch (e) { btn.textContent = e && e.code === "unavailable" ? "Download unavailable here" : "Download HTML"; }
+  setTimeout(() => { btn.textContent = "Download HTML"; }, 2500);
+}
+
+/* ---------- Chat ---------- */
+const CHAT_CHIPS = ["What isn't working?", "How could this teach the objective better?", "Make it more accessible", "Is 3D adding anything here?"];
+function renderChat() {
+  const chips = $("chatChips"); chips.innerHTML = "";
+  for (const c of CHAT_CHIPS) chips.append(el("button", { class: "chip", type: "button", "data-gen": "1", text: c, onclick: () => askChat(c) }));
+  const box = $("msgs"); box.innerHTML = "";
+  if (!state.chat.length) box.append(el("p", { class: "note", text: "Ask why a preview fails, what learners might misread, or how to improve the lesson. Suggested code changes come with a button that applies them." }));
+  for (const m of state.chat) box.append(chatBubble(m));
+  box.scrollTop = box.scrollHeight;
+}
+function chatBubble(m) {
+  const node = el("div", { class: "msg " + m.role });
+  const text = m.role === "assistant" ? m.content.replace(/^REFINE [ABC]:.*$/gm, "").trim() : m.content;
+  node.append(text || "…");
+  if (m.role === "assistant") {
+    const acts = [...m.content.matchAll(/^REFINE ([ABC]):\s*(.+)$/gm)];
+    if (acts.length) node.append(el("div", { class: "applies" }, acts.map(([, id, instr]) =>
+      el("button", { class: "btn small", type: "button", "data-gen": "1", title: instr, text: "Apply to " + id + ": " + (instr.length > 48 ? instr.slice(0, 46) + "…" : instr),
+        disabled: !state.versions.some(v => v.id === id), onclick: () => refine(id, instr) }))));
+  }
+  return node;
+}
+function chatContext() {
+  const s = state.spec;
+  if (!s) return "No spec yet. Goal typed so far: " + (state.goal || "(empty)");
+  const parts = [`Spec: ${JSON.stringify({ title: s.title, objective: s.objective, view: s.view, assumptions: s.assumptions, params: s.params, learnerPrompts: s.learnerPrompts })}`,
+    `model source:\n${s.modelCode}`, `check source:\n${s.checkCode || "(none)"}`,
+    `Spec check: ${state.specCheck ? JSON.stringify(state.specCheck) : "not run"}`, `Current control values: ${JSON.stringify(params)}`];
+  for (const v of state.versions) {
+    const pn = panes[v.id] || {};
+    parts.push(`Version ${v.id} (${libName(v.lib)}, ${LIBS[v.lib].dim}). How it is loaded: ${RUNTIME[v.lib]} Timeline: ${pn.timeline ? "uses host playback (duration/seek)" : "no duration/seek, so no host playback controls"}. Errors: ${JSON.stringify((pn.errors || []).map(m => pn.errLine && pn.errLine[m] ? m + " (code line " + pn.errLine[m] + ")" : m))}. Console (last 10): ${JSON.stringify((pn.logs || []).slice(-10).map(l => l.level + ": " + l.message))}.${v.handEdited ? " The designer has edited this code by hand; keep their edits." : ""} Check: ${JSON.stringify(pn.check || null)}. Visible content: ${pn.hasContent === false ? "none detected" : "yes or unknown"}.\nCode:\n${v.code.slice(0, 9000)}`);
+  }
+  return parts.join("\n\n");
+}
+const CHAT_RULES = `You are Claude inside Visualization Lab, helping an educator or L&D designer build and compare interactive lessons. Be concise and specific: under 170 words unless asked for more, short paragraphs or a few bullets, no headings. Ground answers in the spec, code, errors and check results below. Speak about learning impact as well as code.
+When a code change to a version would help, end your reply with one line per change in exactly this form, which the page turns into a button:
+REFINE A: <one-sentence instruction for the code generator>
+(use REFINE B: or REFINE C: for versions B and C). Never claim you changed anything yourself.
+How the lab runs code: each version runs in a sandboxed iframe. model() and check() are defined as globals first, then the library loads as described per version, then the code, which must define window.lab = {mount, update, destroy} and, for anything that changes over time, a duration getter and seek(t); the host supplies sliders and play/pause/scrub. Use these facts to diagnose. If code breaks the contract (a missing import, its own sliders or clock, a global-mode p5 sketch), say so plainly and propose a REFINE. Only blame loading when Problems shows "Failed to load". If the model returns empty or degenerate data at the default values, say the spec needs fixing and suggest the "Ask Claude to fix the model" button rather than patching the renderer.
+
+Current lab state:
+`;
+$("chatForm").addEventListener("submit", e => { e.preventDefault(); const t = $("chatInput").value.trim(); if (t) { $("chatInput").value = ""; askChat(t); } });
+$("chatInput").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("chatForm").requestSubmit(); } });
+$("btnStopChat").addEventListener("click", () => chatCtl?.abort());
+async function askChat(text) {
+  if (!sample || chatCtl) return;
+  state.chat.push({ role: "user", content: text });
+  const reply = { role: "assistant", content: "Thinking…" };
+  state.chat.push(reply); renderChat();
+  const bubble = $("msgs").lastChild;
+  chatCtl = new AbortController(); $("btnStopChat").hidden = false; $("btnSend").disabled = true;
+  const turns = state.chat.slice(0, -1).slice(-10);
+  try {
+    const { text: out } = await sample([{ role: "user", content: CHAT_RULES + chatContext() }, ...turns], {
+      cache: false, signal: chatCtl.signal, onText: ({ text: t }) => { bubble.textContent = t.replace(/^REFINE [ABC]:.*$/gm, "").trim(); $("msgs").scrollTop = $("msgs").scrollHeight; } });
+    reply.content = out;
+  } catch (e) {
+    reply.content = (e && e.text ? e.text + "\n\n" : "") + (e && e.code === "cancelled" ? "(Stopped.)" : errText(e));
+  } finally {
+    chatCtl = null; $("btnStopChat").hidden = true; $("btnSend").disabled = !sample;
+    state.chat = state.chat.slice(-30); save(); renderChat();
+  }
+}
+
+/* ---------- Top actions ---------- */
+$("btnExample").addEventListener("click", () => { resetLab(Object.assign(clone(EXAMPLE), { source: "example" })); });
+$("btnRocket").addEventListener("click", () => { resetLab(Object.assign(clone(ROCKET), { source: "example" })); });
+$("btnPipeline").addEventListener("click", () => { resetLab(Object.assign(clone(PIPELINE), { source: "example" })); });
+$("btnTerms").addEventListener("click", () => { resetLab(Object.assign(clone(TERMS), { source: "example" })); });
+$("btnNew").addEventListener("click", () => { resetLab({ goal: "", view: "Auto", libChoice: "recommend", spec: null, versions: [], chat: [] }); $("goal").focus(); });
+function resetLab(next) {
+  for (const id in panes) { panes[id].ctl?.abort(); panes[id].node?.remove(); delete panes[id]; }
+  state = next; state.specCheck = null; resetParams(); save(); renderAll(); if (state.spec) runSpecCheck();
+}
+
+function renderAll() { renderSetup(); renderSpec(); renderControls(); renderVersions(); renderChat(); syncGenButtons(); }
+
+
+// The gallery (lesson data and thumbnails) lives in gallery/data.js and loads the first time Get inspired opens
+let GALLERY = null, galLoad = null, galFailed = false;
+function loadGallery() {
+  if (GALLERY) return Promise.resolve(GALLERY);
+  if (!galLoad) galLoad = new Promise(res => {
+    const sc = document.createElement("script"); sc.src = "gallery/data.js";
+    sc.onload = () => res(Array.isArray(window.GALLERY_DATA) ? window.GALLERY_DATA : null); sc.onerror = () => res(null);
+    document.head.append(sc);
+  }).then(d => { GALLERY = d; galFailed = !d; return d; });
+  return galLoad;
+}
+const GAL_CATS = ["All", "Vocabulary", "Enterprise process", "Enterprise architecture", "Data stories", "ML and LLM", "Math"];
+const gal = { cat: "All", lib: "all", armed: null, armTimer: 0 };
+function galLab(it) { return it.ref === "TERMS" ? TERMS : it.ref === "PIPELINE" ? PIPELINE : it.lab; }
+function galTeaches(lab) {
+  const v = lab.versions, a = v[0] && v[0].lib, b = v[1] && v[1].lib;
+  const p = PAIRS.find(x => (x.a === a && x.b === b) || (x.a === b && x.b === a));
+  return p ? p.learn : (lab.spec.alternative && lab.spec.alternative.why) || "";
+}
+function galFiltered() {
+  return (GALLERY || []).filter(it => (gal.cat === "All" || it.category === gal.cat) && (gal.lib === "all" || galLab(it).versions.some(v => v.lib === gal.lib)));
+}
+function hasOwnWork() { return !!(state.spec && state.versions.length && !state.source); }
+function galAct(btn, key, run) {
+  if (hasOwnWork() && gal.armed !== key) {
+    gal.armed = key; clearTimeout(gal.armTimer);
+    document.querySelectorAll("[data-armed]").forEach(b => { b.textContent = b.dataset.label; b.removeAttribute("data-armed"); });
+    btn.dataset.label = btn.dataset.label || btn.textContent; btn.textContent = "Replace your current lesson?"; btn.setAttribute("data-armed", "1");
+    gal.armTimer = setTimeout(() => { gal.armed = null; btn.textContent = btn.dataset.label; btn.removeAttribute("data-armed"); }, 4000);
+    return;
+  }
+  gal.armed = null; run();
+}
+function openGallery(it) {
+  showPage("lab");
+  resetLab(Object.assign(clone(galLab(it)), { source: it.slug }));
+  window.scrollTo(0, 0);
+}
+function reusePrompt(it) {
+  showPage("lab");
+  resetLab({ goal: galLab(it).goal, view: "Auto", libChoice: "recommend", spec: null, versions: [], chat: [] });
+  window.scrollTo(0, 0); $("goal").focus();
+}
+function renderGallery() {
+  const cats = $("galCats"); cats.innerHTML = "";
+  if (!GALLERY) {
+    $("galGrid").innerHTML = ""; $("galCount").textContent = "";
+    $("galGrid").append(galFailed
+      ? el("p", { class: "note", text: "The gallery couldn't load. Check your connection, then switch to Lab and back." })
+      : el("div", { class: "empty" }, el("div", { class: "spinner" }), el("span", { text: "Loading the gallery\u2026" })));
+    if (!galFailed) loadGallery().then(renderGallery);
+    return;
+  }
+  for (const c of GAL_CATS) {
+    const n = c === "All" ? GALLERY.length : GALLERY.filter(it => it.category === c).length;
+    if (!n) continue;
+    cats.append(el("button", { class: "chip", type: "button", "aria-pressed": String(gal.cat === c), onclick: () => { gal.cat = c; renderGallery(); } }, c, el("span", { class: "n", text: String(n) })));
+  }
+  const sel = $("galLib");
+  if (!sel.options.length) {
+    const used = [...new Set(GALLERY.flatMap(it => galLab(it).versions.map(v => v.lib)))].sort((a, b) => libName(a).localeCompare(libName(b)));
+    sel.append(el("option", { value: "all", text: "All libraries" }));
+    for (const id of used) sel.append(el("option", { value: id, text: libName(id) + " · " + (LIBS[id] ? LIBS[id].dim : "") }));
+  }
+  sel.value = gal.lib;
+  const list = galFiltered(), grid = $("galGrid"); grid.innerHTML = "";
+  $("galCount").textContent = list.length === GALLERY.length ? GALLERY.length + " lessons" : list.length + " of " + GALLERY.length + " lessons";
+  if (!list.length) grid.append(el("p", { class: "note", text: "No lessons match these filters yet." }));
+  for (const it of list) {
+    const lab = galLab(it);
+    const img = el("img", { class: "gthumb", src: it.thumb, alt: "Preview of " + it.title + " drawn with " + libName(lab.versions[0].lib), loading: "lazy", decoding: "async" });
+    img.addEventListener("error", () => img.replaceWith(el("div", { class: "gthumb missing", text: it.title })));
+    const open = el("button", { class: "btn small primary", type: "button", text: "Open in lab", onclick: e => galAct(e.currentTarget, "open:" + it.slug, () => openGallery(it)) });
+    const reuse = el("button", { class: "btn small", type: "button", text: "Use this prompt", title: "Start a new lesson from this prompt and choose your own view and library", onclick: e => galAct(e.currentTarget, "reuse:" + it.slug, () => reusePrompt(it)) });
+    grid.append(el("article", { class: "gcard", "data-slug": it.slug, "aria-label": it.title },
+      img,
+      el("div", { class: "gbody" },
+        el("div", { class: "eyebrow", text: it.category }),
+        el("h3", { text: it.title }),
+        el("p", { class: "ggoal", title: lab.goal, text: lab.goal }),
+        el("div", { class: "glibs" }, lab.versions.map(v => el("span", { class: "glib" }, el("span", { class: "tag " + v.id, text: v.id }), libName(v.lib) + " · " + (LIBS[v.lib] ? LIBS[v.lib].dim : "")))),
+        el("p", { class: "gteach" }, el("b", { text: "Compare: " }), galTeaches(lab)),
+        el("div", { class: "gact" }, open, reuse))));
+  }
+}
+$("galLib").addEventListener("change", e => { gal.lib = e.target.value; renderGallery(); });
+$("btnSurprise").addEventListener("click", () => {
+  if (!GALLERY) return;
+  let list = galFiltered(); if (!list.length) { gal.cat = "All"; gal.lib = "all"; renderGallery(); list = GALLERY; }
+  const prev = document.querySelector(".gcard.pulse"), pool = list.filter(it => !prev || it.slug !== prev.dataset.slug);
+  const it = pool[Math.floor(Math.random() * pool.length)] || list[0];
+  document.querySelectorAll(".gcard.pulse").forEach(n => n.classList.remove("pulse"));
+  const card = document.querySelector('.gcard[data-slug="' + it.slug + '"]'); if (!card) return;
+  card.classList.add("pulse"); card.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+  const b = card.querySelector(".gact .primary"); if (b) b.focus({ preventScroll: true });
+});
+let page = "lab";
+function showPage(p) {
+  if (p === page) return;
+  const back = p === "lab";
+  page = p;
+  try { localStorage.setItem("vislab:page", p); } catch (e) {}
+  for (const b of $("pageSeg").querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.page === p));
+  document.querySelector("main.grid").hidden = !back;
+  $("topActions").hidden = !back;
+  $("inspire").hidden = back;
+  if (back) { for (const id in panes) if (state.versions.some(v => v.id === id)) loadPreview(id); }
+  else renderGallery();
+}
+$("pageSeg").addEventListener("click", e => { const b = e.target.closest("button"); if (b) showPage(b.dataset.page); });
+
+/* ---------- Boot ---------- */
+resetParams();
+renderAll();
+if (state.spec && !state.specCheck) runSpecCheck();
+syncGenButtons();
+try { if (localStorage.getItem("vislab:page") === "inspire") showPage("inspire"); } catch (e) {}
+(async () => {
+  try {
+    if (window.claude && claude.use) {
+      sample = await claude.use("sample");
+      downloads = await claude.use("downloads");
+    }
+  } catch (e) {}
+  if (!sample) { const n = $("genNote"); n.hidden = false; n.textContent = "Generation and chat need Claude in this viewer. You can still explore the example and edit the spec."; }
+  $("btnSend").disabled = !sample;
+  syncGenButtons();
+})();
+})();
+</script>

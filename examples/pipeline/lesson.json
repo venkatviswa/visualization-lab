@@ -1,0 +1,102 @@
+{
+  "goal": "Explain how our agentic delivery pipeline works:\n\n1. Reads Jira sprint stories (via a read-only Atlassian MCP server with guardrails)\n2. Plans implementation using the `planner` agent with Confluence context and Sourceprimary metadata discovery\n3. Builds Apex/LWC in a test-driven cycle (RED → GREEN → REFACTOR)\n4. Reviews code for quality, security, and governor limit compliance\n5. Deploys to a dedicated dev sandbox (`deploytarget`) — never to the live Sourceprimary org\n6. Documents every decision with full artifact traceability from requirement to code\n7. Governs via the Assurance Control Plane — shadow mode by default; DAB/Governance councils, Neo4j graph, and RAG index for evidence lineage and cross-feature impact\n8. Scores artifacts with ScoreCardV2 (8-dimensional scoring) and synthesizes a 13-section BoardPacket v2\n9. Improves via the Self-Improvement Agent — analyzes GitHub issues and run retros, classifies root causes, proposes fixes, and applies them through a mandatory human-in-the-loop gate",
+  "view": "Auto",
+  "libChoice": "recommend",
+  "spec": {
+    "title": "Agentic delivery pipeline",
+    "objective": "Learners follow one sprint story through all nine stages and see the guardrails at work: review findings force extra test-driven cycles, deployment only reaches the dev sandbox, governance runs in shadow or enforce mode, and no self-improvement fix lands without a human.",
+    "view": "2D",
+    "recommended": {
+      "library": "story",
+      "why": "An animated story with people, agents, code, tests and scores shows what happens at each stage, not just that a stage exists."
+    },
+    "alternative": {
+      "library": "reactflow",
+      "why": "A clickable architecture diagram of the same model tests whether the animation adds understanding or a diagram is enough."
+    },
+    "assumptions": [
+      "A scripted walk-through of one story, not a live run",
+      "Each review pass resolves one finding, and each finding adds a test-driven rebuild",
+      "Scorecard dimension names and values are illustrative placeholders",
+      "Timings are playback seconds, not real durations"
+    ],
+    "units": [
+      "time: playback seconds",
+      "scores: 0 to 100 (illustrative)"
+    ],
+    "params": [
+      {
+        "id": "reviewFindings",
+        "label": "Review findings",
+        "min": 0,
+        "max": 3,
+        "step": 1,
+        "value": 1,
+        "unit": "",
+        "labels": [
+          "None",
+          "1 finding",
+          "2 findings",
+          "3 findings"
+        ]
+      },
+      {
+        "id": "shadowMode",
+        "label": "Governance mode",
+        "min": 0,
+        "max": 1,
+        "step": 1,
+        "value": 1,
+        "unit": "",
+        "labels": [
+          "Enforce",
+          "Shadow"
+        ]
+      },
+      {
+        "id": "humanApproves",
+        "label": "Human at the gate",
+        "min": 0,
+        "max": 1,
+        "step": 1,
+        "value": 1,
+        "unit": "",
+        "labels": [
+          "Not yet",
+          "Approves"
+        ]
+      }
+    ],
+    "checkDescription": "Build runs once plus once per finding; deployment happens once, after review passes, to deploytarget only; the fix is applied only when a human approves.",
+    "learnerPrompts": {
+      "predict": "Set review findings to 3. How many times will the story pass through Build, and can it ever reach the live org?",
+      "explain": "Why does the Self-Improvement Agent stop at a human gate even when its proposed fix looks right?"
+    }
+  },
+  "versions": [
+    {
+      "id": "A",
+      "lib": "story",
+      "explanation": "One SVG holds a station track and a scene panel. A single paused GSAP timeline, built from model(), plays one scene per event: story cards arriving, the planner agent assembling a plan, code typing through RED, GREEN and REFACTOR, a reviewer scanning for findings, a package landing in the sandbox while the live org stays locked, the trace chain, governance mode, the scorecard filling, and the human gate. The host's play, pause and scrub controls call seek(t), which moves the timeline and updates the station highlights.",
+      "caveats": [
+        "Pictures are Lucide icons and SVG shapes, because the preview cannot load external images."
+      ]
+    },
+    {
+      "id": "B",
+      "lib": "reactflow",
+      "explanation": "React Flow draws the same nine stages as a node diagram with a dashed rework edge from Review to Build. It follows the same timeline, highlighting the active stage and the stages already done, and clicking a stage shows its full description. Compare it with version A to judge how much the animation adds.",
+      "caveats": []
+    },
+    {
+      "id": "C",
+      "lib": "story3d",
+      "explanation": "The same nine stages as a three.js world: stations on a winding path, each with a 3D prop (story cards, a robot planner, a monitor whose screen goes RED, GREEN, REFACTOR, a magnifier that finds bugs, server racks with the live org locked, a chain of trace links, a shield and evidence graph, scorecard bars with board-packet pages, and a gate that lifts only when the person approves). A story token hops between stations and the camera flies to each step. Everything is computed from playback time, so pausing, stepping and scrubbing stay exact; drag to look around and the guided camera resumes at the next step.",
+      "caveats": [
+        "Heavier than the 2D story: it needs WebGL, so it will not run on virtual desktops without a GPU."
+      ]
+    }
+  ],
+  "chat": [],
+  "constant": "PIPELINE"
+}

@@ -1,0 +1,34 @@
+[
+  [
+    "Projectile",
+    "Explain how changing launch angle affects a projectile's range and maximum height."
+  ],
+  [
+    "Rocket escape",
+    "Explain how a rocket launch works and how a rocket escapes Earth's gravity."
+  ],
+  [
+    "Agent pipeline",
+    "Explain how an agentic software delivery pipeline moves a story from ticket to tested code, with review, sandbox deployment, governance and a human approval gate."
+  ],
+  [
+    "Claims workflow",
+    "Walk new claims processors through how a health insurance claim moves from intake to payment, and where it can be pended or denied."
+  ],
+  [
+    "Pendulum",
+    "Show why a simple pendulum's period depends on its length but not on its mass."
+  ],
+  [
+    "Bubble sort",
+    "Show how bubble sort compares and swaps items, step by step, and why it needs about n² comparisons."
+  ],
+  [
+    "Key terms",
+    "Introduce these key terms, sized by importance and grouped by theme: AI agent (high), LLM (high), RAG (high), guardrails (high), human in the loop (high), tool calling (medium), prompt (medium), hallucination (medium), evaluation (medium), embeddings (low), vector store (low), token cost (low)."
+  ],
+  [
+    "Regional hires",
+    "Compare monthly new-hire counts across three regions and highlight which region is growing fastest."
+  ]
+]

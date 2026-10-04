@@ -1,0 +1,83 @@
+{
+  "goal": "Introduce the key terms of our agentic AI module, sized by importance and grouped by theme:\n- Building blocks: AI agent (10), LLM (9), RAG (8), tool calling (7), prompt (7), MCP server (6), context window (5), embeddings (5), vector store (4)\n- Safety and trust: guardrails (8), human in the loop (8), hallucination (7), evaluation (6), PII masking (4), audit trail (3)\n- Delivery: orchestration (6), multi-agent (5), token cost (4), latency (3), fine-tuning (3)",
+  "view": "Auto",
+  "libChoice": "recommend",
+  "spec": {
+    "title": "Key terms of agentic AI",
+    "objective": "Learners see which terms matter most in this module and which theme each belongs to, before the lesson starts.",
+    "view": "2D",
+    "recommended": {
+      "library": "wordcloud",
+      "why": "A word cloud gives an at-a-glance hook for the module vocabulary, with size for importance and colour for theme."
+    },
+    "alternative": {
+      "library": "chartjs",
+      "why": "Visual impact versus accurate comparison: can learners tell which term matters most?"
+    },
+    "assumptions": [
+      "Importance scores (1-10) are illustrative judgements for this module, not measured frequencies",
+      "Three themes: building blocks, safety and trust, delivery",
+      "Terms with equal importance are ordered alphabetically"
+    ],
+    "units": [
+      "importance: score from 1 to 10"
+    ],
+    "params": [
+      {
+        "id": "topN",
+        "label": "Terms shown",
+        "min": 6,
+        "max": 20,
+        "step": 1,
+        "value": 16,
+        "unit": ""
+      },
+      {
+        "id": "focusGroup",
+        "label": "Highlight theme",
+        "min": 0,
+        "max": 3,
+        "step": 1,
+        "value": 0,
+        "unit": "",
+        "labels": [
+          "None",
+          "Building blocks",
+          "Safety and trust",
+          "Delivery"
+        ]
+      }
+    ],
+    "checkDescription": "Every term appears once, in importance order, the count matches the slider, and only the chosen theme is highlighted.",
+    "learnerPrompts": {
+      "predict": "Before you look closely: which theme do you think has the most terms in the top 8?",
+      "explain": "Compare the versions. In which one could you say exactly where “Guardrails” ranks, and why?"
+    }
+  },
+  "versions": [
+    {
+      "id": "A",
+      "lib": "wordcloud",
+      "explanation": "D3 with the d3-cloud layout places each term once, sized by importance and coloured by theme, all horizontal so they read easily. The layout uses a seeded random source, so it stays stable when you change the sliders; playback only reveals the words in rank order. It is a strong hook, but word length distorts importance: long terms look bigger than their score.",
+      "caveats": [
+        "Terms that do not fit at the current size are dropped and reported on screen."
+      ]
+    },
+    {
+      "id": "B",
+      "lib": "chartjs",
+      "explanation": "Chart.js shows the same terms as a ranked horizontal bar chart, largest at the top, coloured by theme. Playback reveals the bars in the same order as the cloud. It is less eye-catching, but learners can read each term's exact rank and compare any two terms.",
+      "caveats": []
+    },
+    {
+      "id": "C",
+      "lib": "three",
+      "explanation": "three.js places the same terms on a slowly turning helix, most important at the top, with words at the back faded. Drag to orbit. It looks striking, but depth adds no information here: terms hide behind each other and rank is harder to read than in either 2D version.",
+      "caveats": [
+        "Needs WebGL; on machines without a graphics card it can be slow or blank."
+      ]
+    }
+  ],
+  "chat": [],
+  "constant": "TERMS"
+}

@@ -1,0 +1,9 @@
+# build output (publish from here)
+dist/
+# scratch for builds and tests
+.work/
+# local mirror of the pinned packages (node scripts/mirror.mjs)
+.cdn/
+node_modules/
+npm-debug.log*
+.DS_Store

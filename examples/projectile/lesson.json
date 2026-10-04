@@ -1,0 +1,73 @@
+{
+  "goal": "Explain how changing launch angle affects a projectile's range and maximum height.",
+  "view": "Auto",
+  "libChoice": "recommend",
+  "spec": {
+    "title": "Launch angle and projectile range",
+    "objective": "Learners see that range peaks at 45° and that complementary angles (30° and 60°) land at the same distance, while height keeps rising with angle.",
+    "view": "2D",
+    "recommended": {
+      "library": "p5",
+      "why": "The motion happens in one vertical plane, so a clean 2D animation with labelled distances shows everything that matters."
+    },
+    "alternative": {
+      "library": "three",
+      "why": "A 3D version tests whether depth adds information. Here it mostly adds camera handling, which is itself a useful lesson for designers."
+    },
+    "assumptions": [
+      "Launched from ground level onto flat ground",
+      "No air resistance",
+      "Constant gravity g = 9.81 m/s²",
+      "Closed-form solution, no time stepping"
+    ],
+    "units": [
+      "angle: degrees",
+      "speed: m/s",
+      "distance and height: metres",
+      "time: seconds"
+    ],
+    "params": [
+      {
+        "id": "angle",
+        "label": "Launch angle",
+        "min": 5,
+        "max": 85,
+        "step": 1,
+        "value": 30,
+        "unit": "°"
+      },
+      {
+        "id": "speed",
+        "label": "Launch speed",
+        "min": 5,
+        "max": 40,
+        "step": 1,
+        "value": 20,
+        "unit": "m/s"
+      }
+    ],
+    "checkDescription": "Range equals v²·sin(2θ)/g, and 45° gives the longest range.",
+    "learnerPrompts": {
+      "predict": "Before you move the slider: which angle sends the ball farthest, 30°, 45° or 60°?",
+      "explain": "Why do 30° and 60° land at the same spot even though one flies much higher?"
+    }
+  },
+  "versions": [
+    {
+      "id": "A",
+      "lib": "p5",
+      "explanation": "The p5.js sketch calls model() once per parameter change and animates the ball along the returned points in real time. Distances are drawn to a fixed scale for the current speed, so changing only the angle shows true differences in range. The last three completed launches stay as faint paths, which supports the predict-then-compare activity.",
+      "caveats": []
+    },
+    {
+      "id": "B",
+      "lib": "three",
+      "explanation": "The three.js scene draws the same model() trajectory in 3D over a grid where ten squares equal the longest possible range at this speed. Learners can orbit the camera, but the flight stays in one plane, so depth adds little information here. It is a useful contrast: same spec and controls, more setup and more for the learner to manage.",
+      "caveats": [
+        "Reading exact distances is harder in perspective; the overlay carries the numbers."
+      ]
+    }
+  ],
+  "chat": [],
+  "constant": "EXAMPLE"
+}

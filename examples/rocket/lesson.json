@@ -1,0 +1,84 @@
+{
+  "goal": "Explain how a rocket launch works and how a rocket escapes Earth's gravity.",
+  "view": "Auto",
+  "libChoice": "recommend",
+  "spec": {
+    "title": "Rocket liftoff and escape",
+    "objective": "Learners see that a rocket lifts off only when thrust exceeds weight, and escapes only if its speed passes the local escape speed, which falls as it climbs.",
+    "view": "2D",
+    "recommended": {
+      "library": "p5",
+      "why": "Force arrows on the rocket and its speed traced against the escape-speed curve tell both halves of the story in one 2D view."
+    },
+    "alternative": {
+      "library": "chartjs",
+      "why": "A standard line chart of the same run shows whether the custom animation adds understanding or only decoration."
+    },
+    "assumptions": [
+      "Single stage flying straight up from the surface",
+      "No air resistance and no Earth rotation",
+      "Constant thrust; exhaust speed 4.4 km/s (hydrogen-oxygen engine in vacuum)",
+      "Gravity falls with distance: g = GM/r²",
+      "Fixed 0.05 s time step (semi-implicit Euler); a frame every 1 s"
+    ],
+    "units": [
+      "thrust: meganewtons (MN)",
+      "mass: tonnes",
+      "speed: km/s",
+      "altitude: km",
+      "time: seconds since ignition"
+    ],
+    "params": [
+      {
+        "id": "thrustMN",
+        "label": "Engine thrust",
+        "min": 5,
+        "max": 60,
+        "step": 1,
+        "value": 30,
+        "unit": "MN"
+      },
+      {
+        "id": "massT",
+        "label": "Liftoff mass",
+        "min": 200,
+        "max": 2000,
+        "step": 50,
+        "value": 1200,
+        "unit": "t"
+      },
+      {
+        "id": "propFraction",
+        "label": "Propellant share of mass",
+        "min": 0.6,
+        "max": 0.97,
+        "step": 0.01,
+        "value": 0.95,
+        "unit": ""
+      }
+    ],
+    "checkDescription": "Burnout speed equals the rocket-equation Δv minus gravity losses, and the outcome matches speed versus escape speed at burnout.",
+    "learnerPrompts": {
+      "predict": "Lower the propellant share from 0.95 to 0.93. Will the rocket still escape? Predict before you drag.",
+      "explain": "Why does the escape speed line slope downward, and why does the rocket keep slowing after engine cutoff yet still escape?"
+    }
+  },
+  "versions": [
+    {
+      "id": "A",
+      "lib": "p5",
+      "explanation": "The p5.js sketch draws the rocket on an altitude scale with two force arrows, thrust and weight, scaled to each other, so learners see the moment thrust beats weight. The right panel traces the rocket's speed against the escape speed at its current altitude. Escape happens where the blue line crosses the dashed curve. The host's play, pause and scrub controls drive the sketch through seek(t).",
+      "caveats": [
+        "Vertical flight overstates the energy needed compared with a real gravity turn into orbit."
+      ]
+    },
+    {
+      "id": "B",
+      "lib": "chartjs",
+      "explanation": "Chart.js plots the same run as standard lines: speed and escape speed on the left axis and altitude on the right. Scrubbing reveals the run up to that moment. It answers the same question with less custom code, but without the force arrows that explain liftoff.",
+      "caveats": []
+    }
+  ],
+  "chat": [],
+  "constant": "ROCKET"
+}
