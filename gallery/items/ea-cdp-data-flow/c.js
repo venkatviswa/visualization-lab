@@ -93,8 +93,10 @@ function render() {
 function clockText(ms) { const d = new Date(2026, 0, 1, 9, 0); d.setTime(d.getTime() + ms); return (ms >= 15 * 3600000 ? 'next day ' : '') + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
 function renderHead(e, done, snap) {
   const sc = M.scenes[e.scene], pf = snap.profile;
-  headEl.querySelector('.sub').textContent = done ? M.summary : 'Scene ' + (sc.i + 1) + ' of ' + M.scenes.length + ' · ' + sc.title + ': ' + sc.caption;
-  const stats = [['Clock', clockText(e.realMs), false], ['Sources in profile', pf.sources.length + ' of 5', false], ['Insight', snap.insight ? 'fired' : 'not yet', false], ['Maria called', snap.calls + (snap.calls === 1 ? ' time' : ' times'), snap.calls > 1]];
+  const narrow = mode === 'narrow';
+  headEl.querySelector('.sub').textContent = done ? M.summary : 'Scene ' + (sc.i + 1) + ' of ' + M.scenes.length + ' · ' + sc.title + (narrow ? '' : ': ' + sc.caption);
+  const stats = narrow ? [['Clock', clockText(e.realMs), false], ['Insight', snap.insight ? 'fired' : 'not yet', false]]
+    : [['Clock', clockText(e.realMs), false], ['Sources in profile', pf.sources.length + ' of 5', false], ['Insight', snap.insight ? 'fired' : 'not yet', false], ['Maria called', snap.calls + (snap.calls === 1 ? ' time' : ' times'), snap.calls > 1]];
   headEl.querySelector('.stats').innerHTML = stats.map(([k, v, bad]) => '<span style="display:inline-block;margin:0 0 4px 6px;padding:3px 8px;border-radius:8px;background:#f4f6f9;font-size:11.5px;color:#5b6475;white-space:nowrap">' + k +
     ' <b style="color:' + (bad ? C.bad : C.ink) + '">' + v + '</b></span>').join('');
   const s = selected ? M.systems.find(x => x.id === selected) : null, last = e.scene === M.scenes.length - 1;
@@ -107,7 +109,7 @@ function renderHead(e, done, snap) {
 }
 function layout(root) {
   const next = root.clientWidth < 640 ? 'narrow' : 'wide';
-  if (next !== mode) { mode = next; infoEl.style.height = (mode === 'narrow' ? 96 : 66) + 'px'; render(); } else if (inst) inst.fitView({ padding: mode === 'narrow' ? 0.06 : 0.05, maxZoom: 1.15 });
+  if (next !== mode) { mode = next; infoEl.style.height = (mode === 'narrow' ? 74 : 66) + 'px'; render(); } else if (inst) inst.fitView({ padding: mode === 'narrow' ? 0.06 : 0.05, maxZoom: 1.15 });
 }
 
 window.lab = {
@@ -125,10 +127,10 @@ window.lab = {
     headEl = document.createElement('div');
     headEl.style.cssText = 'flex:none;padding:8px 14px 2px;box-sizing:border-box;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:flex-start;font-family:system-ui,sans-serif';
     headEl.innerHTML = '<div style="flex:1 1 300px;min-width:0"><div style="font-size:14px;font-weight:600;color:#1d2433">One member, five sources, one profile</div>' +
-      '<div class="sub" style="font-size:12px;line-height:1.35;color:#5b6475;min-height:32px"></div></div><div class="stats" style="flex:0 1 auto;text-align:right"></div>';
+      '<div class="sub" style="font-size:12px;line-height:1.35;color:#5b6475;min-height:16px"></div></div><div class="stats" style="flex:0 1 auto;text-align:right"></div>';
     flowEl = document.createElement('div'); flowEl.style.cssText = 'position:relative;flex:1;min-height:0';
     infoEl = document.createElement('div');
-    infoEl.style.cssText = 'flex:none;height:' + (mode === 'narrow' ? 96 : 66) + 'px;box-sizing:border-box;padding:7px 14px;font:13px/1.4 system-ui,sans-serif;color:#1d2433;border-top:1px solid #e3e7ee;background:#fafbfc;overflow:auto';
+    infoEl.style.cssText = 'flex:none;height:' + (mode === 'narrow' ? 74 : 66) + 'px;box-sizing:border-box;padding:7px 14px;font:13px/1.4 system-ui,sans-serif;color:#1d2433;border-top:1px solid #e3e7ee;background:#fafbfc;overflow:auto';
     wrap.append(headEl, flowEl, infoEl); root.append(wrap);
     rroot = ReactDOM.createRoot(flowEl);
     render();

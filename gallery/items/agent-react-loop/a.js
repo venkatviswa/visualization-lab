@@ -32,13 +32,15 @@ function layout(W, H) {
   const reqLines = wrap(M.request, sw - 72, 12.5).length, custH = Math.max(38, 14 + reqLines * 16);
   const bw = sw - 24, texts = M.steps.filter(s => s.kind === 'thought' || s.kind === 'final').map(s => s.text);
   const bubLines = Math.max(...texts.map(s => wrap(s, bw - 24, 13).length)), bubH = 34 + bubLines * 17;
-  const agentH = 112, toolH = 84, fixed = 20 + custH + bubH + agentH + toolH + 6 + 30 + 20;
-  const sh = wide ? H - hh - pad : Math.min(fixed + 40, Math.max(fixed, H - hh - 200));
+  // compact phone: a short root (an embed) cannot hold the story and the trace; the story shrinks a little and the trace panel is dropped
+  const compact = !wide && H - hh < 20 + custH + bubH + 112 + 84 + 76 + 120;
+  const agentH = compact ? 96 : 112, toolH = compact ? 80 : 84, fixed = 20 + custH + bubH + agentH + toolH + 6 + 30 + 20;
+  const sh = wide ? H - hh - pad : compact ? H - hh - pad : Math.min(fixed + 40, Math.max(fixed, H - hh - 200));
   const extra = Math.max(0, sh - fixed), g1 = 6 + extra * 0.2, g2 = 30 + extra * 0.25;
   const st = { x: pad, y: hh, w: sw, h: sh };
-  const tr = wide ? { x: pad * 2 + sw, y: hh, w: W - sw - 3 * pad, h: H - hh - pad } : { x: pad, y: hh + sh + 8, w: W - 2 * pad, h: H - hh - sh - 8 - pad };
+  const tr = wide ? { x: pad * 2 + sw, y: hh, w: W - sw - 3 * pad, h: H - hh - pad } : compact ? { x: pad, y: H + 10, w: W - 2 * pad, h: 0, hidden: true } : { x: pad, y: hh + sh + 8, w: W - 2 * pad, h: H - hh - sh - 8 - pad };
   const custY = st.y + 10, bubY = custY + custH + g1, agentY = bubY + bubH + g2 + 26, toolY = st.y + sh - 10 - toolH;
-  return { W, H, wide, hh, st, tr, custY, custH, bubY, bubH, bw, agentY, toolY, toolH, cx: st.x + sw / 2 };
+  return { W, H, wide, compact, hh, st, tr, custY, custH, bubY, bubH, bw, agentY, toolY, toolH, cx: st.x + sw / 2 };
 }
 
 function build() {
@@ -53,7 +55,7 @@ function build() {
   R.sub = el('g', {}, head);
   const { st, tr, cx, agentY } = L;
   el('rect', { x: st.x, y: st.y, width: st.w, height: st.h, rx: 14, fill: C.soft }, svg);
-  el('rect', { x: tr.x, y: tr.y, width: tr.w, height: tr.h, rx: 14, fill: '#fff', stroke: C.line }, svg);
+  if (!tr.hidden) el('rect', { x: tr.x, y: tr.y, width: tr.w, height: tr.h, rx: 14, fill: '#fff', stroke: C.line }, svg);
   // customer
   const cust = el('g', {}, svg);
   el('circle', { cx: st.x + 30, cy: L.custY + 18, r: 17, fill: '#fff', stroke: C.line }, cust);
@@ -188,6 +190,7 @@ function setState(t) {
 
 function drawTrace(past, done, approvedNow) {
   clear(R.trace);
+  if (L.tr.hidden) return;
   const { tr } = L, fs = L.wide ? 12 : 11.5, lh = fs + 3.5, lw = L.wide ? 84 : 78, tx = tr.x + 10 + lw, tw2 = tr.w - lw - 22, maxL = L.wide ? 3 : 2;
   el('text', { x: tr.x + 12, y: tr.y + 20, 'font-size': 13, 'font-weight': 600, fill: C.ink, 'font-family': FONT }, R.trace).textContent = 'Agent trace';
   el('text', { x: tr.x + tr.w - 12, y: tr.y + 20, 'font-size': 11, fill: C.muted, 'text-anchor': 'end', 'font-family': FONT }, R.trace).textContent = M.showThoughts ? 'all steps' : 'thoughts hidden';

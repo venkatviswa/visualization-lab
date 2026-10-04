@@ -6,11 +6,18 @@
   "a": {
     "lib": "story",
     "explanation": "The agent sits in the middle of the scene, with the customer's complaint above it, its thought bubble, and five tool cards below (CRM lookup, Billing history, Policy search, Refund API, Case update). Each call sends a packet down to a tool card, and the result flows back in teal, or in red when the billing tool times out. A billing supervisor card appears when the refund is over the limit, and the agent visibly pauses until the supervisor approves. A running trace panel logs every Thought, Action and Observation, so you can read the exact tool calls; GSAP's paused timeline drives the packets and Lucide icons make the tools recognisable. The trade-off is that you see the loop only as a sequence of moments, not as one repeating structure.",
-    "caveats": ["On a phone the trace panel shows only the latest steps, with earlier rows shortened to one line", "The scenario is scripted: a real agent's thoughts and timings would vary from run to run"]
+    "caveats": [
+      "On a phone the trace panel shows only the latest steps, with earlier rows shortened to one line",
+      "The scenario is scripted: a real agent's thoughts and timings would vary from run to run",
+      "On a short phone root the agent trace panel is dropped; the step strip and the bubbles still tell the loop"
+    ]
   },
   "b": {
     "lib": "reactflow",
     "explanation": "React Flow draws the loop itself: Reason, Act and Observe in a triangle, the five tools below Act, a human approval gate between Reason and Act, and edges from the customer and to the answer. As playback advances, the current node and the edge just travelled light up, the loop edge counts how many times the agent went around, and each tool node shows its call count and last result. Clicking a node lists everything that happened there, and the strip of step chips at the top lets you open any single step. This makes the structure and the guardrail easy to audit, but there is less narrative, and you have to read the bottom panel to follow what each step actually said.",
-    "caveats": ["Node text is cut to two lines; the full thought, call or result appears in the panel when you click", "On a phone the diagram is scaled down and some edge labels are left out"]
+    "caveats": [
+      "Node text is cut to two lines; the full thought, call or result appears in the panel when you click",
+      "On a phone the diagram is scaled down and some edge labels are left out"
+    ]
   }
 }

@@ -4,6 +4,7 @@ const C = { ink: '#1d2433', muted: '#5b6475', line: '#dbe0e8', accent: '#2b59c3'
   soft: '#f4f6f9', tint: '#e8eefb', goodTint: '#e6f4ec', badTint: '#fdecea', amberTint: '#fff4e5' };
 const X = i => 70 + i * 107.5, TRACK = 150;
 let svg = null, world = null, tl = null, M = null, hdr = null, stationEls = [], progress = null, arc = null, token = null;
+let root = null, ro = null, narrow = false, N = null, T = 0;   // narrow (phone) mode: a vertical station list instead of the wide scene art
 
 function el(tag, attrs, parent) {
   const n = document.createElementNS(NS, tag);
@@ -294,6 +295,68 @@ function build() {
   tl.set({}, {}, M.duration);
 }
 
+/* ---------- narrow mode: the same model as a vertical station list with the current event's note ---------- */
+function wrapText(n, str, max, lh) {
+  while (n.firstChild) n.removeChild(n.firstChild);
+  const lines = [], x = n.getAttribute('x'); let cur = '';
+  String(str).split(' ').forEach(w => { if (cur && (cur + ' ' + w).length > max) { lines.push(cur); cur = w; } else cur = cur ? cur + ' ' + w : w; }); if (cur) lines.push(cur);
+  lines.forEach((ln, k) => { const t = el('tspan', { x, dy: k ? lh : 0 }, n); t.textContent = ln; });
+  return lines.length;
+}
+function buildNarrow() {
+  if (tl) tl.kill();
+  if (svg) svg.remove();
+  const W = 420, avail = Math.round(W * (root.clientHeight || 600) / Math.max(1, root.clientWidth || 420)), H = Math.max(560, avail), ROW = 38, Y0 = 92;
+  svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, width: '100%', height: '100%', preserveAspectRatio: 'xMidYMid meet', role: 'img', 'aria-label': 'Agentic delivery pipeline, animated' });
+  root.appendChild(svg);
+  el('rect', { x: 0, y: 0, width: W, height: H, fill: '#ffffff' }, svg);
+  world = el('g', {}, svg); tl = gsap.timeline({ paused: true });
+  N = { H, ROW, Y0, title: txt(svg, 14, 26, '', { size: 14, weight: 700 }), note: txt(svg, 14, 46, '', { size: 11.5, fill: C.muted }), rows: [] };
+  el('line', { x1: 34, y1: Y0, x2: 34, y2: Y0 + ROW * 8, stroke: C.line, 'stroke-width': 4, 'stroke-linecap': 'round' }, world);
+  N.progress = el('line', { x1: 34, y1: Y0, x2: 34, y2: Y0, stroke: C.accent, 'stroke-width': 4, 'stroke-linecap': 'round' }, world);
+  if (M.findings) { N.arc = el('g', {}, world); txt(N.arc, 60, Y0 + ROW * 3 + 16, '↩ rework ×' + M.findings + ': back to Build', { size: 10, fill: C.hi, weight: 600 }); }
+  M.stations.forEach((st, i) => {
+    const y = Y0 + i * ROW, g = el('g', {}, world);
+    const c = el('circle', { cx: 34, cy: y, r: 15, fill: '#fff', stroke: C.line, 'stroke-width': 2 }, g);
+    icon(g, st.icon, 26, y - 8, 16, C.ink);
+    const label = txt(g, 60, y + 4, st.n + ' · ' + st.label, { size: 12.5 });
+    const pillBg = el('rect', { x: W - 108, y: y - 10, width: 94, height: 20, rx: 10, fill: C.soft }, g);
+    const pill = txt(g, W - 61, y + 4, '', { size: 10.5, anchor: 'middle', weight: 600, fill: C.muted });
+    N.rows.push({ c, label, pillBg, pill });
+  });
+  N.token = el('g', {}, world);
+  el('rect', { x: -14, y: -9, width: 28, height: 18, rx: 4, fill: C.accent }, N.token); icon(N.token, 'ticket', -7, -7, 14, '#ffffff');
+  gsap.set(N.token, { x: 34, y: Y0 - 26 });
+  const cy = Y0 + ROW * 8 + 24;
+  N.cardBg = el('rect', { x: 10, y: cy, width: W - 20, height: Math.max(60, H - cy - 10), rx: 10, fill: C.soft }, world);
+  N.cardT = txt(world, 22, cy + 20, '', { size: 11.5, weight: 700, fill: C.accent });
+  N.card = txt(world, 22, cy + 40, '', { size: 12 });
+  const idx = id => M.stations.findIndex(st => st.id === id);
+  M.events.forEach(e => { tl.to(N.token, { y: Y0 + idx(e.station) * ROW - 26, duration: 0.5, ease: 'power2.inOut' }, e.start); });
+  tl.set({}, {}, M.duration);
+}
+function setStateNarrow(t) {
+  let e = M.events[0];
+  for (const ev of M.events) if (ev.start <= t + 1e-6) e = ev;
+  const st = M.stations.find(x => x.id === e.station), done = t >= M.duration - 0.05;
+  N.title.textContent = st.n + ' · ' + st.label + (e.cycle ? ', cycle ' + e.cycle : '');
+  wrapText(N.note, done ? M.summary : 'Agentic delivery pipeline · ' + M.findings + (M.findings === 1 ? ' finding' : ' findings') + ' · ' + M.governanceMode + ' mode', 60, 13);
+  let reach = 0; const seen = new Set();
+  for (const ev of M.events) { if (ev.start > e.start) break; reach = Math.max(reach, M.stations.findIndex(x => x.id === ev.station)); if (ev !== e) seen.add(ev.station); }
+  N.rows.forEach((r, i) => {
+    const id = M.stations[i].id, active = id === e.station && !done, visited = seen.has(id) || (done && i <= reach);
+    r.c.setAttribute('fill', active ? C.tint : visited ? C.goodTint : '#fff'); r.c.setAttribute('stroke', active ? C.accent : visited ? C.good : C.line); r.c.setAttribute('stroke-width', active ? 3 : 2);
+    r.label.setAttribute('font-weight', active ? 700 : 400);
+    const txtv = active ? (e.kind === 'findings' ? e.open + ' open' : e.kind === 'rework' ? 'cycle ' + e.cycle : e.kind === 'applied' ? 'applied' : e.kind === 'held' ? 'held' : 'now') : visited ? 'done' : '';
+    r.pill.textContent = txtv; r.pill.setAttribute('fill', active ? (e.kind === 'held' || e.kind === 'findings' ? C.hi : C.accent) : C.good);
+    r.pillBg.setAttribute('fill', txtv ? (active ? (e.kind === 'held' || e.kind === 'findings' ? C.amberTint : C.tint) : C.goodTint) : 'transparent');
+  });
+  N.progress.setAttribute('y2', N.Y0 + reach * N.ROW);
+  if (N.arc) N.arc.setAttribute('opacity', e.kind === 'findings' || e.kind === 'rework' ? 1 : 0.45);
+  N.cardT.textContent = done ? 'Outcome' : 'Step ' + st.n + ' of ' + M.stations.length;
+  wrapText(N.card, done ? M.summary : e.note, 56, 15);
+}
+
 function setState(t) {
   let e = M.events[0];
   for (const ev of M.events) if (ev.start <= t + 1e-6) e = ev;
@@ -317,15 +380,22 @@ function setState(t) {
 window.lab = {
   get duration() { return M ? M.duration : 10; },
   get markers() { return M ? M.events.map(e => e.start) : []; },
-  seek(t) { if (!tl) return; tl.seek(Math.min(t, M.duration), false); setState(t); },
-  mount(root, params) {
-    M = model(params);
+  seek(t) { if (!tl) return; T = t; tl.seek(Math.min(t, M.duration), false); if (narrow) setStateNarrow(t); else setState(t); },
+  mount(r, params) {
+    root = r; M = model(params); narrow = (root.clientWidth || 1000) < 640;
+    this._build();
+    ro = new ResizeObserver(() => { const nn = root.clientWidth < 640; if (nn !== narrow) { narrow = nn; requestAnimationFrame(() => { if (M) { this._build(); this.seek(T); } }); } });
+    ro.observe(root);
+  },
+  _build() {
+    if (narrow) { buildNarrow(); setStateNarrow(0); return; }
+    if (svg) svg.remove();
     svg = el('svg', { viewBox: '0 0 1000 545', width: '100%', height: '100%', preserveAspectRatio: 'xMidYMid meet', role: 'img', 'aria-label': 'Agentic delivery pipeline, animated' });
     root.appendChild(svg);
     el('rect', { x: 0, y: 0, width: 1000, height: 545, fill: '#ffffff' }, svg);
     hdr = { title: txt(svg, 24, 34, '', { size: 21, weight: 700 }), note: txt(svg, 24, 60, '', { size: 15, fill: C.muted }) };
     build(); setState(0);
   },
-  update(params) { M = model(params); build(); setState(0); },
-  destroy() { if (tl) tl.kill(); if (svg) svg.remove(); svg = world = tl = M = null; }
+  update(params) { M = model(params); this._build(); },
+  destroy() { if (ro) ro.disconnect(); if (tl) tl.kill(); if (svg) svg.remove(); svg = world = tl = M = N = null; }
 };

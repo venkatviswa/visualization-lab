@@ -30,7 +30,16 @@ function layout(w, h) {
         .concat([['profile', { x: 212, y: 306, w: 300, h: 104 }], ['agent', { x: 548, y: 306, w: 212, h: 104 }], ['journey', { x: 788, y: 306, w: 192, h: 104 }]])),
       band: { x: 200, y: 160, w: 790, h: 100 }, cap: { x: 20, y: 424, w: 960, h: 108, chars: 112, nchars: 124, size: 15.5 }, stats: { y: 544, h: 42 }, nameMax: 17, sub: 118 };
   }
-  const W = 420, H = Math.max(760, Math.round(W * h / Math.max(1, w))), sw = (W - 20 - 4 * 5) / 5, tw = (W - 20 - 3 * 6) / 4;
+  const W = 420, avail = Math.round(W * h / Math.max(1, w)), sw = (W - 20 - 4 * 5) / 5, tw = (W - 20 - 3 * 6) / 4;
+  if (avail < 740) {
+    // compact: a short root (an embed, a landscape phone). Smaller cards, the phone beside Maria's name, one stats line, no note line.
+    const H = Math.max(600, avail);
+    return { W, H, narrow: true, compact: true, maria: { cx: 26, cy: 74, r: 14 }, phone: { x: 150, y: 56, w: 160, h: 40 },
+      box: Object.fromEntries(SRC.map((id, i) => [id, { x: 10 + i * (sw + 5), y: 106, w: sw, h: 76 }]).concat(STAGES.map((id, i) => [id, { x: 10 + i * (tw + 6), y: 204, w: tw, h: 76 }]))
+        .concat([['profile', { x: 10, y: 298, w: 188, h: 108 }], ['agent', { x: 206, y: 298, w: 100, h: 108 }], ['journey', { x: 312, y: 298, w: 98, h: 108 }]])),
+      band: { x: 4, y: 192, w: W - 8, h: 98 }, cap: { x: 10, y: 416, w: 400, h: H - 416 - 40, chars: 54, nchars: 58, size: 12.5 }, stats: { y: H - 32, h: 26 }, nameMax: 13, sub: 64 };
+  }
+  const H = Math.max(760, avail);
   return { W, H, narrow: true, maria: { cx: 28, cy: 90, r: 16 }, phone: { x: 10, y: 112, w: 110, h: 60 },
     box: Object.fromEntries(SRC.map((id, i) => [id, { x: 10 + i * (sw + 5), y: 184, w: sw, h: 90 }]).concat(STAGES.map((id, i) => [id, { x: 10 + i * (tw + 6), y: 296, w: tw, h: 90 }]))
       .concat([['profile', { x: 10, y: 412, w: 188, h: 126 }], ['agent', { x: 206, y: 412, w: 100, h: 126 }], ['journey', { x: 312, y: 412, w: 98, h: 126 }]])),
@@ -52,27 +61,28 @@ function card(id) {
   const b = L.box[id], s = M.systems.find(x => x.id === id), g = el('g', {}, world), small = L.narrow && id !== 'profile';
   const r = { g, rect: el('rect', { x: b.x, y: b.y, width: b.w, height: b.h, rx: 10, fill: '#fff', stroke: C.line, 'stroke-width': 2 }, g) };
   if (small) {
-    icon(g, s.icon, b.x + b.w / 2 - 10, b.y + 7, 20, C.ink);
-    r.name = txt(g, b.x + b.w / 2, b.y + 40, s.name.replace(/\s*\(.*\)/, ''), { size: 9.5, weight: 600, anchor: 'middle', max: L.nameMax, lh: 11 });
+    icon(g, s.icon, b.x + b.w / 2 - 10, b.y + (L.compact ? 5 : 7), 20, C.ink);
+    r.name = txt(g, b.x + b.w / 2, b.y + (L.compact ? 36 : 40), s.name.replace(/\s*\(.*\)/, ''), { size: 9.5, weight: 600, anchor: 'middle', max: L.nameMax, lh: 11 });
   } else {
     icon(g, s.icon, b.x + 10, b.y + 10, 20, C.ink);
-    const nm = id === 'profile' ? (L.narrow ? 9 : 18) : L.nameMax, lines = wrap(s.name, nm).length;
+    const nm = id === 'profile' ? 18 : L.nameMax, lines = wrap(s.name, nm).length;
     r.name = txt(g, b.x + 38, b.y + (lines > 1 ? 20 : 25), s.name, { size: id === 'profile' ? 13 : 12.5, weight: 600, max: nm, lh: 14 });
   }
   if (id === 'profile') {
-    r.rows = []; const y0 = b.y + (L.narrow ? 46 : 48);
-    for (let k = 0; k < 6; k++) { const col = L.narrow ? 0 : k % 2, row = L.narrow ? k : Math.floor(k / 2); r.rows.push(txt(g, b.x + 12 + col * 146, y0 + row * (L.narrow ? 13 : 19), '', { size: L.narrow ? 10.5 : 11.5 })); }
+    r.rows = []; const y0 = b.y + (L.compact ? 42 : L.narrow ? 46 : 48), step = L.compact ? 11.5 : L.narrow ? 13 : 19;
+    for (let k = 0; k < 6; k++) { const col = L.narrow ? 0 : k % 2, row = L.narrow ? k : Math.floor(k / 2); r.rows.push(txt(g, b.x + 12 + col * 146, y0 + row * step, '', { size: L.compact ? 10 : L.narrow ? 10.5 : 11.5 })); }
     r.pillBg = el('rect', { x: b.x + b.w - (L.narrow ? 90 : 104), y: b.y + 9, width: L.narrow ? 82 : 96, height: 20, rx: 10, fill: C.soft }, g);
     r.pill = txt(g, b.x + b.w - (L.narrow ? 49 : 56), b.y + 23, '', { size: L.narrow ? 10 : 11, anchor: 'middle', weight: 600 });
     return r;
   }
-  const pw = small ? b.w - 8 : Math.min(b.w - 20, 150), px = small ? b.x + 4 : b.x + 10, py = b.y + b.h - (small ? 24 : 26);
+  const pw = small ? b.w - 8 : Math.min(b.w - 20, 150), px = small ? b.x + 4 : b.x + 10, py = b.y + b.h - (small ? (L.compact ? 22 : 24) : 26);
   r.pillBg = el('rect', { x: px, y: py, width: pw, height: 20, rx: 10, fill: C.soft }, g);
   r.pill = txt(g, px + pw / 2, py + 14, '', { size: small ? 9.5 : 11, anchor: 'middle', weight: 600 });
   return r;
 }
 function stat(i) {
   const g = el('g', {}, world);
+  if (L.compact) { const w = (L.W - 20) / 3, x = 10 + i * w; return { k: txt(g, x, L.stats.y + 10, '', { size: 9.5, fill: C.muted }), v: txt(g, x, L.stats.y + 23, '', { size: 11.5, weight: 700 }) }; }
   if (L.narrow) { const w = (L.W - 20 - 12) / 3, x = 10 + i * (w + 6); el('rect', { x, y: L.stats.y, width: w, height: L.stats.h, rx: 8, fill: C.soft }, g);
     return { k: txt(g, x + 8, L.stats.y + 15, '', { size: 10, fill: C.muted }), v: txt(g, x + 8, L.stats.y + 33, '', { size: 12, weight: 700 }) }; }
   const w = (L.W - 40 - 24) / 3, x = 20 + i * (w + 12); el('rect', { x, y: L.stats.y, width: w, height: L.stats.h, rx: 8, fill: C.soft }, g);
@@ -107,8 +117,8 @@ function build() {
   txt(world, m.cx + m.r + 8, m.cy + 13, 'plan member', { size: L.narrow ? 10 : 12, fill: C.muted });
   R.phoneBg = el('rect', { x: ph.x, y: ph.y, width: ph.w, height: ph.h, rx: 12, fill: C.soft, stroke: C.line }, world);
   R.phoneIcon = el('g', {}, world);
-  R.phoneT = txt(world, ph.x + (L.narrow ? 36 : 12), ph.y + (L.narrow ? 25 : 48), '', { size: L.narrow ? 10.5 : 12, weight: 600, max: L.narrow ? 14 : 16, lh: 14 });
-  R.phoneS = txt(world, ph.x + (L.narrow ? 36 : 12), ph.y + (L.narrow ? 43 : 100), '', { size: L.narrow ? 9.5 : 11, fill: C.muted, max: L.narrow ? 16 : 18, lh: 13 });
+  R.phoneT = txt(world, ph.x + (L.narrow ? 36 : 12), ph.y + (L.compact ? 17 : L.narrow ? 25 : 48), '', { size: L.narrow ? 10.5 : 12, weight: 600, max: L.compact ? 20 : L.narrow ? 14 : 16, lh: 14 });
+  R.phoneS = txt(world, ph.x + (L.narrow ? 36 : 12), ph.y + (L.compact ? 31 : L.narrow ? 43 : 100), '', { size: L.narrow ? 9.5 : 11, fill: C.muted, max: L.compact ? 22 : L.narrow ? 16 : 18, lh: 13 });
   // caption and stats
   const c = L.cap;
   R.capBox = el('rect', { x: c.x, y: c.y, width: c.w, height: c.h, rx: 12, fill: C.soft, stroke: C.soft, 'stroke-width': 2 }, world);
@@ -143,7 +153,7 @@ function setState(t) {
   for (const ev of M.events) if (ev.start <= t + 1e-6) e = ev;
   const done = t >= M.duration - 0.05, arrived = e._arrive == null || t >= e._arrive - 0.02, prev = e.i ? M.events[e.i - 1].snap : null;
   const snap = arrived || !prev ? e.snap : prev, sc = M.scenes[e.scene], last = sc.i === M.scenes.length - 1, pf = snap.profile;
-  setText(R.sub, done ? M.summary : M.sourcesConnected.length + ' of 5 sources connected · claims feed ' + (M.claimsFeed === 'streaming' ? 'streaming' : 'nightly batch') + ' · marketing ' + (M.consent ? 'opted in' : 'opted out'), L.sub, 13);
+  setText(R.sub, done ? M.summary : L.narrow ? M.sourcesConnected.length + ' of 5 sources · claims ' + (M.claimsFeed === 'streaming' ? 'streaming' : 'nightly') + ' · ' + (M.consent ? 'opted in' : 'opted out') : M.sourcesConnected.length + ' of 5 sources connected · claims feed ' + (M.claimsFeed === 'streaming' ? 'streaming' : 'nightly batch') + ' · marketing ' + (M.consent ? 'opted in' : 'opted out'), L.sub, 13);
   setText(R.clock, clock(e.realMs));
   const lit = new Set();
   M.events.forEach(ev => { if (ev.start <= t + 1e-6 && (ev.i < e.i || arrived)) for (let k = 1; k < ev.path.length; k++) lit.add(eKey(ev.path[k - 1], ev.path[k])); });
@@ -159,7 +169,8 @@ function setState(t) {
       if (s.id === 'insight' && !snap.insight && stt === 'idle' && e.kind === 'none') { pill(r, 'Nothing fires', C.hi, C.hiTint); stroke = C.hi; }
       else pill(r, lab[k], k === 2 ? (s.id === 'insight' && snap.insight ? C.hi : C.good) : k === 1 ? C.accent : C.muted, k === 2 ? (s.id === 'insight' && snap.insight ? C.hiTint : C.goodTint) : k === 1 ? C.tint : C.soft);
     } else if (s.id === 'profile') {
-      pill(r, pf.sources.length + ' of 5 sources', pf.sources.length >= 3 ? C.good : C.muted, pf.sources.length >= 3 ? C.goodTint : C.soft);
+      if (L.narrow) { r.pillBg.setAttribute('opacity', 0); r.pill.setAttribute('opacity', 0); setText(r.name, 'Profile · ' + pf.sources.length + ' of 5 sources'); }   // no room for a pill beside the title on a phone
+      else pill(r, pf.sources.length + ' of 5 sources', pf.sources.length >= 3 ? C.good : C.muted, pf.sources.length >= 3 ? C.goodTint : C.soft);
       const rows = [['Member', '#48812 (CRM)'], ['Claim', pf.claim ? 'DENIED' : '—'], ['Portal visits', pf.visits ? String(pf.visits) : '—'],
         ['Call', pf.call ? pf.call : '—'], ['Case', pf.caseOpen ? 'open' : '—'], ['Email', pf.engagement ? 'engaged' : '—']];
       r.rows.forEach((n, k) => { setText(n, rows[k][0] + ': ' + rows[k][1]); n.setAttribute('fill', rows[k][1] === '—' ? C.muted : k === 1 && pf.claim ? C.bad : C.ink); n.setAttribute('font-weight', k === 1 && pf.claim ? 700 : 400); });
@@ -180,13 +191,13 @@ function setState(t) {
     : { home: ['Letter: claim denied', 'Knee scan · 09:00', 'mail-warning', C.bad], portal: ['Portal: claim status', 'Denied · nothing new', 'app-window', C.accent], calling: [snap.status.agent === 'bad' ? 'On the phone, explaining' : 'On the phone, resolved', 'to the contact centre', 'phone-call', snap.status.agent === 'bad' ? C.bad : C.good] }[snap.maria];
   setText(R.phoneT, ps[0], L.narrow ? 14 : 16, 14); setText(R.phoneS, ps[1], L.narrow ? 16 : 18, 13); R.phoneT.setAttribute('fill', ps[3]);
   while (R.phoneIcon.firstChild) R.phoneIcon.removeChild(R.phoneIcon.firstChild);
-  icon(R.phoneIcon, ps[2], L.phone.x + 10, L.phone.y + (L.narrow ? 18 : 14), L.narrow ? 20 : 24, ps[3]);
+  icon(R.phoneIcon, ps[2], L.phone.x + 10, L.phone.y + (L.compact ? 10 : L.narrow ? 18 : 14), L.narrow ? 20 : 24, ps[3]);
   R.avatar.setAttribute('stroke-width', !done && (e.station === 'maria' || snap.maria === 'calling') ? 4 : 2);
   // caption
   setText(R.scene, 'Scene ' + (sc.i + 1) + ' of ' + M.scenes.length + ' · ' + sc.title);
   const capLines = setText(R.cap, last ? M.outcome : sc.caption, L.cap.chars, L.cap.size + 4);
   R.note.setAttribute('y', L.cap.y + 45 + capLines * (L.cap.size + 4) + 2);
-  setText(R.note, last ? M.soWhat : '▸ ' + e.note, L.cap.nchars, L.cap.size + 2);
+  setText(R.note, L.compact && !last && L.cap.h < 100 ? '' : last ? M.soWhat : '▸ ' + e.note, L.cap.nchars, L.cap.size + 2);
   R.note.setAttribute('font-weight', last ? 700 : 400); R.note.setAttribute('fill', last ? C.ink : C.muted);
   const goodEnd = M.proactive;
   R.capBox.setAttribute('fill', last ? (goodEnd ? C.goodTint : C.hiTint) : C.soft); R.capBox.setAttribute('stroke', last ? (goodEnd ? C.good : C.hi) : C.soft);
@@ -204,7 +215,7 @@ window.lab = {
   seek(t) { if (!tl) return; T = Math.min(Math.max(0, t), M.duration); tl.seek(T, false); setState(T); },
   mount(r, params) {
     root = r; M = model(params); build(); this.seek(0);
-    ro = new ResizeObserver(() => { const nm = layout(root.clientWidth, root.clientHeight); if ((nm.narrow ? 'narrow' : 'wide') !== mode || (nm.narrow && nm.H !== L.H)) requestAnimationFrame(() => { if (M) { build(); this.seek(T); } }); });
+    ro = new ResizeObserver(() => { const nm = layout(root.clientWidth, root.clientHeight); if ((nm.narrow ? 'narrow' : 'wide') !== mode || (nm.narrow && (nm.H !== L.H || !!nm.compact !== !!L.compact))) requestAnimationFrame(() => { if (M) { build(); this.seek(T); } }); });
     ro.observe(root);
   },
   update(params) { M = model(params); build(); this.seek(0); },

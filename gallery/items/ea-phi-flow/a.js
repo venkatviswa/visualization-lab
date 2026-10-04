@@ -79,7 +79,8 @@ function card(g, x, y, w, L, hop, grp, s, e) {
 function hopScene(g, e, L) {
   const hop = M.hops[e.hop], s = e.start, sg = M.safeguards, i = e.hop;
   const two = hop.groups.length > 1, cw = L.narrow ? (two ? (L.pw - 10) / 2 : L.pw) : (two ? (L.cardW - 12) / 2 : L.cardW);
-  L = Object.assign({}, L, { avail: L.narrow ? L.ph * (two ? 0.56 : 0.48) : L.ph });
+  const short = L.narrow && L.ph < 400;   // a short phone root (an embed): a smaller card and only the lines that carry the lesson
+  L = Object.assign({}, L, { avail: L.narrow ? L.ph * (two ? (short ? 0.5 : 0.56) : (short ? 0.42 : 0.48)) : L.ph });
   let ch = 0;
   hop.groups.forEach((grp, k) => { ch = Math.max(ch, card(g, L.px + k * (cw + (L.narrow ? 10 : 12)), L.py + 4, cw, L, hop, grp, s + k * 0.15, e)); });
   const ix = L.narrow ? L.px : L.px + L.cardW + 28, iw = L.narrow ? L.pw : L.W - ix - 28;
@@ -89,8 +90,8 @@ function hopScene(g, e, L) {
   if (hop.generic !== hop.label && !L.narrow) { txt(info, ix, y - 2, hop.generic, { fs: 12, fill: C.muted }); y += 16; }
   const needs = hop.needs.split(' ').map(id => M.fields.find(f => f.id === id).label);
   const needTxt = i === 0 ? 'all 7 fields' : needs.join(', ') + (hop.derived ? ', plus ' + hop.derived.replace(/^an? /, '') + ' (derived)' : '') + (hop.gate ? '; nothing for members who opted out' : '');
-  y += para(info, ix, y, 'Purpose: ' + hop.purpose + '.', iw, { fs: 12.5, fill: C.muted, lh: 16 }) + 2;
-  y += para(info, ix, y, 'Needs: ' + needTxt + '.', iw, { fs: 12.5, fill: C.muted, lh: 16 }) + 8;
+  if (!short) y += para(info, ix, y, 'Purpose: ' + hop.purpose + '.', iw, { fs: 12.5, fill: C.muted, lh: 16 }) + 2;
+  y += para(info, ix, y, 'Needs: ' + needTxt + '.', iw, { fs: short ? 12 : 12.5, fill: C.muted, lh: short ? 15 : 16 }) + (short ? 4 : 8);
   gsap.set(info, { opacity: 0 }); tl.to(info, { opacity: 1, duration: 0.3 }, s + 0.15);
   const g0 = hop.groups[0], drops = M.fields.filter(f => g0.cells[f.id].action === 'dropped').map(f => f.label);
   const toks = M.fields.filter(f => g0.cells[f.id].action === 'tokenised').map(f => ({ name: 'name', mid: 'ID', dob: 'DOB', addr: 'address' })[f.id] + ' to ' + g0.cells[f.id].as);
@@ -102,7 +103,7 @@ function hopScene(g, e, L) {
   cps.forEach(([ic, t, col], k) => {
     const r = el('g', {}, g);
     icon(r, ic, ix, y - 12, 16, col);
-    y += para(r, ix + 24, y, t + '.', iw - 24, { fs: 12.5, fill: col === C.faint ? C.muted : C.ink, lh: 16 }) + 4;
+    y += para(r, ix + 24, y, t + '.', iw - 24, { fs: short ? 12 : 12.5, fill: col === C.faint ? C.muted : C.ink, lh: short ? 15 : 16 }) + (short ? 2 : 4);
     gsap.set(r, { opacity: 0 }); tl.to(r, { opacity: 1, duration: 0.25 }, e.checkAt + k * 0.12);
   });
   const res = el('g', {}, g), n = hop.exposures;

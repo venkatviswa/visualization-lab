@@ -150,6 +150,7 @@ window.lab = {
 
 <!-- lab:phone -->
 - Every version is tested at 420px wide. No horizontal overflow; text 11px or larger; labels may wrap or abbreviate; panels may stack, or drop to a count ("and 11 more").
+- Inside a course embed a phone gives the visual about 480px of height. Never shrink the whole picture to fit a short root: drop what is secondary (a stats row, a note line, a transcript panel, scene decoration) and keep the picture, its labels and the caption at full size. A fixed wide scene needs a narrow counterpart, such as a vertical list of the same stations.
 - Hover-only details do not work on touch: anything important goes in a visible label or a click.
 <!-- /lab -->
 
@@ -213,10 +214,10 @@ node kit/verify.mjs shots/ a.html b.html
 
 **verify** opens each page in headless Chromium and prints one JSON line per page, then exits 1 if any page failed. Fields: `pass`, `errors`, `check`, `timeline`, `blank` (a screenshot with fewer than four colours), `overflow` (horizontal scroll at 420px), `embedClipped` (the page scrolls inside the standard embed below, on a 390×844 phone or in a 560px column; `null` for `--course` pages, which are whole documents and scroll by design), `status` (the text status line), `extremes` (for up to four controls, the check result and status at the control's min and max), and `shots`: `t00`, `t35`, `t70`, `t100` along the timeline, `phone` at 420px, and `x-<param>-min` / `x-<param>-max` for each control at the end of the timeline, so a reviewer can see what every slider does. `pass` requires ready, no errors, check passing, not blank, no overflow and not clipped in the embed. A lesson is done when every version passes and someone has looked at the screenshots: verify cannot see an overlapping label or a misleading picture.
 
-The standalone page has its own sliders and transport bar. Embed it with this rule, which gives a lab the height it needs (about 640px) whatever the column width; the bake-off skill and verify use the same rule:
+The standalone page has its own sliders and transport bar. Embed it with this rule, which gives a lab the height it needs (about 680px) whatever the column width; the bake-off skill and verify use the same rule:
 
 ```html
-<style>.lab-embed{display:block;width:100%;aspect-ratio:16/10;min-height:640px;max-height:85vh;border:0}</style>
+<style>.lab-embed{display:block;width:100%;aspect-ratio:16/10;min-height:680px;max-height:85vh;border:0}</style>
 <iframe class="lab-embed" sandbox="allow-scripts" title="Rocket liftoff and escape" srcdoc="…the file's HTML, attribute-escaped…"></iframe>
 ```
 

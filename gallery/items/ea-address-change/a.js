@@ -29,7 +29,17 @@ function layout(w, h) {
         dn(0, 'mdm'), dn(1, 'claims'), dn(2, 'billing'), dn(3, 'analytics'), ['queue', { x: 640, y: 258, w: 115, h: 40 }]]),
       cap: { x: 20, y: 418, w: 960, h: 114, chars: 114, nchars: 126, size: 16 }, stats: { y: 544, h: 42 }, nameMax: 22, sub: 120 };
   }
-  const W = 420, H = Math.max(724, Math.round(W * h / Math.max(1, w))), cw = (W - 20 - 18) / 4;
+  const W = 420, avail = Math.round(W * h / Math.max(1, w)), cw = (W - 20 - 18) / 4;
+  if (avail < 700) {
+    // compact: a short phone-height root (an embed, a landscape phone). Smaller cards, no note line, one stats line.
+    const H = Math.max(600, avail);
+    const top = (i, id) => [id, { x: 150, y: 60 + i * 58, w: 260, h: 52 }], dn = (i, id) => [id, { x: 10 + i * (cw + 6), y: 314, w: cw, h: 90 }];
+    return { W, H, narrow: true, compact: true, maria: { cx: 28, cy: 76, r: 16 }, phone: { x: 12, y: 100, w: 124, h: 128 },
+      box: Object.fromEntries([top(0, 'portal'), top(1, 'gateway'), top(2, 'crm'), ['bus', { x: 10, y: 240, w: 400, h: 36 }],
+        dn(0, 'mdm'), dn(1, 'claims'), dn(2, 'billing'), dn(3, 'analytics'), ['queue', { x: 10 + 2 * (cw + 6), y: 280, w: cw, h: 30 }]]),
+      cap: { x: 10, y: 412, w: 400, h: H - 412 - 40, chars: 56, nchars: 60, size: 13 }, stats: { y: H - 32, h: 26 }, nameMax: 13, sub: 64 };
+  }
+  const H = Math.max(724, avail);
   const top = (i, id) => [id, { x: 150, y: 74 + i * 66, w: 260, h: 60 }], dn = (i, id) => [id, { x: 10 + i * (cw + 6), y: 402, w: cw, h: 104 }];
   return { W, H, narrow: true, maria: { cx: 30, cy: 92, r: 18 }, phone: { x: 12, y: 120, w: 124, h: 184 },
     box: Object.fromEntries([top(0, 'portal'), top(1, 'gateway'), top(2, 'crm'), ['bus', { x: 10, y: 314, w: 400, h: 42 }],
@@ -80,6 +90,7 @@ function card(id) {
 }
 function stat(i) {
   const w = (L.W - 40 - 2 * 12) / 3, x = 20 + i * (w + 12), g = el('g', {}, world);
+  if (L.compact) { const w2 = (L.W - 20) / 3, x2 = 10 + i * w2; return { k: txt(g, x2, L.stats.y + 10, '', { size: 9.5, fill: C.muted }), v: txt(g, x2, L.stats.y + 23, '', { size: 11.5, weight: 700 }) }; }
   if (L.narrow) { const w2 = (L.W - 20 - 12) / 3, x2 = 10 + i * (w2 + 6); el('rect', { x: x2, y: L.stats.y, width: w2, height: L.stats.h, rx: 8, fill: C.soft }, g);
     return { k: txt(g, x2 + 8, L.stats.y + 15, '', { size: 10.5, fill: C.muted }), v: txt(g, x2 + 8, L.stats.y + 33, '', { size: 12.5, weight: 700 }) }; }
   el('rect', { x, y: L.stats.y, width: w, height: L.stats.h, rx: 8, fill: C.soft }, g);
@@ -120,11 +131,12 @@ function build() {
   txt(world, sx, ph.y + 56, 'Home address', { size: fs - 0.5, fill: C.muted });
   el('rect', { x: sx - 2, y: ph.y + 62, width: ph.w - 24, height: 24, rx: 5, fill: '#fff', stroke: C.line }, world);
   R.field = txt(world, sx + 4, ph.y + 78, '', { size: fs });
-  R.btn = el('rect', { x: sx - 2, y: ph.y + 96, width: ph.w - 24, height: 26, rx: 6, fill: C.accent }, world);
-  R.btnT = txt(world, ph.x + ph.w / 2, ph.y + 113, 'Save', { size: fs, weight: 600, fill: '#fff', anchor: 'middle' });
-  R.msgBg = el('rect', { x: sx - 2, y: ph.y + 132, width: ph.w - 24, height: ph.h - 132 - 20, rx: 6, fill: '#fff' }, world);
-  R.msg = txt(world, ph.x + ph.w / 2, ph.y + 151, '', { size: fs, weight: 700, anchor: 'middle', max: L.narrow ? 14 : 15, lh: 14 });
-  R.spin = el('circle', { cx: ph.x + ph.w / 2, cy: ph.y + 150, r: 9, fill: 'none', stroke: C.accent, 'stroke-width': 3, 'stroke-dasharray': '20 40' }, world);
+  R.btn = el('rect', { x: sx - 2, y: ph.y + 96, width: ph.w - 24, height: 26, rx: 6, fill: C.accent, opacity: L.compact ? 0 : 1 }, world);
+  R.btnT = txt(world, ph.x + ph.w / 2, ph.y + 113, 'Save', { size: fs, weight: 600, fill: '#fff', anchor: 'middle', ...(L.compact ? { fill: 'none' } : {}) });
+  const my = L.compact ? ph.y + 96 : ph.y + 132;
+  R.msgBg = el('rect', { x: sx - 2, y: my, width: ph.w - 24, height: L.compact ? 26 : ph.h - 132 - 20, rx: 6, fill: '#fff' }, world);
+  R.msg = txt(world, ph.x + ph.w / 2, my + 19, '', { size: fs, weight: 700, anchor: 'middle', max: L.narrow ? 14 : 15, lh: 14 });
+  R.spin = el('circle', { cx: ph.x + ph.w / 2, cy: my + 18, r: 9, fill: 'none', stroke: C.accent, 'stroke-width': 3, 'stroke-dasharray': '20 40' }, world);
   // caption box and stats
   const c = L.cap;
   R.capBox = el('rect', { x: c.x, y: c.y, width: c.w, height: c.h, rx: 12, fill: C.soft, stroke: C.soft, 'stroke-width': 2 }, world);
@@ -228,7 +240,7 @@ function setState(t) {
   setText(R.scene, 'Scene ' + (sc.i + 1) + ' of ' + M.scenes.length + ' · ' + sc.title);
   const capLines = setText(R.cap, last ? M.outcome : sc.caption, L.cap.chars, L.cap.size + 4);
   R.note.setAttribute('y', L.cap.y + 46 + capLines * (L.cap.size + 4) + 2);
-  setText(R.note, last ? M.soWhat : '▸ ' + e.note, L.cap.nchars, L.cap.size + 2);
+  setText(R.note, L.compact && !last && L.cap.h < 100 ? '' : last ? M.soWhat : '▸ ' + e.note, L.cap.nchars, L.cap.size + 2);
   R.note.setAttribute('font-weight', last ? 700 : 400); R.note.setAttribute('fill', last ? C.ink : C.muted);
   R.capBox.setAttribute('fill', last ? (M.consistent ? C.goodTint : C.hiTint) : C.soft); R.capBox.setAttribute('stroke', last ? (M.consistent ? C.good : C.hi) : C.soft);
   // stats
@@ -247,7 +259,7 @@ window.lab = {
   seek(t) { if (!tl) return; T = Math.min(Math.max(0, t), M.duration); tl.seek(T, false); setState(T); },
   mount(r, params) {
     root = r; P = params; M = model(params); build(); this.seek(0);
-    ro = new ResizeObserver(() => { const nm = layout(root.clientWidth, root.clientHeight); if ((nm.narrow ? 'narrow' : 'wide') !== mode || (nm.narrow && nm.H !== L.H)) { build(); this.seek(T); } });
+    ro = new ResizeObserver(() => { const nm = layout(root.clientWidth, root.clientHeight); if ((nm.narrow ? 'narrow' : 'wide') !== mode || (nm.narrow && (nm.H !== L.H || !!nm.compact !== !!L.compact))) { build(); this.seek(T); } });
     ro.observe(root);
   },
   update(params) { P = params; M = model(params); build(); this.seek(0); },

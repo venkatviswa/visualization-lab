@@ -47,8 +47,9 @@ function render() {
   const { e } = clockAt(lastT), sc = M.scenes[e.scene], done = lastT >= M.duration - 0.05, last = sc.i === M.scenes.length - 1;
   head.querySelector('.sub').textContent = done ? M.summary : 'Scene ' + (sc.i + 1) + ' of ' + M.scenes.length + ' · ' + sc.title + (narrow ? '' : ': ' + sc.caption);
   const vals = Object.values(e.snap.steps), np = vals.filter(v => v === 'passed').length, nf = vals.filter(v => v === 'failed').length, ns = vals.filter(v => v === 'skipped').length;
-  head.querySelector('.stats').innerHTML = [['Elapsed', fmt(e.realMs / 1000)], ['Steps', np + ' ✓ ' + nf + ' ✕ ' + ns + ' skipped'], ['Install', M.installSeconds + ' s (' + (M.warm ? 'warm' : 'cold') + ')'], ['Server', e.snap.deployed ? 'new build' : 'previous build']]
+  head.querySelector('.stats').innerHTML = (narrow ? [['Elapsed', fmt(e.realMs / 1000)], ['Install', M.installSeconds + ' s (' + (M.warm ? 'warm' : 'cold') + ')']] : [['Elapsed', fmt(e.realMs / 1000)], ['Steps', np + ' ✓ ' + nf + ' ✕ ' + ns + ' skipped'], ['Install', M.installSeconds + ' s (' + (M.warm ? 'warm' : 'cold') + ')'], ['Server', e.snap.deployed ? 'new build' : 'previous build']])
     .map(([k, v]) => '<span style="display:inline-block;margin:0 0 4px 6px;padding:3px 8px;border-radius:8px;background:#f4f6f9;font-size:11.5px;color:#5b6475;white-space:nowrap">' + k + ' <b style="color:#1d2433">' + v + '</b></span>').join('');
+  foot.style.height = narrow ? '52px' : '66px';
   foot.innerHTML = ''; const b = document.createElement('b'); b.textContent = last ? 'Outcome: ' : 'Now: '; foot.append(b, document.createTextNode(last ? M.outcome + ' ' : e.note));
   if (last) { const w = document.createElement('b'); w.textContent = M.soWhat; foot.append(w); }
   foot.style.background = last ? (M.deployed ? '#e6f4ec' : '#fbefe8') : '#fafbfc';

@@ -6,16 +6,26 @@
   "a": {
     "lib": "story",
     "explanation": "A narrated SVG story: Maria and her phone on the left, the five source systems across the top (greyed and dashed when not connected), the platform as a dashed band with its four stages in the middle, and below it the unified profile with its fields filling in next to the two activation targets. GSAP moves each record from its source through ingest, harmonise and unify into the profile, and from the profile to the insight and on to the agent and the journey; a clock in the corner shows real time (09:00 to the next morning), a narrator caption per scene and three counters (sources in the profile, the insight, how often Maria has called) carry the story. It is the version a non-architect will remember; every position is placed by hand and nothing is clickable.",
-    "caveats": ["Records that take the same route are drawn one after another, so a busy minute looks like a sequence", "Playback runs about 33 s; the real clock in the top-right spans a day"]
+    "caveats": [
+      "Records that take the same route are drawn one after another, so a busy minute looks like a sequence",
+      "Playback runs about 33 s; the real clock in the top-right spans a day",
+      "On a short phone root the layout switches to a compact form: smaller cards, a one-line stats row and no note line"
+    ]
   },
   "b": {
     "lib": "story3d",
     "explanation": "The Story3D kit lays Maria, the five sources, the four stages, the profile and the two targets out as thirteen stations and flies the camera to whichever one the current event touches: pages for the claims system, a monitor for the portal, a database for the profile, bars for the insights, a robot for the service agent. Sources that are not connected stand locked; the agent's visits show a screen with what the agent can see on the profile; a dashed loop from the agent back to Maria appears when the platform never fires and she has to call again. It is the most atmospheric version and follows the viewer's theme, but with thirteen stations the camera travels a lot and you see one stage at a time.",
-    "caveats": ["The profile station is a database prop, so the matched fields appear only in the caption and the agent's screen", "On a phone the overview crops the outer stations"]
+    "caveats": [
+      "The profile station is a database prop, so the matched fields appear only in the caption and the agent's screen",
+      "On a phone the overview crops the outer stations"
+    ]
   },
   "c": {
     "lib": "reactflow",
     "explanation": "React Flow draws the platform the way a design review would: sources on top, the platform's four stages as a dashed band in the middle, the unified profile and the two activation targets below. As the timeline plays the active box is highlighted, edges light up as records flow, unconnected sources and their edges fade, the profile's fields fill in, the insight box turns amber when the segment picks Maria up, and the agent box turns red on the call where it cannot see the claim. Clicking any box shows its role; a clock, the source count, the insight state and the number of calls sit in the header. It is the most precise view of what is connected to what, and it switches to a compact layout on phones, but it reads like any architecture diagram and Maria is a counter rather than a character.",
-    "caveats": ["Edge labels are hidden on phones", "Long Salesforce names make some boxes taller, so a few edges bend"]
+    "caveats": [
+      "Edge labels are hidden on phones",
+      "Long Salesforce names make some boxes taller, so a few edges bend"
+    ]
   }
 }

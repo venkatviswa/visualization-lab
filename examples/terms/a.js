@@ -2,14 +2,14 @@
 // Layout is computed once per update or resize with a seeded random source, so the cloud is stable;
 // seek(t) only reveals words in importance order.
 const COLORS = ['#2b59c3', '#0f766e', '#b4530f'], MUTED = '#c3c9d4', FONT = 'system-ui, -apple-system, Segoe UI, sans-serif';
-const TOP = 58;
+const TOP = 58, TOP_NARROW = 76;   // on narrow screens the legend takes its own row under the subtitle
 let root = null, svg = null, M = null, placed = [], dropped = 0, T = 0, onResize = null, resizeTimer = 0;
 
 function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 function colorOf(t) { return M.focusGroup && !t.highlighted ? MUTED : COLORS[t.groupIndex]; }
 
 function layout() {
-  const W = root.clientWidth, H = root.clientHeight - TOP;
+  const W = root.clientWidth, headH = W < 640 ? TOP_NARROW : TOP, H = root.clientHeight - headH;
   const top = Math.max(26, Math.min(72, H / 5.5));
   let scale = 1;
   for (let attempt = 0; attempt < 5; attempt++) {
@@ -39,15 +39,16 @@ function draw() {
   head.select('.title').text('Key terms, sized by importance');
   const done = T >= M.terms[M.terms.length - 1].revealAt + 0.3;
   head.select('.sub').attr('fill', done ? '#1d2433' : '#5b6475')
-    .text(done ? M.summary + (dropped ? '  (' + dropped + ' did not fit at this size)' : '') : 'Terms appear from most to least important. Bigger means more important.');
+    .text(done ? M.summary + (dropped ? '  (' + dropped + ' did not fit at this size)' : '') : W < 640 ? 'Most to least important; bigger means more.' : 'Terms appear from most to least important. Bigger means more important.');
   const items = M.groups.map((g, i) => ({ g, i }));
-  const lg = head.select('.legend').attr('transform', `translate(${Math.max(14, W - 14 - items.length * 128)},16)`);
+  const narrowLeg = W < 640, lgStep = narrowLeg ? Math.min(128, (W - 28) / items.length) : 128;
+  const lg = head.select('.legend').attr('transform', narrowLeg ? 'translate(14,62)' : `translate(${Math.max(14, W - 14 - items.length * 128)},16)`);
   lg.selectAll('g.it').data(items).join(e => { const g = e.append('g').attr('class', 'it'); g.append('rect').attr('width', 10).attr('height', 10).attr('rx', 2).attr('y', -9); g.append('text').attr('x', 15).attr('font-size', 11.5).attr('font-family', FONT); return g; })
-    .attr('transform', d => `translate(${d.i * 128},0)`)
+    .attr('transform', d => `translate(${d.i * lgStep},0)`)
     .call(g => g.select('rect').attr('fill', d => M.focusGroup && M.focusGroup !== d.g ? MUTED : COLORS[d.i]))
     .call(g => g.select('text').attr('fill', '#5b6475').text(d => d.g));
   const cloud = svg.selectAll('g.cloud').data([0]).join('g').attr('class', 'cloud')
-    .attr('transform', `translate(${W / 2},${TOP + (H - TOP) / 2})`);
+    .attr('transform', `translate(${W / 2},${(W < 640 ? TOP_NARROW : TOP) + H / 2})`);
   cloud.selectAll('text').data(placed, d => d.text).join('text')
     .attr('text-anchor', 'middle').attr('font-family', FONT).attr('font-weight', 600)
     .attr('font-size', d => d.size).attr('transform', d => `translate(${d.x},${d.y})`)

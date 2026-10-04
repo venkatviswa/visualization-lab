@@ -212,10 +212,10 @@ When the suggested library starts one of these pairs, the comparison is set auto
 3. The page loads its library from jsDelivr, so the learner's device needs internet access. On a restricted network, host the library files yourself and change the `<script src>` URLs in the file.
 4. Nothing is tracked or sent anywhere: the page is self-contained. For completion tracking, wrap it in your LMS's own activity (SCORM/xAPI packaging is not built in).
 
-**Download HTML** gives the same page without the lesson wrapper, for a slide, a wiki or a demo, or for a course that puts the lab between its own paragraphs. Embed that plain page with this rule so it keeps the height it needs (about 640 px) whatever the column width:
+**Download HTML** gives the same page without the lesson wrapper, for a slide, a wiki or a demo, or for a course that puts the lab between its own paragraphs. Embed that plain page with this rule so it keeps the height it needs (about 680 px) whatever the column width:
 
 ```html
-<style>.lab-embed{display:block;width:100%;aspect-ratio:16/10;min-height:640px;max-height:85vh;border:0}</style>
+<style>.lab-embed{display:block;width:100%;aspect-ratio:16/10;min-height:680px;max-height:85vh;border:0}</style>
 <iframe class="lab-embed" src="rocket-liftoff-and-escape-A-p5.html" sandbox="allow-scripts" title="Rocket liftoff and escape"></iframe>
 ```
 

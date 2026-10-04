@@ -56,6 +56,7 @@ function layout() {
   els.left.style.flex = wide ? '1.65 1 0' : '1.5 1 0';
   els.right.style.flex = wide ? '1 1 0' : '0 0 auto';
   els.barBox.style.height = wide ? '180px' : '150px';
+  if (line) { line.options.scales.y.title.display = wide; line.options.scales.x.title.text = wide ? 'Systems in the estate (one added per year)' : 'Systems in the estate'; }   // axis titles cost height a phone does not have
   els.note.style.fontSize = (wide ? 12.5 : 11.5) + 'px';
 }
 

@@ -85,7 +85,7 @@ Write bakeoff/<slug>/src/<lib>.js. Contract (mandatory):
 - No network requests, external images or fonts; no alert or prompt. Text goes in the scene or an HTML overlay inside root.
 - Show current values, units and the key result on screen. Label what the learner must notice. Under 300 lines.
 - Anything the learner must read also has to exist as HTML text, not only as canvas pixels: the page shows model(p).summary as a live status line, so make sure the summary names the key result.
-- The page must fit a 640 px tall embed on a 390 px phone and in a 560 px column without scrolling inside the frame (verify reports embedClipped).
+- The page must fit a 680 px tall embed on a 390 px phone and in a 560 px column without scrolling inside the frame (verify reports embedClipped).
 Library notes: <paste the matching notes from the library table>.
 
 Build and test:
@@ -144,7 +144,7 @@ Send the judge's fixes to the winning builder with SendMessage. Rebuild and re-v
 
 Instructions for the course agent that receives the bundle (include them in `lesson.json` as `embed`):
 - Embed `visual.html` unchanged, one iframe per visual so library globals never collide, with exactly this rule (a bare 16/10 aspect ratio gives about 220 px on a phone and clips the controls):
-  `<style>.lab-embed{display:block;width:100%;aspect-ratio:16/10;min-height:640px;max-height:85vh;border:0}</style>`
+  `<style>.lab-embed{display:block;width:100%;aspect-ratio:16/10;min-height:680px;max-height:85vh;border:0}</style>`
   `<iframe class="lab-embed" sandbox="allow-scripts" title="<title>" srcdoc="<the file's HTML, attribute-escaped>"></iframe>` (or `src="visual.html"` when the file is hosted beside the page).
 - The `--course` page is a standalone whole-page lesson (objective, predict, visual, check line, explain, assumptions). Courses that want the lab inside their own text embed the plain `visual.html` as above; courses that want the ready-made lesson page give the `--course` file its own frame, 800 to 1000 px tall.
 - Never edit or restyle the visual. To change it, rerun this skill with a revised spec.

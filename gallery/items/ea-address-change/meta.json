@@ -6,16 +6,26 @@
   "a": {
     "lib": "story",
     "explanation": "A narrated SVG story: Maria and her phone sit on the left, the enterprise is laid out as portal, gateway and CRM on top, the integration layer or event bus in the middle and the four downstream systems below. GSAP moves envelopes along the connections (one at a time for point-to-point, fanning out for events), while each system card shows the address it holds, billing turns red when it goes down and systems left out of step get an orange tag. A narrator caption per scene, a live 'Maria has waited' counter and an outcome banner with the one-line 'so what' carry the story. It is the version a non-architect will remember, but every position and label was placed by hand, so the layout is fixed and nothing is clickable.",
-    "caveats": ["Parallel event deliveries are shown with staggered arrivals so each one can be narrated", "Playback runs up to 27 s; real times (0.35 s, 11 s, 20 min) appear in the top-right clock instead"]
+    "caveats": [
+      "Parallel event deliveries are shown with staggered arrivals so each one can be narrated",
+      "Playback runs up to 27 s; real times (0.35 s, 11 s, 20 min) appear in the top-right clock instead",
+      "On a short phone root the layout switches to a compact form: smaller cards, a one-line stats row and no note line"
+    ]
   },
   "b": {
     "lib": "story3d",
     "explanation": "The Story3D kit turns Maria and the eight systems into platforms with props: a person for Maria, a screen for the portal (Saving, Saved or the red error), a shield for the gateway, an inspected record for the CRM (green when saved, red flags on rollback), cards or a chain for the event bus versus the integration layer, a database, a stack of claim pages, a gate for billing and bars for analytics. The camera flies to each system as the change reaches it, and in the point-to-point failure a dashed arc shows the timeout bouncing back to the CRM. It is the most atmospheric version and follows the viewer's theme, but you see one system at a time, parallel deliveries become a sequence of visits, and a closed gate has to stand for both 'down' and 'message waiting'.",
-    "caveats": ["Billing's gate includes the kit's gatekeeper figure, which is not part of the story", "On a phone the closing overview crops the outer systems"]
+    "caveats": [
+      "Billing's gate includes the kit's gatekeeper figure, which is not part of the story",
+      "On a phone the closing overview crops the outer systems"
+    ]
   },
   "c": {
     "lib": "reactflow",
     "explanation": "React Flow draws the reference architecture as a team would show it in a design review: experience, API and system-of-record layers on top, the integration layer or event bus as a wide bar, a retry queue in front of billing for event-driven, and the four consumers below. As the timeline plays, the active system is highlighted, edges light up as the change flows, billing is marked down, the reply path turns green or red, and out-of-step systems get an orange tag; clicking any node shows its role. It is the most precise view of coupling and blast radius and switches to a compact layout on phones, but it reads like any architecture diagram and leaves the member's experience to a status chip and the caption panel.",
-    "caveats": ["Edge labels are hidden on phones", "Long Salesforce names make some boxes taller, so a few edges bend"]
+    "caveats": [
+      "Edge labels are hidden on phones",
+      "Long Salesforce names make some boxes taller, so a few edges bend"
+    ]
   }
 }

@@ -12,7 +12,7 @@ const [outDir, ...pages] = process.argv.slice(2);
 const exe = ['/opt/pw-browsers/chromium', process.env.CHROMIUM_PATH].find(p => p && fs.existsSync(p));
 const browser = await chromium.launch(Object.assign({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] }, exe ? { executablePath: exe } : {}));
 // The embed rule a course must use (kept identical in AUTHORING.md and the bake-off skill)
-const EMBED_CSS = '.lab-embed{display:block;width:100%;aspect-ratio:16/10;min-height:640px;max-height:85vh;border:0}';
+const EMBED_CSS = '.lab-embed{display:block;width:100%;aspect-ratio:16/10;min-height:680px;max-height:85vh;border:0}';
 let failed = 0;
 for (const page of pages) {
   const name = path.basename(page, '.html'), dir = path.join(outDir, name);

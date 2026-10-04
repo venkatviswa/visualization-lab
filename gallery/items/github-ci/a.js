@@ -26,7 +26,15 @@ function layout(w, h) {
   if (w >= 640) return { W: 1000, H: 600, narrow: false, dev: { x: 30, y: 62, w: 170, h: 340 },
     box: { github: { x: 222, y: 62, w: 290, h: 68 }, pr: { x: 528, y: 62, w: 232, h: 68 }, server: { x: 776, y: 62, w: 204, h: 68 }, runner: { x: 222, y: 150, w: 758, h: 254 } },
     rows: { x0: 236, y0: 192, colW: 372, rowH: 50, cols: 2 }, cap: { x: 20, y: 420, w: 960, h: 110, chars: 112, nchars: 124, size: 15.5 }, stats: { y: 544, h: 42 }, sub: 118 };
-  const W = 420, H = Math.max(820, Math.round(W * h / Math.max(1, w))), cw = (W - 20 - 12) / 3;
+  const W = 420, avail = Math.round(W * h / Math.max(1, w)), cw = (W - 20 - 12) / 3;
+  if (avail < 800) {
+    // compact: a short root (an embed, a landscape phone). Tighter rows, no step sub-lines, one stats line, no note line.
+    const H = Math.max(600, avail);
+    return { W, H, narrow: true, compact: true, dev: { x: 10, y: 54, w: 400, h: 40 },
+      box: { github: { x: 10, y: 102, w: cw, h: 56 }, pr: { x: 10 + cw + 6, y: 102, w: cw, h: 56 }, server: { x: 10 + 2 * (cw + 6), y: 102, w: cw, h: 56 }, runner: { x: 10, y: 166, w: 400, h: 240 } },
+      rows: { x0: 20, y0: 198, colW: 380, rowH: 26, cols: 1 }, cap: { x: 10, y: 414, w: 400, h: H - 414 - 40, chars: 54, nchars: 58, size: 12.5 }, stats: { y: H - 32, h: 26 }, sub: 64 };
+  }
+  const H = Math.max(820, avail);
   return { W, H, narrow: true, dev: { x: 10, y: 58, w: 400, h: 54 },
     box: { github: { x: 10, y: 122, w: cw, h: 70 }, pr: { x: 10 + cw + 6, y: 122, w: cw, h: 70 }, server: { x: 10 + 2 * (cw + 6), y: 122, w: cw, h: 70 }, runner: { x: 10, y: 202, w: 400, h: 318 } },
     rows: { x0: 20, y0: 238, colW: 380, rowH: 34, cols: 1 }, cap: { x: 10, y: 530, w: 400, h: H - 530 - 58, chars: 54, nchars: 58, size: 12.5 }, stats: { y: H - 50, h: 42 }, sub: 64 };
@@ -70,6 +78,7 @@ function card(id) {
 }
 function stat(i) {
   const g = el('g', {}, world);
+  if (L.compact) { const w = (L.W - 20) / 3, x = 10 + i * w; return { k: txt(g, x, L.stats.y + 10, '', { size: 9.5, fill: C.muted }), v: txt(g, x, L.stats.y + 23, '', { size: 11.5, weight: 700 }) }; }
   if (L.narrow) { const w = (L.W - 20 - 12) / 3, x = 10 + i * (w + 6); el('rect', { x, y: L.stats.y, width: w, height: L.stats.h, rx: 8, fill: C.soft }, g);
     return { k: txt(g, x + 8, L.stats.y + 15, '', { size: 10, fill: C.muted }), v: txt(g, x + 8, L.stats.y + 33, '', { size: 12, weight: 700 }) }; }
   const w = (L.W - 40 - 24) / 3, x = 20 + i * (w + 12); el('rect', { x, y: L.stats.y, width: w, height: L.stats.h, rx: 8, fill: C.soft }, g);
@@ -100,7 +109,7 @@ function build() {
   txt(world, d.x + 42, d.y + 26, 'Developer', { size: L.narrow ? 12 : 14, weight: 700 });
   if (L.narrow) {
     R.term = el('rect', { x: d.x + 120, y: d.y + 8, width: d.w - 130, height: d.h - 16, rx: 6, fill: C.term }, world);
-    R.termT = txt(world, d.x + 130, d.y + 24, '', { size: 9.5, fill: '#cfe0ff', mono: true, max: 36, lh: 12 });
+    R.termT = txt(world, d.x + 130, d.y + (L.compact ? 22 : 24), '', { size: 9.5, fill: '#cfe0ff', mono: true, max: L.compact ? 44 : 36, lh: 12 });
   } else {
     el('rect', { x: d.x + 10, y: d.y + 44, width: d.w - 20, height: d.h - 56, rx: 8, fill: C.term }, world);
     R.termT = txt(world, d.x + 18, d.y + 64, '', { size: 10.5, fill: '#cfe0ff', mono: true, max: 20, lh: 14 });
@@ -174,12 +183,12 @@ function setState(t) {
   // terminal
   const term = e.kind === 'push' ? '$ git push origin ' + (M.target === 'main' ? 'main' : 'feature/export-course') + '\n' + (u > 0.4 ? 'Writing objects: 100%\nTo github.com:acme/visualization-lab\n   e24f3ea..f6e3e29' : '')
     : done ? '$ _\n' + (snap.deployed ? '# shipped' : '# fix the test, push again') : snap.pr === 'blocked' ? '$ # check failed\n$ # fixing the test…' : '$ _\n# waiting for the check';
-  setText(R.termT, term.replace(/\n/g, ' ⏎ '), L.narrow ? 36 : 20, L.narrow ? 12 : 14);
+  setText(R.termT, L.compact ? term.split('\n')[0] + (term.includes('\n') ? ' …' : '') : term.replace(/\n/g, ' ⏎ '), L.compact ? 44 : L.narrow ? 36 : 20, L.narrow ? 12 : 14);
   // caption and stats
   setText(R.scene, 'Scene ' + (sc.i + 1) + ' of ' + M.scenes.length + ' · ' + sc.title);
   const capLines = setText(R.cap, last ? M.outcome : sc.caption, L.cap.chars, L.cap.size + 4);
   R.note.setAttribute('y', L.cap.y + 45 + capLines * (L.cap.size + 4) + 2);
-  setText(R.note, last ? M.soWhat : '▸ ' + e.note, L.cap.nchars, L.cap.size + 2);
+  setText(R.note, L.compact && !last && L.cap.h < 100 ? '' : last ? M.soWhat : '▸ ' + e.note, L.cap.nchars, L.cap.size + 2);
   R.note.setAttribute('font-weight', last ? 700 : 400); R.note.setAttribute('fill', last ? C.ink : C.muted);
   R.capBox.setAttribute('fill', last ? (M.deployed ? C.goodTint : C.hiTint) : C.soft); R.capBox.setAttribute('stroke', last ? (M.deployed ? C.good : C.hi) : C.soft);
   const vals = Object.values(snap.steps), np = vals.filter(v => v === 'passed').length, nf = vals.filter(v => v === 'failed').length, ns = vals.filter(v => v === 'skipped').length;
@@ -194,7 +203,7 @@ window.lab = {
   seek(t) { if (!tl) return; T = Math.min(Math.max(0, t), M.duration); tl.seek(T, false); setState(T); },
   mount(r, params) {
     root = r; M = model(params); build(); this.seek(0);
-    ro = new ResizeObserver(() => { const nm = layout(root.clientWidth, root.clientHeight); if ((nm.narrow ? 'narrow' : 'wide') !== mode || (nm.narrow && nm.H !== L.H)) requestAnimationFrame(() => { if (M) { build(); this.seek(T); } }); });
+    ro = new ResizeObserver(() => { const nm = layout(root.clientWidth, root.clientHeight); if ((nm.narrow ? 'narrow' : 'wide') !== mode || (nm.narrow && (nm.H !== L.H || !!nm.compact !== !!L.compact))) requestAnimationFrame(() => { if (M) { build(); this.seek(T); } }); });
     ro.observe(root);
   },
   update(params) { M = model(params); build(); this.seek(0); },

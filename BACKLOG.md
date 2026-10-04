@@ -18,7 +18,7 @@ Open items, roughly in the order we plan to take them. Tick items here in the sa
 - [x] **Toolkit review fixes**: examples pass `check_spec`; verify gates for phone overflow, embed clipping and slider extremes, exit code, status text; one embed rule everywhere; lock file for CI.
 - [x] **More than three versions** per lesson: six, A to F, with rows D to F added on request.
 - [x] **Scoring rubric in the compare step** (teach, faithful, clarity, interaction, visual, robustness: the bake-off skill's rubric), Claude fills a first pass, the designer adjusts.
-- [ ] **Phone layout pass** over existing lessons against the guide's phone rules (hover-only details, 11 px text, dropped panels).
+- [x] **Phone layout pass**: every version screenshotted inside the phone embed; compact layouts for the squeezed stories, a narrow mode for the pipeline scene, overlaps and clipping fixed; the kit's bars tighter on narrow screens and the embed minimum raised to 680 px. Still rough: label overlaps in the two three.js versions (git branches, RAG) at phone width.
 - [ ] **Verify lab-built lessons** in headless Chromium the way gallery lessons are (from Ask Claude, or documented as a step before publishing).
 - [ ] **Architecture note** with one diagram: sandbox + harness protocol, host-owned timeline, spec probe, gallery assembly, toolkit and skill.
 - [ ] **Hover previews** on gallery cards (short animation instead of a still).

@@ -146,7 +146,7 @@ function build() {
       const g = el('g', {}, linkLayer), at = tMatch + 1.6 + li++ * Math.min(0.25, 2.2 / Math.max(1, M.records.length - M.profiles.length));
       const ln = same ? el('line', { x1: a.x + cw * s / 2, y1: a.y + ch * s, x2: z.x + cw * s / 2, y2: z.y, stroke: C.accent, 'stroke-width': 2 }, g)
         : el('path', { d: `M${a.x + cw * s} ${a.y + ch * s / 2} C${a.x + cw * s + 18} ${a.y + ch * s / 2} ${z.x - 18} ${z.y + ch * s / 2} ${z.x} ${z.y + ch * s / 2}`, fill: 'none', stroke: C.accent, 'stroke-width': 2, 'stroke-dasharray': '4 3' }, g);
-      if (same) {
+      if (same && L.lg * s >= 14) {   // the reason pill needs the gap between cards; when the cluster is scaled down on a phone the line alone carries the link
         const pw = lk.reason.length * 6 + 14, px = a.x + cw * s / 2 - pw / 2, py = a.y + ch * s + L.lg * s / 2 - 8;
         const pill = el('rect', { x: px, y: py, width: pw, height: 16, rx: 8, fill: '#fff', stroke: C.accent }, g);
         const t = txt(g, px + pw / 2, py + 12, lk.reason, { size: 11, weight: 600, fill: C.accent, anchor: 'middle' });
