@@ -146,6 +146,13 @@ When the suggested library starts one of these pairs, the comparison is set auto
 
 ---
 
+## Export and import
+
+- **Export lesson** (top right) saves the whole lesson as one JSON file: goal, spec (model and check included), every version's code and notes, the chat, and the 3D look. The file is named after the lesson, for example `rocket-liftoff-and-escape.lesson.json`.
+- **Import lesson** opens such a file. You can also drop a `.lesson.json` file anywhere on the page. An imported lesson counts as your own work, so New lab, Draft spec and the gallery ask before replacing it.
+- Files from an older or newer lab load as long as the libraries they use exist here; a version that uses an unknown library is refused with its name.
+- This is the way to move a lesson between browsers or hand it to a colleague. It needs no account and no server.
+
 ## Ask Claude
 
 Use the chat for diagnosis and teaching advice, for example:
@@ -193,7 +200,7 @@ All libraries load from jsDelivr at fixed versions.
 **Before you start**
 - **Gallery data is illustrative.** Terms, scores, hiring numbers, claims rules and embeddings in the gallery are made up for teaching; each lesson's assumptions say so.
 - **Generation and chat need Claude available in the viewer.** If it isn't, you'll see *"Generation and chat need Claude in this viewer."* The examples, sliders, code editor and downloads still work.
-- **Your lab is saved in this browser only.** A different browser, device or private window starts fresh, and clearing site data erases it. Download HTML for anything you want to keep.
+- **Your lab is saved in this browser only.** A different browser, device or private window starts fresh, and clearing site data erases it. Use **Export lesson** for anything you want to keep or share; Download HTML gives one version as a page.
 - **The page is private until you share it.** Others can't open the link until you share it from the page's Share menu.
 - **Don't paste confidential material into the goal or chat.** It's sent to Claude to draft the spec and code.
 

@@ -282,3 +282,36 @@ test('replace guard: New lab and Draft spec ask for a second click when the less
   assert.equal(await page.$$eval('.pane', n => n.length), 0, 'second click within the window acts');
   await ctx.close();
 });
+
+test('export and import: a lesson round-trips through a JSON file; bad files are refused', async () => {
+  const fs = await import('fs'); const os = await import('os'); const path = await import('path');
+  const { ctx, page } = await fresh({ acceptDownloads: true });
+  await page.click('#btnPipeline'); await sleep(3000);
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#btnExport')]);
+  assert.match(dl.suggestedFilename(), /agentic-delivery-pipeline\.lesson\.json$/);
+  const file = path.join(os.tmpdir(), 'vl-export.json'); await dl.saveAs(file);
+  const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+  assert.equal(data.visualizationLab, 1);
+  assert.equal(data.lesson.spec.title, 'Agentic delivery pipeline');
+  assert.deepEqual(data.lesson.versions.map(v => v.id + ':' + v.lib), ['A:story', 'B:reactflow', 'C:story3d']);
+  assert.ok(data.lesson.versions.every(v => v.code.includes('window.lab')));
+  // import into an empty lab
+  await page.click('#btnNew'); await sleep(300);
+  assert.equal(await page.$$eval('.pane', n => n.length), 0);
+  await page.click('#btnImport'); await page.setInputFiles('#importFile', file); await sleep(7000);
+  assert.equal(await page.$eval('#specBox h3', n => n.textContent), 'Agentic delivery pipeline');
+  assert.ok(allPass(await statuses(page)), JSON.stringify(await statuses(page)));
+  // an imported lesson counts as the designer's work: New lab asks first
+  await page.click('#btnNew'); await sleep(200);
+  assert.match(await page.$eval('#btnNew', b => b.textContent), /Replace your current lesson/);
+  await page.click('#btnNew'); await sleep(300);
+  // bad files
+  const bad = path.join(os.tmpdir(), 'vl-bad.json'); fs.writeFileSync(bad, '{"hello": 1}');
+  await page.click('#btnImport'); await page.setInputFiles('#importFile', bad); await sleep(500);
+  assert.match(await page.$eval('#specBox .banner.bad', n => n.textContent), /Import failed/);
+  const unknownLib = path.join(os.tmpdir(), 'vl-unknown.json');
+  fs.writeFileSync(unknownLib, JSON.stringify({ visualizationLab: 1, lesson: { ...data.lesson, versions: [{ id: 'A', lib: 'nosuchlib', code: 'window.lab = {}' }] } }));
+  await page.click('#btnImport'); await page.setInputFiles('#importFile', unknownLib); await sleep(500);
+  assert.match(await page.$eval('#specBox .banner.bad', n => n.textContent), /nosuchlib/);
+  await ctx.close();
+});

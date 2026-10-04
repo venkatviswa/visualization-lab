@@ -216,7 +216,11 @@ The standalone page has its own sliders and transport bar, so `a.html` can be em
 
 ---
 
-## 8. Adding a lesson to the gallery
+## 8. Lesson files
+
+The lab's **Export lesson** writes `{ visualizationLab: 1, exportedAt, title, lesson: { goal, view, libChoice, spec, versions, chat, theme, sync } }`. `spec` is the section 2 object with `modelCode` and `checkCode` inline; each version is `{ id, lib, code, explanation, caveats, handEdited }`. The same shape, minus the wrapper, is what the gallery stores per lesson, so a gallery item's `spec.json` plus its renderers can be assembled into an importable file, and an exported file can be split into an item folder.
+
+## 9. Adding a lesson to the gallery
 
 Gallery lessons live in the lab's source under `gallery/items/<slug>/`:
 
@@ -250,7 +254,7 @@ The bake-off skill produces the same folder shape (`spec.json`, candidates, scre
 
 ---
 
-## 9. Review checklist
+## 10. Review checklist
 
 Before a lesson ships, someone checks:
 
@@ -268,7 +272,7 @@ Before a lesson ships, someone checks:
 
 ---
 
-## 10. A worked example
+## 11. A worked example
 
 The **Key terms of agentic AI** lesson (`examples/terms.spec.json`, `terms_cloud.js`, `terms_ranked.js`, `terms_helix.js`) is the shortest complete lesson and a good one to copy.
 
@@ -282,7 +286,7 @@ Three renderers, one model, one check, and a comparison line that asks the only 
 
 ---
 
-## 11. How the single source works
+## 12. How the single source works
 
 | What | Lives in | Used by |
 | --- | --- | --- |

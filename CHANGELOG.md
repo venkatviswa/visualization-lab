@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Export lesson / Import lesson: the whole lesson as one JSON file (`<title>.lesson.json`), drag-and-drop import, validation with clear errors; imported lessons are protected by the replace guard.
 - Guide drawer in the app: the README and the authoring guide, with a `?` next to Draft spec that opens the spec rules; keyboard `?` toggles it.
 - Replace guard on Draft spec and New lab: a second click is needed when the lesson is the designer's own work (the gallery already had it).
 
