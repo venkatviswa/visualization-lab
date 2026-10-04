@@ -6,8 +6,12 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { startServer, labUrlForTests, launch, statuses, sleep } from '../helpers.mjs';
 
+import fs from 'fs';
+import path from 'path';
+import { root } from '../helpers.mjs';
 let server, browser, url;
-before(async () => { server = await startServer(); browser = await launch(); url = labUrlForTests(server); });
+before(async () => {
+  if (!fs.existsSync(path.join(root, 'dist/gallery/data.js'))) throw new Error('dist/gallery is missing: run `npm run build:gallery` once before the e2e tests'); server = await startServer(); browser = await launch(); url = labUrlForTests(server); });
 after(async () => { await browser?.close(); server?.close(); });
 
 async function fresh(opts = {}) {

@@ -43,7 +43,7 @@ npm run mirror              # downloads the pinned packages into .cdn/ so tests 
 npm run build               # dist/vislab.html + kit + examples + docs (fast, no browser)
 npm run build:gallery       # dist/gallery/data.js + thumbnails; verifies all 47 versions (about 8 minutes)
 npm run serve               # http://localhost:8766/dist/vislab.html
-npm test                    # build, then unit + toolkit + e2e (about 4 minutes)
+npm test                    # build, then unit + toolkit + e2e (about 4 minutes; needs dist/gallery from one build:gallery)
 npm run test:gallery        # every gallery lesson at defaults, min and max (about 15 minutes)
 ```
 
