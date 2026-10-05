@@ -239,11 +239,11 @@ A library is how a version is drawn; its **form** is what the picture is: a Gant
 | 2D simulation | motion drawn from the model's physics | p5 | projectile, rocket (examples) |
 | 3D simulation | the same motion with depth | three | projectile (example) |
 | Sankey | flows between stages, width as volume, drop-offs labelled | plotly, d3sankey | where the records go |
-| control chart | a metric over time with control limits and breaches marked | chartjs, plotly | planned |
-| distribution plot | a box, violin or ridge of a measure such as latency | plotly, d3 | planned |
-| slope chart | before and after for each item, as a line | d3, chartjs | planned |
-| dot plot with ranges | an estimate per item with its uncertainty bar | d3, chartjs, svg | planned |
-| cohort chart | a measure by cohort over time, as a grid or stacked lines | chartjs, d3 | planned |
+| control chart | a metric over time with control limits and breaches marked | chartjs, plotly | is the agent healthy |
+| distribution plot | a box, violin or ridge of a measure such as latency | plotly, d3 | is the agent healthy |
+| slope chart | before and after for each item, as a line | d3, chartjs | before and after |
+| dot plot with ranges | an estimate per item with its uncertainty bar | d3, chartjs, svg | before and after |
+| cohort chart | a measure by cohort over time, as a grid or stacked lines | svg, chartjs, d3 | before and after |
 | ER diagram | objects and their relations in a data model | reactflow | planned |
 | org chart | a hierarchy of people or owners | reactflow, d3 | planned |
 | chord diagram | relations between items on a circle, width as volume | d3 | planned |

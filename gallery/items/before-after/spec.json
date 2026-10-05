@@ -1,0 +1,64 @@
+{
+  "title": "Before and after: did the new way of working work?",
+  "objective": "Learners see the same rollout three ways (a slope per team, each team's change with its 95 % range, and the cohorts lined up by months since adoption) and learn why a leader should lead with the pooled change and its range, show every team's slope, and use the cohort grid to answer \"was it just one good team?\"",
+  "view": "2D",
+  "recommended": {
+    "library": "d3",
+    "why": "A slope chart is two columns and a line per team; D3 draws it exactly and lets the lines appear one by one and recolour when the ranges arrive."
+  },
+  "alternative": {
+    "library": "chartjs",
+    "why": "The slope shows direction for every team; the dot plot with ranges shows which changes are real at this sample size. Which one goes on the first slide, and which one answers the sceptic?"
+  },
+  "assumptions": [
+    "Teams, baselines and measurements are seeded synthetic numbers; the method, the metric (cycle time in days) and the teams are fictional",
+    "Each team's true improvement is the effect size plus a little team-to-team variation; measurements vary by 25 % around the truth, so a mean of n measurements has a standard error of 25 % / √n",
+    "The 95 % range of a change is ± 1.96 × √2 × standard error, expressed as a share of the before mean",
+    "Teams adopt in a staggered rollout over six months; the adoption month gets half the effect, the following months the full effect",
+    "The cohort grid averages the % change against baseline for the teams that adopted in the same month, by months since adoption",
+    "Playback: five scenes over about 21 s (before, after, ranges, cohorts, so what)"
+  ],
+  "units": [
+    "cycle time: days",
+    "change: percent of the before mean, negative is better",
+    "sample size: measurements per team per period",
+    "months: calendar months of the rollout"
+  ],
+  "params": [
+    {
+      "id": "effect",
+      "label": "True improvement",
+      "min": 0,
+      "max": 40,
+      "step": 5,
+      "value": 20,
+      "unit": "%"
+    },
+    {
+      "id": "sampleSize",
+      "label": "Measurements per team",
+      "min": 5,
+      "max": 60,
+      "step": 5,
+      "value": 15,
+      "unit": ""
+    },
+    {
+      "id": "teams",
+      "label": "Teams",
+      "min": 4,
+      "max": 12,
+      "step": 1,
+      "value": 8,
+      "unit": ""
+    }
+  ],
+  "checkDescription": "Each team's change, margin and flags follow from its means; standard errors scale with 1/√n; the pooled change lies within three of its margins of the stated effect; every team sits in exactly one rollout cohort; cells before adoption average near zero and cells after it are negative when the effect is positive.",
+  "expectAtDefaults": "m.pooled < 0 && m.clearCount >= 1 && m.clearCount < m.teams && m.cohorts.length === 6",
+  "learnerPrompts": {
+    "predict": "Set the measurements per team to 5 before you play. How many teams will clear zero on their own, and will any look worse?",
+    "explain": "With the true improvement at 0 %, some teams still show a change. Explain to a sponsor why the cohort grid is the honest picture here."
+  },
+  "modelCode": "function model(p) {\n  // Teams adopt a new way of working in a staggered rollout. Each team's cycle time (days from start to done) is measured\n  // before and after; the true improvement is the effect size, measurements are noisy, and a mean of n measurements\n  // carries a standard error. Numbers are seeded and illustrative.\n  const effect = Math.max(0, Math.min(40, Math.round(p.effect / 5) * 5));\n  const n = Math.max(5, Math.min(60, Math.round(p.sampleSize / 5) * 5));\n  const teams = Math.max(4, Math.min(12, Math.round(p.teams)));\n  let seed = 7 + teams * 131;\n  const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };\n  const gauss = () => { const u = Math.max(1e-9, rnd()), v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };\n  const NAMES = ['Atlas', 'Birch', 'Cedar', 'Delta', 'Ember', 'Falcon', 'Granite', 'Harbor', 'Indigo', 'Juniper', 'Kestrel', 'Lumen'];\n  const CV = 0.25, Z = 1.96, ROLLOUT = 6, MONTHS = 12;\n  const ramp = k => k < 0 ? 0 : k === 0 ? 0.5 : 1; // half the effect in the adoption month, full from the next\n  // Noise per team is fixed in its own seed stream so that changing the effect or n does not reshuffle the teams\n  const list = Array.from({ length: teams }, (_, i) => {\n    const baseline = +(8 + 8 * rnd()).toFixed(1), trueEffect = Math.max(0, effect + 4 * gauss()); // some teams gain more than others\n    const zB = gauss(), zA = gauss(), zM = Array.from({ length: MONTHS + 1 }, () => gauss());\n    return { i, name: NAMES[i], baseline, trueEffect: +trueEffect.toFixed(1), adopt: 1 + Math.floor(i * ROLLOUT / teams), zB, zA, zM };\n  });\n  list.forEach(t => {\n    const sd = CV * t.baseline, se = sd / Math.sqrt(n);\n    t.before = +(t.baseline + se * t.zB).toFixed(2);\n    t.after = +(t.baseline * (1 - t.trueEffect / 100) + se * t.zA).toFixed(2);\n    t.se = +se.toFixed(3);\n    t.change = +(100 * (t.after - t.before) / t.before).toFixed(1);\n    t.margin = +(100 * Z * Math.sqrt(2) * se / t.before).toFixed(1);\n    t.lo = +(t.change - t.margin).toFixed(1); t.hi = +(t.change + t.margin).toFixed(1);\n    t.clear = t.hi < 0; // the range excludes zero: a real improvement at 95 %\n    t.looksWorse = t.change > 0;\n    // Monthly series for the cohort view: months 1..12 of the rollout\n    t.months = Array.from({ length: MONTHS }, (_, m) => { const month = m + 1, k = month - t.adopt, v = t.baseline * (1 - ramp(k) * t.trueEffect / 100) + se * t.zM[m]; return { month, k, value: +v.toFixed(2), pct: +(100 * (v - t.baseline) / t.baseline).toFixed(1) }; });\n  });\n  const sumB = list.reduce((a, t) => a + t.before, 0), sumA = list.reduce((a, t) => a + t.after, 0);\n  const pooled = +(100 * (sumA - sumB) / sumB).toFixed(1);\n  const pooledMargin = +(100 * Z * Math.sqrt(list.reduce((a, t) => a + 2 * t.se * t.se, 0)) / sumB).toFixed(1);\n  // Cohorts: teams by adoption month; cells are the mean % change against baseline by months since adoption (-2 to 5)\n  const KS = [-2, -1, 0, 1, 2, 3, 4, 5];\n  const cohorts = Array.from({ length: ROLLOUT }, (_, c) => { const month = c + 1, members = list.filter(t => t.adopt === month);\n    const cells = KS.map(k => { const vals = members.map(t => t.months.find(x => x.k === k)).filter(x => x && x.month >= 1 && x.month <= MONTHS).map(x => x.pct);\n      return { k, month: month + k, n: vals.length, pct: vals.length ? +(vals.reduce((a, v) => a + v, 0) / vals.length).toFixed(1) : null }; });\n    return { month, label: 'M' + month, teams: members.map(t => t.name), size: members.length, cells }; }).filter(c => c.size > 0);\n  const clearCount = list.filter(t => t.clear).length, worseCount = list.filter(t => t.looksWorse).length;\n  const sorted = list.slice().sort((a, b) => a.change - b.change).map(t => t.i);\n  const steps = [\n    { id: 'before', t: 0, title: 'Before: ' + teams + ' teams, one baseline each', note: 'Cycle time per team before the rollout, each a mean of ' + n + ' measurements. Teams differ more than any method will change them.' },\n    { id: 'after', t: 4.5, title: 'After: the slopes', note: 'The same teams after adopting the method. Pooled change ' + pooled + ' %' + (worseCount ? '; ' + worseCount + (worseCount === 1 ? ' team looks worse' : ' teams look worse') + ', which is the noise talking.' : '; every team moved the same way.') },\n    { id: 'ranges', t: 9.5, title: 'The ranges', note: 'Each change carries a 95 % range of ± ' + (list.reduce((a, t) => a + t.margin, 0) / teams).toFixed(0) + ' points at n = ' + n + '. ' + clearCount + ' of ' + teams + ' teams clear zero on their own; the pooled change is ' + pooled + ' % ± ' + pooledMargin + '.' },\n    { id: 'cohorts', t: 14.5, title: 'Cohorts: the rollout, month by month', note: 'Teams adopted over ' + ROLLOUT + ' months. Lining them up by months since adoption shows the same step in every cohort, which one before-and-after pair cannot.' },\n    { id: 'sowhat', t: 18.5, title: 'So what for the story', note: 'Lead with the pooled change and its range, show the slope for every team, and let the cohort grid answer \"was it just one good team?\"' }\n  ];\n  const summary = 'Pooled change ' + pooled + ' % (± ' + pooledMargin + ') across ' + teams + ' teams at n = ' + n + '; ' + clearCount + ' teams clear zero on their own, ' + worseCount + ' look worse by chance.';\n  return { effect, n, teams, rollout: ROLLOUT, monthsTotal: MONTHS, list, sorted, pooled, pooledMargin, clearCount, worseCount, cohorts, ks: KS, steps, duration: 21, markers: steps.map(s => s.t), summary };\n}",
+  "checkCode": "function check(p) {\n  const m = model(p), Z = 1.96;\n  // Each team's change, margin and flags follow from its before and after means\n  const perTeam = m.list.every(t => Math.abs(t.change - 100 * (t.after - t.before) / t.before) < 0.06\n    && Math.abs(t.margin - 100 * Z * Math.sqrt(2) * t.se / t.before) < 0.06 && t.clear === (t.hi < 0) && t.looksWorse === (t.change > 0) && Math.abs(t.hi - t.lo - 2 * t.margin) < 0.11);\n  // Margins shrink with the square root of the sample size: se * sqrt(n) is the fixed measurement spread\n  const seOk = m.list.every(t => Math.abs(t.se * Math.sqrt(m.n) - 0.25 * t.baseline) < 0.01);\n  // The pooled change sits within three of its own margins of the stated effect (the noise is seeded, the effect is the signal)\n  const pooledOk = Math.abs(m.pooled + m.effect) <= Math.max(3 * m.pooledMargin, 6);\n  // Cohorts: every team belongs to one cohort in the rollout window, and cells before adoption average near zero\n  const sizes = m.cohorts.reduce((a, c) => a + c.size, 0);\n  const adoptOk = sizes === m.teams && m.list.every(t => t.adopt >= 1 && t.adopt <= m.rollout);\n  const preCells = m.cohorts.flatMap(c => c.cells.filter(x => x.k < 0 && x.pct !== null).map(x => x.pct));\n  const preOk = preCells.length === 0 || Math.abs(preCells.reduce((a, v) => a + v, 0) / preCells.length) < 12;\n  const postCells = m.cohorts.flatMap(c => c.cells.filter(x => x.k >= 1 && x.pct !== null).map(x => x.pct));\n  const postOk = m.effect === 0 || postCells.reduce((a, v) => a + v, 0) / postCells.length < 0;\n  const pass = perTeam && seOk && pooledOk && adoptOk && preOk && postOk;\n  return {\n    pass,\n    detail: 'Pooled change ' + m.pooled + ' % ± ' + m.pooledMargin + ' against a stated effect of −' + m.effect + ' %' + (pooledOk ? '' : ' (too far apart)') + '; ' + m.clearCount + ' of ' + m.teams + ' teams clear zero; margins scale with 1/√n' + (seOk ? '' : ' (they do not)') +\n      '; ' + m.cohorts.length + ' cohorts hold all ' + m.teams + ' teams' + (adoptOk ? '' : ' (mismatch)') + '; pre-adoption cells average ' + (preCells.length ? (preCells.reduce((a, v) => a + v, 0) / preCells.length).toFixed(1) : '0') + ' %.'\n  };\n}"
+}

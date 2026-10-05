@@ -1,0 +1,36 @@
+{
+  "slug": "agent-observability",
+  "category": "ML and LLM",
+  "title": "Is the agent healthy?",
+  "goal": "Show one day of an AI agent in production: latency and error rate per half hour, a prompt or model change that ships in the afternoon and slowly drifts both upward, and the moment a control chart catches it. Teach why control limits and a view of the whole latency distribution (p50 against p95) catch drift hours before a dashboard of averages does. Let me change the traffic, the hour the change ships, and how tight the alert threshold is.",
+  "a": {
+    "lib": "chartjs",
+    "form": "control chart",
+    "explanation": "A Chart.js control chart: the half-hour median latency as a line with the baseline mean (dotted) and the control limits (dashed red) from the first six hours, and the error rate below with its own upper limit, both revealed as the clock walks through the day. A dashed orange line marks the change, breaches turn into red dots, and the header keeps the clock, the median, the p95, the error rate and the limits. It is the chart an on-call engineer already knows, built from a line chart and three extra datasets. Its weakness is the lesson's point: it watches one number per bucket, so the growing tail (p95) only appears in the header.",
+    "caveats": [
+      "Limits are mean ± k σ of twelve medians, a small sample; the lesson says so in its assumptions",
+      "At 2 σ the chart flags a false alarm before the change, which is intended",
+      "Narrow screens drop the legend and halve the tick labels"
+    ]
+  },
+  "b": {
+    "lib": "plotly",
+    "form": "distribution plot",
+    "explanation": "Plotly violins with boxes: eight three-hour windows of the day, each a violin of the latency samples with the box and median inside, blue before the change and orange after, with the window that straddles the change in brown. A violin grows as its window gathers samples, so the clock reveals the day left to right; the dashed red line is the control limit and the dotted line the baseline median. After the change the violins sit higher and grow a tail at the top, which is what a rising p95 looks like. Plotly does the density estimate, the boxes and the hover; the renderer only hands it samples and colours.",
+    "caveats": [
+      "A violin needs enough samples to take shape, so the current window looks ragged until it is nearly complete",
+      "Plotly's bandwidth and the y-axis range are fixed for the lesson; very high traffic stretches the y axis",
+      "Tick labels rotate on a phone and the caption shortens"
+    ]
+  },
+  "c": {
+    "lib": "d3",
+    "form": "distribution plot",
+    "explanation": "A D3 ridge plot: the same eight windows as Gaussian density curves stacked top to bottom through the day, overlapping like a mountain range and rising as each window fills, blue before the change and orange after, with a thick tick for the median and a thin one for the p95 at the foot of each ridge. The baseline median and the control limit are vertical reference lines, so the shift to the right after the change reads at a glance, and the p95 labels show the tail stretching further than the median moves. The density is computed in the renderer from the model's samples; D3 draws the curves, the axis and every tick by hand.",
+    "caveats": [
+      "The kernel bandwidth (0.18 s) is a renderer choice; a different bandwidth changes how smooth the ridges look, not where they sit",
+      "Ridges overlap by design, so a short ridge below a tall one can be partly hidden",
+      "Phone width keeps only the start time of each window and drops the p95 labels"
+    ]
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "slug": "before-after",
+  "category": "Data stories",
+  "title": "Before and after: did the new way of working work?",
+  "goal": "Show the result of rolling out a new way of working to several teams in a way a leader can defend: cycle time per team before and after as a slope chart, each team's change with its 95 % range as a dot plot, and the teams lined up by months since adoption as a cohort grid. Make the sample size and the true improvement controls, so the audience sees why some teams look worse by chance and why the pooled change with its range is the number to lead with.",
+  "a": {
+    "lib": "d3",
+    "form": "slope chart",
+    "explanation": "A D3 slope chart: two columns, before and after, one dot and one line per team, the pooled change as a thick orange line through the middle. The clock adds the before dots, draws each slope across, then recolours the lines when the ranges arrive: green where the 95 % range excludes zero, grey where it does not, red where the change points the wrong way, and the after labels gain their ± margin. Labels are nudged apart so twelve teams stay readable. It is the first slide: direction for every team at a glance. It cannot show how wide the ranges are, only the verdict.",
+    "caveats": [
+      "Labels are pushed apart vertically, so a label may sit a little off its dot when teams are close",
+      "Phone width drops the team names from the before column and the change from the after labels"
+    ]
+  },
+  "b": {
+    "lib": "chartjs",
+    "form": "dot plot with ranges",
+    "explanation": "A Chart.js dot plot with ranges, the newspaper poll chart: one row per team sorted by its change, a dot for the estimate, a pale bar for the 95 % range, a dashed zero line and the pooled change at the top in orange with a visibly narrower bar. Dots appear first, the ranges after, so the audience sees the sort before the uncertainty. A bar that crosses zero means the change could be noise at this sample size; drag the measurements down to 5 and most of them do. It is the slide that answers the sceptic. Chart.js draws it from a floating bar and a dot dataset on the same rows.",
+    "caveats": [
+      "Bars and dots share the same rows through two datasets; the dot can sit off-centre of a very wide bar when the estimate is near an edge, which is correct",
+      "The x axis rescales when the sample size changes the ranges"
+    ]
+  },
+  "c": {
+    "lib": "svg",
+    "form": "cohort chart",
+    "explanation": "A plain SVG cohort grid: one row per adoption month with its teams, one column per month since adoption (two before, six from), each cell the cohort's mean change against its own baseline, green when faster and red when slower, with a pooled row at the bottom. The clock runs the calendar, so cells appear as their month arrives and the grid fills as a staircase; the dashed column marks adoption. Every cohort stepping down in the same column is the evidence that the change travelled with the method and not with one good team, which no before-and-after pair can show. Nothing but rectangles and text, drawn by hand.",
+    "caveats": [
+      "Cohorts with one team are noisy rows; the pooled row is the one to read",
+      "Cells before month 1 of the rollout do not exist for the first cohorts and stay blank",
+      "Phone width keeps the cohort month and drops the team names"
+    ]
+  }
+}
