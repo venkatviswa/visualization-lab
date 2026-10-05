@@ -152,6 +152,7 @@ window.lab = {
 - Every version is tested at 420px wide. No horizontal overflow; text 11px or larger; labels may wrap or abbreviate; panels may stack, or drop to a count ("and 11 more").
 - Inside a course embed a phone gives the visual about 480px of height. Never shrink the whole picture to fit a short root: drop what is secondary (a stats row, a note line, a transcript panel, scene decoration) and keep the picture, its labels and the caption at full size. A fixed wide scene needs a narrow counterpart, such as a vertical list of the same stations.
 - Hover-only details do not work on touch: anything important goes in a visible label or a click.
+- The lab's own preview is about 700×540. When a layout has to squeeze there, thin the labels rather than shrink the type: label only the items that differ from the group's own label, or every other item, and keep the rest in a tooltip and the caption.
 <!-- /lab -->
 
 ### Reduced motion

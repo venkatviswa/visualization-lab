@@ -64,9 +64,10 @@ function build() {
       txt(g, x + cw / 2 + 4, hy + hh - 20, vend ? (c.g.optedOut ? 'Opted out' : 'Vendor') : c.hop.short, { fs: 11, wt: 600, rot: -90 });
       txt(g, x + cw / 2, hy + hh - 6, '×' + c.g.count, { fs: 10.5, fill: C.muted, anchor: 'middle' });
     } else {
-      const ls = wrap(c.hop.label, cw - 12, 12, 600).slice(0, 2);
+      const tight = cw < 120;   // a pane-sized root: short hop names and sub-lines, so seven headers do not run into each other
+      const ls = wrap(tight ? c.hop.short : c.hop.label, cw - 12, 12, 600).slice(0, 2);
       ls.forEach((l, j) => txt(g, x + cw / 2, hy + 17 + j * 14, l, { fs: 12, wt: 600, anchor: 'middle' }));
-      const sub = vend ? (c.g.optedOut ? 'Member 3, opted out' : 'Members 1 and 2') : '3 records';
+      const sub = vend ? (c.g.optedOut ? (tight ? 'M3 opted out' : 'Member 3, opted out') : (tight ? 'Members 1–2' : 'Members 1 and 2')) : '3 records';
       txt(g, x + cw / 2, hy + hh - 7, sub, { fs: 10.5, fill: c.g.optedOut ? C.hi : C.muted, anchor: 'middle' });
     }
   });

@@ -40,7 +40,7 @@ function layout() {
   // Source lanes for the arrival steps
   const cols = narrow ? 2 : 4, laneW = (W - 32 - (cols - 1) * 10) / cols, lanes = M.sources.map((s, i) => ({ s, i, x: 16 + (i % cols) * (laneW + 10), y: area.y + Math.floor(i / cols) * 196, w: laneW }));
   const lanePos = M.records.map(r => { const ln = lanes[r.src], j = M.records.filter(q => q.src === r.src && q.i < r.i).length; return { x: ln.x + 18, y: ln.y + 44 + j * 50 }; });
-  return { W, H, narrow, head, legY, top, panel, area, rings, pos, lanes, lanePos };
+  return { W, H, narrow, head, legY, top, panel, area, rings, pos, lanes, lanePos, compact: k < 0.95 };
 }
 
 function draw() {
@@ -111,12 +111,21 @@ function draw() {
   M.records.forEach((r, j) => {
     const at = st('arrive') + 0.2 + j * 0.35, op = clamp01((t - at) / 0.3); if (op <= 0) return;
     const p = P[r.i], col = d3.interpolateRgb(SRC[r.src], PERSON[r.person])(rev), inLane = move < 0.5;
-    const half = r.name.length * 3.4, lx = inLane ? 14 : Math.max(16 + half, Math.min(W - 16 - half, p.x)) - p.x; // labels sit under the node once grouped
+    const half = r.name.length * 3.4; let lx = inLane ? 14 : Math.max(16 + half, Math.min(W - 16 - half, p.x)) - p.x, ly = inLane ? 4 : 23, anchor = inLane ? 'start' : 'middle'; // labels sit under the node once grouped
+    // Compressed rings (short panes): nodes sit too close for a label under each, so only the variant names (nickname, typo,
+    // odd casing) are labelled, fanned outward from the ring; the dominant name is already in the ring's own label
+    const cl = G.rings.find(c => c.pr.records.includes(r.i)), squeezed = !inLane && G.compact && cl && cl.n >= 3;
+    let showLabel = true;
+    if (squeezed) {
+      if (r.name === cl.pr.label) showLabel = false;
+      const dx = pos[r.i].x - cl.cx, dy = pos[r.i].y - cl.cy;
+      anchor = dx > 6 ? 'start' : dx < -6 ? 'end' : 'middle'; lx = dx > 6 ? 12 : dx < -6 ? -12 : 0; ly = dy < -6 ? -14 : 23;
+    }
     const g = svg.append('g').attr('opacity', op).attr('transform', `translate(${p.x},${p.y - (1 - op) * 10})`);
     g.append('title').text([r.id, r.source, r.name, r.email || 'no email', r.phone || 'no phone', 'DOB ' + r.dob, r.address].join(' · '));
     g.append('circle').attr('r', 9).attr('fill', col).attr('stroke', '#fff').attr('stroke-width', 2);
-    if (!inLane) g.append('rect').attr('x', lx - half - 3).attr('y', 12).attr('width', 2 * half + 6).attr('height', 15).attr('rx', 3).attr('fill', '#fff').attr('opacity', 0.9);
-    g.append('text').attr('x', lx).attr('y', inLane ? 4 : 23).attr('text-anchor', inLane ? 'start' : 'middle').attr('font-size', 12).attr('font-weight', 600).attr('fill', C.ink)
+    if (!inLane && showLabel) { const bx = anchor === 'start' ? lx - 3 : anchor === 'end' ? lx - 2 * half - 3 : lx - half - 3; g.append('rect').attr('x', bx).attr('y', ly - 11).attr('width', 2 * half + 6).attr('height', 15).attr('rx', 3).attr('fill', '#fff').attr('opacity', 0.9); }
+    if (showLabel) g.append('text').attr('x', lx).attr('y', ly).attr('text-anchor', anchor).attr('font-size', 12).attr('font-weight', 600).attr('fill', C.ink)
       .attr('paint-order', 'stroke').attr('stroke', '#fff').attr('stroke-width', 3).text(r.name);
     if (inLane) [r.email || 'no email', (r.phone || 'no phone') + ' · DOB ' + r.dob].forEach((s, q) => g.append('text').attr('x', 14).attr('y', 19 + q * 14).attr('font-size', 11).attr('fill', C.muted).text(s));
   });

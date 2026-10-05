@@ -26,7 +26,7 @@ function layout(w, h) {
   if (w >= 640) {
     const sx = i => 212 + i * 158, st = i => 212 + i * 196;
     return { W: 1000, H: 600, narrow: false, maria: { cx: 62, cy: 96, r: 24 }, phone: { x: 32, y: 136, w: 132, h: 180 },
-      box: Object.fromEntries(SRC.map((id, i) => [id, { x: sx(i), y: 62, w: 146, h: 64 }]).concat(STAGES.map((id, i) => [id, { x: st(i), y: 188, w: 180, h: 62 }]))
+      box: Object.fromEntries(SRC.map((id, i) => [id, { x: sx(i), y: 62, w: 146, h: 64 }]).concat(STAGES.map((id, i) => [id, { x: st(i), y: 192, w: 180, h: 60 }]))
         .concat([['profile', { x: 212, y: 306, w: 300, h: 104 }], ['agent', { x: 548, y: 306, w: 212, h: 104 }], ['journey', { x: 788, y: 306, w: 192, h: 104 }]])),
       band: { x: 200, y: 160, w: 790, h: 100 }, cap: { x: 20, y: 424, w: 960, h: 108, chars: 112, nchars: 124, size: 15.5 }, stats: { y: 544, h: 42 }, nameMax: 17, sub: 118 };
   }
@@ -104,7 +104,7 @@ function build() {
   const bd = L.band;
   el('rect', { x: bd.x, y: bd.y, width: bd.w, height: bd.h, rx: 14, fill: C.band, stroke: C.line, 'stroke-dasharray': '5 4' }, world);
   if (L.narrow) txt(world, bd.x + 8, bd.y + 10, M.names === 'salesforce' ? 'DATA 360' : 'CUSTOMER DATA PLATFORM', { size: 8.5, weight: 700, fill: C.muted });
-  else txt(world, bd.x + bd.w - 12, bd.y + bd.h - 7, (M.names === 'salesforce' ? 'DATA 360' : 'CUSTOMER DATA PLATFORM') + ' · ingest → harmonise → unify → calculate → activate', { size: 9.5, weight: 700, fill: C.muted, anchor: 'end' });
+  else txt(world, bd.x + bd.w - 12, bd.y + 13, (M.names === 'salesforce' ? 'DATA 360' : 'CUSTOMER DATA PLATFORM') + ' · ingest → harmonise → unify → calculate → activate', { size: 9.5, weight: 700, fill: C.muted, anchor: 'end' });
   // edges under the cards
   const edgeG = el('g', {}, world), pairs = SRC.map(s => [s, 'ingest']).concat([['ingest', 'harmonize'], ['harmonize', 'unify'], ['unify', 'profile'], ['profile', 'insight'], ['insight', 'agent'], ['insight', 'journey']]);
   pairs.forEach(([a, b]) => { const p1 = side(a, b), p2 = side(b, a); R.edges[eKey(a, b)] = el('line', { x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y, stroke: C.line, 'stroke-width': 2.5, 'stroke-linecap': 'round' }, edgeG); });

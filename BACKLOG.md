@@ -18,6 +18,8 @@ Open items, roughly in the order we plan to take them. Tick items here in the sa
 - [x] **Toolkit review fixes**: examples pass `check_spec`; verify gates for phone overflow, embed clipping and slider extremes, exit code, status text; one embed rule everywhere; lock file for CI.
 - [x] **More than three versions** per lesson: six, A to F, with rows D to F added on request.
 - [x] **Scoring rubric in the compare step** (teach, faithful, clarity, interaction, visual, robustness: the bake-off skill's rubric), Claude fills a first pass, the designer adjusts.
+- [x] **Laptop layout pass**: every version screenshotted full width and in the 700×560 preview pane; identity-resolution labels, PHI grid headers, data platform band label and flashcard stepper fixed; preview panes 540 px on tall screens. Accepted: wide stories scale to about 0.7 in the pane (full screen exists); React Flow diagrams are small there.
+- [ ] **Poll charts**: a dot-and-range lesson in the newspaper style (estimate dot, margin-of-error bar, sample size as a control) comparing D3, Chart.js and plain SVG. Deferred by the owner.
 - [x] **Phone layout pass**: every version screenshotted inside the phone embed; compact layouts for the squeezed stories, a narrow mode for the pipeline scene, overlaps and clipping fixed; the kit's bars tighter on narrow screens and the embed minimum raised to 680 px. Still rough: label overlaps in the two three.js versions (git branches, RAG) at phone width.
 - [ ] **Verify lab-built lessons** in headless Chromium the way gallery lessons are (from Ask Claude, or documented as a step before publishing).
 - [ ] **Architecture note** with one diagram: sandbox + harness protocol, host-owned timeline, spec probe, gallery assembly, toolkit and skill.

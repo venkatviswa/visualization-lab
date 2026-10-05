@@ -41,12 +41,13 @@ function build() {
   hdr = { lines: [0, 1].map(i => txt(svg, 16, 44 + i * 16, '', { fs: 12.5, fill: C.muted })), w: W - 32, max: narrow ? 2 : 1 };
   // progress strip: one segment per card
   const n = M.cards.length, sy = narrow ? 84 : 70, gap = narrow ? 5 : 8, sw = (W - 32 - gap * (n - 1)) / n;
+  const allFit = M.cards.every(c => tw(c.term, 11.5) <= sw);   // names for every segment or numbers for every segment, never a mix
   strip = M.cards.map((c, i) => {
     const x = 16 + i * (sw + gap);
     el('rect', { x, y: sy, width: sw, height: 6, rx: 3, fill: C.line }, svg);
     const fill = el('rect', { x, y: sy, width: 0, height: 6, rx: 3, fill: C.accent }, svg);
-    const label = narrow ? String(c.index) : (tw(c.term, 11.5) <= sw ? c.term : String(c.index));
-    const lt = txt(svg, x + (narrow ? sw / 2 : 0), sy + 22, label, { fs: 11.5, fill: C.muted, anchor: narrow ? 'middle' : 'start' });
+    const useNum = narrow || !allFit, label = useNum ? String(c.index) : c.term;
+    const lt = txt(svg, x + (useNum ? sw / 2 : 0), sy + 22, label, { fs: 11.5, fill: C.muted, anchor: useNum ? 'middle' : 'start' });
     return { fill, lt, sw };
   });
   // the deck: two static cards behind the live one
