@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.11.0 — offline downloads and accessibility
+
+- **Works offline**: a tick box beside Download HTML and Export for course puts the libraries inside the downloaded file, so it runs with no internet (a workshop, a classroom, a locked-down network). Classic libraries become inline scripts and three.js modules become data: URLs in the import map, including the addons the code uses. Files grow by 0.1 MB (Chart.js) to 4.6 MB (Plotly) and end in `.offline.html`. The toolkit has the same as `build.mjs --offline [--libdir dir]`; tests open an offline page for every library family with the network switched off.
+- A hosted copy carries the library files in `lib/` beside the page (copied from the mirror by `npm run build`; GitHub Pages workflow mirrors them) and its previews load them first, then jsDelivr, then unpkg.
+- **Text version** of every lesson, built from the model (`kit/textview.js`): a **Text** tab on each version in the lab, and in every downloaded page a **Text version of this visual** link as the first Tab stop (a section at the bottom of course pages). It holds the summary, the check, the steps with their times, the key numbers and small tables.
+- Screen readers hear the step the lesson is on while it plays or steps (one polite live region, debounced), in the lab and in downloaded pages.
+- Labels and keyboard: previews are labelled with the lesson, library and form; downloaded visuals are labelled figures in a main landmark with a heading; a pane's tabs follow the ARIA tabs pattern (arrow keys, Home, End); a **Skip to the versions** link; scrolling panels are keyboard-reachable.
+- axe-core findings fixed: the page's language, heading order, the Get inspired landmark, a chip count's contrast, the code comment colour, the Guide dialog's role.
+- axe-core runs in the e2e tests over the lab (light, dark, phone; scores, Text, How it works, Edit code, Guide, empty lab, library failure, Get inspired) and over downloaded plain and course pages.
+- The authoring guide's model rules ask for `summary` and timed `steps: [{t, title, note}]` with plain field names, since the text version reads them; the projectile example gains its summary.
+
 ## 0.10.0 — chart forms, a bigger gallery, physics, explore mode and GitHub Pages
 
 - Encoding: the page declares UTF-8 itself, so opened as a file or from a static host it no longer shows garbled characters (â€” and similar). On claude.ai the wrapper did this already, which is why it only showed elsewhere.

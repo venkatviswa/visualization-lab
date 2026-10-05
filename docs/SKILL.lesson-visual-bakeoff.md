@@ -17,7 +17,7 @@ Outputs in `bakeoff/<slug>/`:
 
 ## 0. Set up the toolkit (once per session)
 
-The toolkit ships inside this skill's folder, next to this SKILL.md: `kit/` (template.html, build.mjs, verify.mjs, check_spec.mjs, libraries.json, story3d_kit.js, look2d.js, reactflow.css) and `examples/` (pipeline.spec.json with pipeline_story.js, pipeline_story3d.js, pipeline_reactflow.js; rocket.spec.json with rocket_p5.js, rocket_chartjs.js; projectile.spec.json with projectile_p5.js, projectile_three.js; terms.spec.json with terms_wordcloud.js, terms_chartjs.js, terms_three.js). `AUTHORING.md` beside them is the full lesson guide; `kit/libraries.json` is the library registry `build.mjs` reads, so keep the `kit/` folder together.
+The toolkit ships inside this skill's folder, next to this SKILL.md: `kit/` (template.html, build.mjs, verify.mjs, check_spec.mjs, libraries.json, story3d_kit.js, look2d.js, reactflow.css, offline.js, textview.js) and `examples/` (pipeline.spec.json with pipeline_story.js, pipeline_story3d.js, pipeline_reactflow.js; rocket.spec.json with rocket_p5.js, rocket_chartjs.js; projectile.spec.json with projectile_p5.js, projectile_three.js; terms.spec.json with terms_wordcloud.js, terms_chartjs.js, terms_three.js). `AUTHORING.md` beside them is the full lesson guide; `kit/libraries.json` is the library registry `build.mjs` reads, so keep the `kit/` folder together.
 Copy both folders into the working project as `bakeoff/kit/` and `bakeoff/examples/` (keep `template.html` next to `build.mjs`). Needs Node 18+. If the folders are missing, stop and tell the user; do not improvise a harness.
 
 Check the browser once: `node -e "import('playwright').then(()=>console.log('ok'))"`. If missing, `npm i playwright`; use the preinstalled Chromium at `/opt/pw-browsers/chromium` if present (verify.mjs finds it), otherwise `npx playwright install chromium`, or set `CHROMIUM_PATH`.
@@ -139,6 +139,7 @@ Send the judge's fixes to the winning builder with SendMessage. Rebuild and re-v
 ## 7. Bundle and hand over
 
 - Copy the winner to `bakeoff/<slug>/visual.html`. If the winner is `story3d` or `three`, also copy the best passing 2D candidate to `fallback.html`.
+- When learners may be offline (a classroom, a workshop, a locked-down network), add `--offline` to the final `build.mjs` command, with `--libdir <folder laid out like the CDN>` if you have the library files locally: the libraries go inside the page, so it runs with no internet (Plotly adds about 4.5 MB). Every page also carries a text version of the lesson (summary, steps, key numbers, the check) for screen readers, built from the model by `textview.js`, so give the model a `summary` and timed `steps` with a title and a note.
 - When the course wants one page that already carries the lesson text, rebuild the winner with `--course` added to the `build.mjs` command (it must still pass verify): the page then shows the objective, the predict prompt, the visual, a live check line, the explain prompt and the assumptions.
 - Write `lesson.json`: `{title, objective, assumptions, units, params, learnerPrompts, check: <defaults check result>, winner, runnerUp, scores, judgeWhy, fixesApplied, embed}`.
 - Write `scorecard.md`: a weighted score table, the winner and the reason.

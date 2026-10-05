@@ -174,9 +174,10 @@ When the suggested library starts one of these pairs, the comparison is set auto
 
 | Part | What it does |
 | --- | --- |
-| Status pill | Generating, Running, Check passed, Check failed, *n* errors, or Preview looks empty |
+| Status pill | Generating, Running, Check passed, Check failed, *n* errors, Couldn't load (a library server could not be reached; see *Gotchas*), or Preview looks empty |
 | **Full screen** | Shows just this version. Esc exits. |
 | **Preview** | The live visual, running in a sandbox, with its own play bar |
+| **Text** | The same lesson as text, built from the model: the one-line summary, the check, the steps with their times, the key numbers and small tables. It is what a screen reader user gets, and a quick way to read the numbers the picture is drawing. Arrow keys move between the tabs. |
 | **Edit code** | A code editor. **Run** (Ctrl/⌘+Enter) applies your edits; **Discard edits** throws them away; **Copy** copies the code. A dot on the tab means you have edits you haven't run. |
 | **How it works** | Claude's explanation, caveats, and the shared model and check |
 | Check line | The result of `check()` at the current slider values |
@@ -186,6 +187,7 @@ When the suggested library starts one of these pairs, the comparison is set auto
 | **Fix errors** | Asks Claude to fix the reported problems with the smallest change |
 | **Reload preview** | Restarts the preview without changing code |
 | **Download HTML** | Saves this version as a standalone page with its own sliders, play bar and the current Look |
+| **Works offline** | When ticked (one setting for every version), Download HTML and Export for course put the libraries inside the file, so it runs with no internet: a workshop, a classroom, a locked-down network. The file grows by 0.1 MB (Chart.js) to 4.6 MB (Plotly); the name ends in `.offline.html`. |
 | **Export for course** | Saves this version as a lesson page: title, objective, the **Predict** prompt, the visual with its controls, a live "What the model confirms" line, the **Explain** prompt, assumptions and units. Ready to drop into a course. |
 | **Undo last change** | Steps back through the last 5 revisions (generations, refines, fixes and your own edits) |
 | **Remove B … F** | Deletes a comparison version (A can be regenerated but not removed) |
@@ -210,7 +212,7 @@ When the suggested library starts one of these pairs, the comparison is set auto
    ```
 
    Give it 800–1000 px of height so the predict prompt, the visual and the explain prompt all show; the page scrolls inside the frame if it's shorter.
-3. The page loads its library from jsDelivr, so the learner's device needs internet access. On a restricted network, host the library files yourself and change the `<script src>` URLs in the file.
+3. The page loads its library from jsDelivr, so the learner's device needs internet access, unless you tick **Works offline** before exporting: then the libraries are inside the file and it needs nothing else.
 4. Nothing is tracked or sent anywhere: the page is self-contained. For completion tracking, wrap it in your LMS's own activity (SCORM/xAPI packaging is not built in).
 
 **Download HTML** gives the same page without the lesson wrapper, for a slide, a wiki or a demo, or for a course that puts the lab between its own paragraphs. Embed that plain page with this rule so it keeps the height it needs (about 680 px) whatever the column width:
@@ -220,7 +222,7 @@ When the suggested library starts one of these pairs, the comparison is set auto
 <iframe class="lab-embed" src="rocket-liftoff-and-escape-A-p5.html" sandbox="allow-scripts" title="Rocket liftoff and escape"></iframe>
 ```
 
-Both pages carry a hidden live status line with the model's one-line summary, so screen readers get the key result as text.
+Both pages are built for screen readers and keyboards as well as eyes. The first Tab stop is **Text version of this visual** (on a course page it is also a section at the bottom): the summary, the check, the steps and the key numbers as text, from the model. A live status line reads out the one-line result after every slider change and the step the lesson is on while it plays. The visual is a labelled figure, and the page has a heading and a main landmark. The lab's own tests run axe-core over the lab and both kinds of page.
 
 ## Ask Claude
 
@@ -247,7 +249,7 @@ Paste the terms into the goal, ideally with a weight and a theme for each, for e
 
 ## Libraries
 
-All libraries load from jsDelivr at fixed versions, with unpkg as the fallback for previews.
+All libraries load at fixed versions: from `lib/` beside the page on a hosted copy, otherwise from jsDelivr, with unpkg as the fallback for previews. **Works offline** puts them inside a downloaded page.
 
 | Library | View | Best for |
 | --- | --- | --- |
@@ -290,7 +292,7 @@ All libraries load from jsDelivr at fixed versions, with unpkg as the fallback f
 
 **Previews and delivery**
 - **The gallery loads separately.** The lab page is small; the 35 lessons and their thumbnails load the first time you open Get inspired, so that tab takes a moment on first use.
-- **Libraries come from a library server on the internet.** Previews load them from jsDelivr and switch to unpkg for the rest of the session if jsDelivr can't be reached (the console says so). If neither can be reached (offline, or a network that blocks both), each version says *Couldn't load p5.js* (or whichever library) in plain words with a **Retry** button; nothing is wrong with the lesson, so Fix errors is not offered. Downloaded pages still load from jsDelivr only; for an offline workshop, host the libraries yourself (an offline download is in the backlog).
+- **Libraries come from a library server.** On a hosted copy (GitHub Pages) the previews load them from the `lib/` folder beside the page; inside Claude, from jsDelivr. Either way they move on to the next server (jsDelivr, then unpkg) for the rest of the session if one can't be reached, and the console says so. If none can be reached, each version says *Couldn't load p5.js* (or whichever library) in plain words with a **Retry** button; nothing is wrong with the lesson, so Fix errors is not offered. Downloaded pages load from jsDelivr unless **Works offline** was ticked.
 - **3D needs WebGL.** On machines without a capable graphics card (some virtual desktops), 3D versions can be slow or blank. Keep a 2D version as a fallback.
 - **"Reduce motion" changes playback.** With the operating system's reduce-motion setting on, animations open at their final state instead of playing. Press Play to watch them.
 - **Word clouds drop terms that don't fit.** The example cloud shrinks its fonts and says on screen if any terms are still missing; check that generated clouds do the same. Long words also look more important than they are, which is why the ranked chart is the default comparison.
@@ -306,7 +308,7 @@ See **AUTHORING.md** (published beside this file): the spec format, the model an
 
 The lab is a static site, so any static host serves it. The repository publishes itself to **GitHub Pages**: after the test workflow passes on `main`, `.github/workflows/pages.yml` builds `dist/` (reusing the verified gallery the tests cached) and deploys it, with `vislab.html` also served as `index.html`. Turn it on once under the repository's **Settings → Pages → Build and deployment → Source: GitHub Actions**; the address is then `https://<user>.github.io/<repository>/`. You can also run the **pages** workflow by hand from the Actions tab.
 
-A hosted copy runs in explore mode (see *Gotchas*): no Claude, so no drafting, generating, refining or chat, and no sign-in either. To generate on your own host you need a small server-side function that holds an API key and calls Claude for the page; that is in the backlog. Netlify, Vercel or Cloudflare Pages work the same way as GitHub Pages: publish the `dist/` folder after `npm run build` and `npm run build:gallery`.
+The build copies the library files into `dist/lib/` (from the mirror, `npm run mirror`), so a hosted copy's previews and offline downloads need no CDN. A hosted copy runs in explore mode (see *Gotchas*): no Claude, so no drafting, generating, refining or chat, and no sign-in either. To generate on your own host you need a small server-side function that holds an API key and calls Claude for the page; that is in the backlog. Netlify, Vercel or Cloudflare Pages work the same way as GitHub Pages: publish the `dist/` folder after `npm run build` and `npm run build:gallery`.
 
 ## Taking it further
 

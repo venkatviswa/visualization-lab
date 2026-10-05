@@ -87,6 +87,7 @@ Three rules follow from this:
 <!-- lab:model-rules -->
 - model(p) is pure and deterministic: no DOM, no Date, no Math.random. Synthetic data uses a seeded generator (mulberry32 is enough) so the same params always give the same result.
 - Everything a renderer draws comes from the model, with units. Precompute maxima, totals, outcomes and a one-line "summary" string, so renderers never do arithmetic.
+- The model is also the lesson's text version for screen readers (the Text tab and the "Text version" of every downloaded page are built from it): always return "summary"; anything that plays in steps returns steps: [{t, title, note}] in playback seconds; name fields in plain words (rangeMeters, not r2) because the names become the labels.
 - Keep every array under about 2,000 entries; sample or coarsen a simulation that produces more.
 - Simulations and motion return frames: [{t, ...state}] at a fixed interval, always including the first and last state, plus summary values (outcome, key times, maxima).
 - Processes, pipelines and stories return ordered stations (or steps) with ids, labels and details, and events: [{station, start, dur, note}] in playback seconds.

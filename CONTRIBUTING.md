@@ -5,7 +5,8 @@
 ```
 src/vislab.html        the page, with build placeholders (/*@LIBS@*/, @@SPEC_RULES@@ …)
 src/starters.json      the starter chips in step 1
-kit/                   the toolkit: template.html, build.mjs, verify.mjs, check_spec.mjs, story3d_kit.js, look2d.js, reactflow.css, libraries.json
+kit/                   the toolkit: template.html, build.mjs, verify.mjs, check_spec.mjs, story3d_kit.js, look2d.js, reactflow.css, libraries.json,
+                       offline.js (inlines libraries into a page), textview.js (the text version of a lesson)
 examples/<name>/       the four built-in lessons: lesson.json + model.js + check.js + a.js, b.js, c.js
 gallery/items/<slug>/  the Get inspired lessons: spec.json + meta.json + a.js, b.js, c.js
 gallery/gallery.json   gallery order, the cards that point at built-in lessons, and the opener (the lesson a first visit shows, inlined into the page)
@@ -48,6 +49,12 @@ npm run test:gallery        # every gallery lesson at defaults, min and max (lon
 ```
 
 Tests run against the local mirror in `.cdn/`, never against jsDelivr. Every library in `kit/libraries.json` is in the mirror, Plotly included; if jsDelivr is blocked where you are, `npm pack` the package and unpack it under `.cdn/<name>@<version>/`. The e2e tests point the fallback server (unpkg) at the mirror too; to play a server that is down they point it at a folder that does not exist, because Playwright's request routing does not see requests from the sandboxed preview frames.
+
+## Accessibility and offline pages
+
+The e2e tests run axe-core (WCAG 2.1 A and AA plus best practices; `audit()` in `test/helpers.mjs`) over the lab in light, dark and phone layouts, with the scores, the Text, How it works and Edit code tabs, the Guide, the empty lab, the library-failure message, Get inspired, and over a downloaded plain page and course page. A new control, panel or tab that fails axe fails the build. The preview frames themselves are not audited: their accessible content is the text version (`kit/textview.js`), built from the model, so a lesson's model must return `summary` and, if it plays in steps, `steps: [{t, title, note}]` (AUTHORING.md, model rules).
+
+`kit/offline.js` turns a page's library tags into inline scripts (and an import map's modules into data: URLs). The toolkit test builds an offline page for every library family and opens it with the network switched off; the e2e test does the same with the lab's **Works offline** downloads. `scripts/libfiles.mjs` lists the library files; `npm run mirror` fetches them into `.cdn/` and `npm run build` copies them into `dist/lib/`.
 
 ## Continuous integration
 

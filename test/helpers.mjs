@@ -21,16 +21,20 @@ export function startServer() {
   });
 }
 
-// The lab loads libraries from jsDelivr with unpkg as the fallback; tests point both at the local mirror instead.
-// A test can point either server somewhere else (a missing folder plays a server that is down; Playwright's request routing
-// does not see requests from the sandboxed preview frames, so blocking has to happen at the URL). `name` keeps variants apart.
-export function labUrlForTests(server, { primary = server.cdn, fallback = server.cdn, name = 'vislab.test.html' } = {}) {
+// Outside Claude the lab's previews load libraries from lib/ beside the page first, then jsDelivr, then unpkg. Tests serve the
+// page from .work/lab/ with lib/ linked to dist/lib, and point both CDNs at the local mirror. A test can drop lib/ (local: false)
+// or point a CDN somewhere else (a missing folder plays a server that is down: Playwright's request routing does not see requests
+// from the sandboxed preview frames, so blocking has to happen at the URL). Each `name` gets its own folder.
+export function labUrlForTests(server, { primary = server.cdn, fallback = server.cdn, local = true, name } = {}) {
   const src = read('dist/vislab.html').replaceAll('https://cdn.jsdelivr.net/npm/', primary).replaceAll('https://unpkg.com/', fallback);
-  const dir = path.join(root, '.work/lab'); fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, name), src);
-  // vendor/, gallery/ and the two guides are resolved relative to the page, so link them next to it
-  for (const d of ['vendor', 'gallery', 'README.md', 'AUTHORING.md']) { const l = path.join(dir, d); try { fs.unlinkSync(l); } catch (e) {} fs.symlinkSync(path.join(root, 'dist', d), l); }
-  return server.base + '/.work/lab/' + name;
+  const sub = name ? 'lab-' + name : 'lab', dir = path.join(root, '.work', sub); fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'vislab.test.html'), src);
+  // vendor/, gallery/, lib/ and the two guides are resolved relative to the page, so link them next to it
+  for (const d of ['vendor', 'gallery', 'lib', 'README.md', 'AUTHORING.md']) {
+    const l = path.join(dir, d); try { fs.unlinkSync(l); } catch (e) {}
+    if (d !== 'lib' || local) fs.symlinkSync(path.join(root, 'dist', d), l);
+  }
+  return server.base + '/.work/' + sub + '/vislab.test.html';
 }
 
 export async function launch() {
@@ -41,3 +45,15 @@ export async function launch() {
 
 export const statuses = page => page.$$eval('.pane', ns => ns.map(n => [n.dataset.vid, n.querySelector('[data-r=status]').innerText]));
 export const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// Accessibility audit with axe-core (WCAG 2.1 A and AA plus best practices) of the page as it is now; the sandboxed preview
+// frames are skipped (their content is the lesson's own drawing; the Text tab and the downloaded pages' text version cover it).
+export async function audit(page) {
+  await page.addScriptTag({ path: path.join(root, 'node_modules/axe-core/axe.min.js') });
+  return page.evaluate(async () => {
+    const r = await axe.run(document, { runOnly: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice'], iframes: false });
+    // CodeMirror's scroller holds a contenteditable that Tab reaches, which axe does not count as focusable content
+    const vs = r.violations.map(v => v.id === 'scrollable-region-focusable' ? Object.assign({}, v, { nodes: v.nodes.filter(n => !/cm-scroller/.test(n.target.join(' '))) }) : v).filter(v => v.nodes.length);
+    return vs.map(v => v.impact + ' ' + v.id + ': ' + v.nodes.slice(0, 3).map(n => n.target.join(' ')).join(' | '));
+  });
+}

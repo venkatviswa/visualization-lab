@@ -4,7 +4,7 @@
 // the gallery tab (load on demand, filters, surprise me, open, use this prompt, the replace guard); dark mode and phone width.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { startServer, labUrlForTests, launch, statuses, sleep } from '../helpers.mjs';
+import { startServer, labUrlForTests, launch, statuses, sleep, audit } from '../helpers.mjs';
 
 import fs from 'fs';
 import path from 'path';
@@ -535,7 +535,7 @@ test('without Claude in the viewer the chat and the Claude-only buttons are hidd
 test('a library that cannot load is explained in plain words with Retry (no Fix errors), and Retry recovers', async () => {
   // both library servers are folders that do not exist yet; Retry is pressed after the first one "comes back"
   const flaky = path.join(root, '.work/cdn-flaky'); try { fs.unlinkSync(flaky); } catch (e) {}
-  const u = labUrlForTests(server, { primary: server.base + '/.work/cdn-flaky/', fallback: server.base + '/.work/cdn-gone/', name: 'vislab.down.html' });
+  const u = labUrlForTests(server, { primary: server.base + '/.work/cdn-flaky/', fallback: server.base + '/.work/cdn-gone/', local: false, name: 'down' });
   const ctx = await browser.newContext({ viewport: { width: 1500, height: 2600 } });
   const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(e.message));
   await page.goto(u); await page.evaluate(() => localStorage.clear()); await page.reload(); await sleep(500);
@@ -543,9 +543,10 @@ test('a library that cannot load is explained in plain words with Retry (no Fix 
   const st = await statuses(page);
   assert.deepEqual(st.map(([, s]) => s), ["Couldn't load", "Couldn't load"], JSON.stringify(st));
   const msg = await page.$eval('.pane[data-vid="A"] [data-r=libfail]', n => n.innerText);
-  assert.match(msg, /Couldn't load p5/); assert.match(msg, /tried jsDelivr, then unpkg/); assert.doesNotMatch(msg, /is not defined|mount\(\)/);
+  assert.match(msg, /Couldn't load p5/); assert.match(msg, /tried this site, then jsDelivr, then unpkg/); assert.doesNotMatch(msg, /is not defined|mount\(\)/);
   assert.ok(await page.$eval('.pane[data-vid="A"] [data-r=repair]', n => n.hidden), 'no Fix errors for a missing library');
   assert.ok(await page.$eval('.pane[data-vid="A"] [data-r=problems]', n => n.hidden), 'the technical detail stays in the console');
+  assert.deepEqual(await audit(page), [], 'the failure message passes axe');
   fs.symlinkSync(path.join(root, '.cdn'), flaky);                                   // the first server is back
   try {
     await page.click('.pane[data-vid="A"] [data-r=retry]'); await sleep(5000);
@@ -556,7 +557,7 @@ test('a library that cannot load is explained in plain words with Retry (no Fix 
 });
 
 test('when the first library server is unreachable the previews fall back to the second', async () => {
-  const u = labUrlForTests(server, { primary: server.base + '/.work/cdn-gone/', name: 'vislab.fallback.html' });
+  const u = labUrlForTests(server, { primary: server.base + '/.work/cdn-gone/', local: false, name: 'fallback' });
   const ctx = await browser.newContext({ viewport: { width: 1500, height: 2600 } });
   const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(e.message));
   await page.goto(u); await page.evaluate(() => localStorage.clear()); await page.reload(); await sleep(500);
@@ -564,7 +565,117 @@ test('when the first library server is unreachable the previews fall back to the
   const st = await statuses(page);
   assert.ok(allPass(st), JSON.stringify(st));
   const log = await page.$eval('.pane[data-vid="C"] [data-r=clog]', n => n.textContent);
-  assert.match(log, /load from unpkg because jsDelivr could not be reached/, 'the console says which server is in use');
+  assert.match(log, /load from unpkg because this site and jsDelivr could not be reached/, 'the console says which server is in use');
   assert.deepEqual(errors, []);
   await ctx.close();
+});
+
+test('outside Claude the previews load their libraries from lib/ beside the page', async () => {
+  const { ctx, page, errors } = await fresh();
+  await loadExample(page, 'projectile'); await sleep(5000);
+  assert.ok(allPass(await statuses(page)));
+  const srcs = await page.$$eval('.pane iframe', fs => fs.map(f => f.srcdoc));
+  for (const d of srcs) assert.match(d, /\/\.work\/lab\/lib\/(p5|three)@/, 'loads from lib/ beside the page');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('"Works offline" downloads run with the network switched off (classic scripts and a three.js import map)', async () => {
+  const { ctx, page, errors } = await fresh({ acceptDownloads: true });
+  await loadExample(page, 'projectile'); await sleep(4000);
+  await page.check('.pane[data-vid="A"] [data-r=offline]');
+  assert.ok(await page.$eval('.pane[data-vid="B"] [data-r=offline]', c => c.checked), 'one setting for every version');
+  const files = [];
+  for (const [id, course] of [['A', false], ['B', false], ['B', true]]) {
+    const [dl] = await Promise.all([page.waitForEvent('download'), page.click(`.pane[data-vid="${id}"] [data-r=${course ? 'course' : 'dl'}]`)]);
+    assert.match(dl.suggestedFilename(), course ? /\.offline\.course\.html$/ : /\.offline\.html$/);
+    const f = path.join(root, '.work', 'dl-' + dl.suggestedFilename()); await dl.saveAs(f); files.push(f);
+  }
+  await ctx.close();
+  const off = await browser.newContext({ viewport: { width: 900, height: 700 } });
+  const net = []; await off.route(/^https?:/, q => { if (!/fonts\.g/.test(q.request().url())) net.push(q.request().url()); q.abort(); });
+  for (const f of files) {
+    const p = await off.newPage(); const pe = []; p.on('pageerror', e => pe.push(e.message));
+    await p.goto('file://' + f); await sleep(3000);
+    const st = await p.evaluate(() => ({ ready: !!window.__ready, errors: window.__errors, pass: !!(window.__check && window.__check.pass) }));
+    assert.deepEqual(st, { ready: true, errors: [], pass: true }, path.basename(f) + ' ' + JSON.stringify(pe));
+    await p.close();
+  }
+  assert.deepEqual(net, [], 'nothing was fetched from the network');
+  assert.deepEqual(errors, []);
+  await off.close();
+});
+
+test('accessibility: no axe violations in the lab (light, dark, phone), with the scores and the Text tab open, and in Get inspired', async () => {
+  for (const opts of [{ colorScheme: 'light' }, { colorScheme: 'dark' }, { viewport: { width: 420, height: 1600 }, colorScheme: 'light' }]) {
+    const { ctx, page, errors } = await fresh(opts);
+    await sleep(4000);
+    assert.deepEqual(await audit(page), [], 'lab ' + JSON.stringify(opts));
+    await page.click('#btnRubric'); await page.click('.pane[data-vid="A"] [data-tab=text]'); await sleep(500);
+    assert.deepEqual(await audit(page), [], 'scores and Text tab ' + JSON.stringify(opts));
+    await page.click('#pageSeg [data-page=inspire]'); await sleep(2500);
+    assert.deepEqual(await audit(page), [], 'Get inspired ' + JSON.stringify(opts));
+    if (opts.colorScheme === 'light' && !opts.viewport) {
+      await page.click('#pageSeg [data-page=lab]'); await sleep(500);
+      await page.click('.pane[data-vid="A"] [data-tab=how]'); await sleep(400);
+      assert.deepEqual(await audit(page), [], 'How it works');
+      await page.click('.pane[data-vid="A"] [data-tab=source]'); await sleep(2500);
+      assert.deepEqual(await audit(page), [], 'Edit code');
+      await page.click('#btnGuide'); await sleep(1500);
+      assert.deepEqual(await audit(page), [], 'Guide');
+      await page.click('#btnGuideClose'); await page.click('#btnNew'); await sleep(500);
+      assert.deepEqual(await audit(page), [], 'empty lab');
+    }
+    assert.deepEqual(errors, []);
+    await ctx.close();
+  }
+});
+
+test('the Text tab reads the lesson from the model, tabs work from the keyboard, and steps are announced', async () => {
+  const { ctx, page, errors } = await fresh();
+  await loadExample(page, 'pipeline'); await sleep(4000);
+  await page.click('.pane[data-vid="A"] [data-tab=text]'); await sleep(300);
+  const txt = await page.$eval('.pane[data-vid="A"] .textview', n => n.innerText);
+  assert.match(txt, /build cycles/); assert.match(txt, /STEP BY STEP|Step by step/i); assert.match(txt, /What the model confirms/);
+  assert.equal(await page.$eval('.pane[data-vid="A"] [data-tab=text]', b => b.getAttribute('aria-selected')), 'true');
+  await page.focus('.pane[data-vid="A"] [data-tab=text]'); await page.keyboard.press('ArrowRight'); await sleep(200);
+  assert.equal(await page.evaluate(() => document.activeElement.dataset.tab), 'source', 'ArrowRight moves to the next tab');
+  await page.keyboard.press('Home'); await sleep(200);
+  assert.equal(await page.evaluate(() => document.activeElement.dataset.tab), 'preview');
+  assert.equal(await page.$$eval('.pane[data-vid="A"] [role=tab]', ts => ts.filter(t => t.tabIndex === 0).length), 1, 'one tab in the Tab order');
+  await page.click('#tlPause').catch(() => {}); await page.click('body'); await page.keyboard.press('ArrowRight'); await sleep(900);
+  assert.match(await page.$eval('#announce', n => n.textContent), /^Step \d+ of \d+: /);
+  assert.match(await page.$eval('.pane[data-vid="A"] iframe', f => f.title), /Version A preview: Agentic delivery pipeline/);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('downloaded pages: a skip link opens the text version, steps are announced, and axe finds nothing (plain and course)', async () => {
+  const { ctx, page } = await fresh({ acceptDownloads: true });
+  await loadExample(page, 'pipeline'); await sleep(3000);
+  const files = [];
+  for (const sel of ['[data-r=dl]', '[data-r=course]']) {
+    const [dl] = await Promise.all([page.waitForEvent('download'), page.click('.pane[data-vid="A"] ' + sel)]);
+    const f = path.join(root, '.work', 'a11y-' + dl.suggestedFilename()); await dl.saveAs(f); files.push(f);
+  }
+  await ctx.close();
+  const c2 = await browser.newContext({ viewport: { width: 900, height: 700 } });
+  for (const f of files) {
+    const p = await c2.newPage(); const pe = []; p.on('pageerror', e => pe.push(e.message));
+    await p.goto(server.base + '/.work/' + path.basename(f)); await sleep(3500);
+    assert.deepEqual(await audit(p), [], path.basename(f));
+    await p.keyboard.press('Tab');
+    assert.equal(await p.evaluate(() => document.activeElement.id), 'textLink', 'the first Tab stop is the text version');
+    await p.keyboard.press('Enter'); await sleep(300);
+    const course = /course/.test(f);
+    const text = await p.$eval(course ? '#courseText' : '#textPanel', n => n.innerText);
+    assert.match(text, /build cycles/); assert.match(text, /Step by step/i);
+    if (!course) { await p.keyboard.press('Escape'); await sleep(200); assert.ok(await p.$eval('#textPanel', n => n.hidden)); }
+    await p.evaluate(() => window.__seekFrac(0.5)); await sleep(700);
+    assert.match(await p.$eval('#stepStatus', n => n.textContent), /^Step \d+ of \d+: /);
+    assert.equal(await p.$eval('#root', n => n.getAttribute('role')), 'figure');
+    assert.deepEqual(pe, []);
+    await p.close();
+  }
+  await c2.close();
 });

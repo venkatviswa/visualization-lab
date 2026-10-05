@@ -13,7 +13,7 @@ test('build runs and is deterministic', () => {
   build(); const a = read('dist/vislab.html');
   build(); const b = read('dist/vislab.html');
   assert.equal(a, b, 'two builds produced different pages');
-  assert.ok(a.length > 150000 && a.length < 400000, 'unexpected page size ' + a.length);
+  assert.ok(a.length > 150000 && a.length < 450000, 'unexpected page size ' + a.length);
 });
 
 const page = () => read('dist/vislab.html');
@@ -110,4 +110,14 @@ test('docs: generated tables match libraries.json', () => {
 test('dist: toolkit and examples are published next to the page', () => {
   for (const f of ['dist/kit/build.mjs', 'dist/kit/verify.mjs', 'dist/kit/check_spec.mjs', 'dist/kit/template.html', 'dist/kit/story3d_kit.js', 'dist/kit/libraries.json', 'dist/vendor/codemirror.min.js', 'dist/examples/rocket.spec.json', 'dist/README.md', 'dist/AUTHORING.md'])
     assert.ok(fs.existsSync(path.join(root, f)), f);
+});
+
+test('dist/lib: every library file the lessons load is there, as plain text (no raw control characters or U+FFFD, which some hosts refuse)', () => {
+  const dir = path.join(root, 'dist/lib');
+  if (!fs.existsSync(dir)) return;   // no mirror here: the build skipped lib/ with a warning
+  const files = JSON.parse(read('kit/libraries.json')).libraries.flatMap(l => [...(l.head || '').matchAll(/\{\{CDN\}\}([^"'\s}]+)/g)].map(m => m[1]).filter(f => !f.endsWith('/')));
+  for (const f of files) {
+    const t = fs.readFileSync(path.join(dir, f), 'utf8');
+    assert.ok(!/[\x00-\x08\x0b\x0c\x0e-\x1f\ufffd]/.test(t), f + ' has a raw control character or U+FFFD');
+  }
 });

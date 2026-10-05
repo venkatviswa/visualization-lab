@@ -1,5 +1,6 @@
 # Publishes the lab to GitHub Pages after the test workflow passes on main (or by hand from the Actions tab).
 # One-time setup: repository Settings -> Pages -> Build and deployment -> Source: GitHub Actions.
+# The site carries the library files in lib/ (from the mirror), so its previews do not depend on a CDN.
 # On Pages there is no Claude in the viewer, so the lab runs in explore mode: every lesson, the code editor, comparing,
 # scoring and downloads work; Draft spec, Generate, Refine and Ask Claude are hidden (see README, "Hosting").
 name: pages
@@ -49,8 +50,13 @@ jobs:
         if: steps.gallery.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
 
-      - name: Mirror the pinned packages (only if the gallery has to be built here)
-        if: steps.gallery.outputs.cache-hit != 'true'
+      - name: Restore the package mirror
+        uses: actions/cache@v4
+        with:
+          path: .cdn
+          key: cdn-${{ hashFiles('kit/libraries.json', 'scripts/mirror.mjs', 'scripts/libfiles.mjs') }}
+
+      - name: Mirror the pinned packages (the site ships them in lib/, so previews and offline downloads need no CDN)
         run: npm run mirror
 
       - name: Build and verify the gallery (only if it was not cached)

@@ -5,6 +5,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { libraryFiles } from './libfiles.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = p => fs.readFileSync(path.join(root, p), 'utf8');
@@ -89,6 +90,11 @@ fill('/*@LIBS@*/\n', LIBS);
 fill('/*@STORY3D_KIT@*/\n', KIT + '\n');
 fill('/*@TEMPLATE@*/\n', '// kit/template.html (inlined by scripts/build.mjs)\nconst KIT_TEMPLATE = ' + js(read('kit/template.html')) + ';\n');
 fill('/*@LOOK2D@*/\n', '// kit/look2d.js (inlined by scripts/build.mjs)\n' + read('kit/look2d.js') + '\n');
+// inlined kit code must not close the page's <script> element
+const inlineJs = f => read(f).replace(/<\/script/gi, '<\\/script');
+fill('/*@OFFLINE@*/\n', '// kit/offline.js (inlined by scripts/build.mjs)\n' + inlineJs('kit/offline.js') + '\n');
+// kit/textview.js runs here (the Text tab, step announcements) and inside every preview frame and downloaded page, so it goes in twice: as code and as a string
+fill('/*@TEXTVIEW@*/\n', '// kit/textview.js (inlined by scripts/build.mjs)\n' + inlineJs('kit/textview.js') + '\nconst TEXTVIEW_SRC = ' + js(read('kit/textview.js').replace(/<\/script/gi, '<\\/script')) + ';\n');
 fill('/*@LIBS_STORY3D_AND_RUNTIME@*/\n', STORY3D);
 fill('/*@STARTERS@*/\n', STARTERS);
 fill('/*@EXAMPLES@*/\n', EXAMPLES);
@@ -104,7 +110,17 @@ fs.mkdirSync(path.join(dist, 'vendor'), { recursive: true });
 fs.mkdirSync(path.join(dist, 'kit'), { recursive: true });
 fs.writeFileSync(path.join(dist, 'vislab.html'), page);
 fs.copyFileSync(path.join(root, 'vendor/codemirror.min.js'), path.join(dist, 'vendor/codemirror.min.js'));
-for (const f of ['template.html', 'build.mjs', 'verify.mjs', 'check_spec.mjs', 'story3d_kit.js', 'reactflow.css', 'libraries.json', 'look2d.js']) fs.copyFileSync(path.join(root, 'kit', f), path.join(dist, 'kit', f));
+for (const f of ['template.html', 'build.mjs', 'verify.mjs', 'check_spec.mjs', 'story3d_kit.js', 'reactflow.css', 'libraries.json', 'look2d.js', 'offline.js', 'textview.js']) fs.copyFileSync(path.join(root, 'kit', f), path.join(dist, 'kit', f));
+// The library files themselves, beside the page in dist/lib/ (from the mirror in .cdn/): a hosted copy loads its previews from
+// here first, and "Works offline" downloads inline them from here, so neither depends on a CDN. Skipped with a warning without a mirror.
+const libFiles = libraryFiles(libs), haveMirror = libFiles.every(f => fs.existsSync(path.join(root, '.cdn', f)));
+// Raw control characters and U+FFFD (Plotly carries both inside string literals) are written as \u escapes, which mean the
+// same in a JS string, so the files are plain text wherever they are published.
+if (haveMirror) for (const f of libFiles) {
+  const to = path.join(dist, 'lib', f); fs.mkdirSync(path.dirname(to), { recursive: true });
+  fs.writeFileSync(to, fs.readFileSync(path.join(root, '.cdn', f), 'utf8').replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\ufffd]/g, c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0')));
+}
+else console.warn('warning: .cdn/ is incomplete (run npm run mirror), so dist/lib/ was not written; hosted previews and offline downloads will use the CDN');
 for (const f of ['README.md', 'AUTHORING.md']) fs.copyFileSync(path.join(root, f), path.join(dist, f));
 // examples for the published toolkit
 const exd = path.join(dist, 'examples'); fs.mkdirSync(exd, { recursive: true });

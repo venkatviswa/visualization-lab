@@ -9,6 +9,7 @@ window.__errors = [];
 addEventListener('error', e => { const t = e.target; const u = t && t !== window && (t.src || t.href); if (u && /fonts\.(googleapis|gstatic)\.com/.test(u)) return; __errors.push(u ? 'Failed to load ' + u : (e.message || 'Script error') + (e.lineno ? ' (line ' + e.lineno + ')' : '')); }, true);
 addEventListener('unhandledrejection', e => __errors.push('Unhandled rejection: ' + (e.reason && e.reason.message || e.reason)));
 </script>
+<script>{{TEXTVIEW}}</script>
 {{HEAD}}
 <style>
   :root { --bg:#0C1130; --panel:#161D45; --line:#2A3370; --ink:#EEF0FA; --muted:#A7AED3; --accent:#F5B83D; }
@@ -19,7 +20,8 @@ addEventListener('unhandledrejection', e => __errors.push('Unhandled rejection: 
   :root[data-look="forest"] { --bg:#0F1E17; --panel:#17291F; --line:#27413A; --ink:#E9F2EC; --muted:#9DB5A6; --accent:#F2B544; }
   :root[data-look="paper"] { --bg:#F6F1E7; --panel:#FFFDF8; --line:#E2D9CA; --ink:#2B2520; --muted:#6E655B; --accent:#8A4F2B; }
   html, body { margin:0; height:100%; background:var(--bg); color:var(--ink); font:14px/1.45 system-ui, sans-serif; }
-  body { display:flex; flex-direction:column; }
+  body, main { display:flex; flex-direction:column; }
+  main { flex:1; min-height:0; }
   #root { position:relative; flex:1; min-height:320px; overflow:hidden; background:{{ROOT_BG}}; }
   .bar { display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; padding:8px 12px; background:var(--panel); border-top:1px solid var(--line); }
   .bar label { display:flex; gap:8px; align-items:center; white-space:nowrap; max-width:100%; min-width:0; }
@@ -43,6 +45,7 @@ addEventListener('unhandledrejection', e => __errors.push('Unhandled rejection: 
   #time { font-family:ui-monospace, monospace; color:var(--muted); font-size:12px; }
   /* Course wrapper (only when COURSE is set): title, predict card, the visual, the check line, explain card, notes */
   body.course { height:auto; min-height:100%; }
+  body.course main { flex:none; }
   body.course #root { flex:none; height:min(62vh, 560px); min-height:320px; }
   .course-head, .course-card, .course-notes, .course-foot { padding:12px 16px; background:var(--panel); border-top:1px solid var(--line); }
   .course-head { border-top:0; border-bottom:1px solid var(--line); }
@@ -56,12 +59,34 @@ addEventListener('unhandledrejection', e => __errors.push('Unhandled rejection: 
   .course-notes summary { cursor:pointer; color:var(--muted); font-size:13px; }
   .course-notes ul { margin:6px 0 0; padding-left:18px; font-size:13px; }
   .course-foot { font-size:11.5px; color:var(--muted); display:flex; flex-wrap:wrap; gap:4px 16px; }
+  /* Text version (kit/textview.js): reached by the first Tab stop on a plain page, a section at the bottom of a course page */
+  .skip { position:absolute; left:10px; top:-60px; z-index:20; padding:8px 12px; border-radius:8px; background:var(--accent); color:#111; font-weight:600; text-decoration:none; }
+  .skip:focus { top:10px; }
+  .textpanel { position:fixed; inset:0; z-index:30; overflow:auto; background:var(--panel); color:var(--ink); padding:16px 20px; }
+  .textpanel[hidden] { display:none; }
+  .tp-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:10px; }
+  .tp-head button { background:transparent; color:var(--ink); border:1px solid var(--line); border-radius:7px; padding:4px 10px; font:inherit; cursor:pointer; }
+  .textview { display:flex; flex-direction:column; gap:10px; font-size:14px; max-width:72ch; }
+  .textview h3 { margin:6px 0 0; font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
+  .textview p, .textview ol { margin:0; } .textview ol { padding-left:22px; display:flex; flex-direction:column; gap:4px; }
+  .textview .tv-time, .textview .tv-check, .textview .tv-note { color:var(--muted); }
+  .textview table { border-collapse:collapse; font-size:13px; }
+  .textview caption { text-align:left; font-weight:600; padding:4px 0; }
+  .textview th, .textview td { text-align:left; padding:3px 12px 3px 0; border-bottom:1px solid var(--line); vertical-align:top; }
+  .textview th { font-weight:500; color:var(--muted); }
+  .course-text .textview { margin-top:8px; }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 </style>
 </head>
 <body>
+<a class="skip" id="textLink" href="#textPanel">Text version of this visual</a>
+<main id="main">
+<h1 class="sr" id="pageTitle">{{TITLE}}</h1>
 <div id="courseTop"></div>
-<div id="root"></div>
+<div id="root" role="figure" aria-label="{{TITLE}}" aria-describedby="status"></div>
 <p id="status" class="sr" aria-live="polite"></p>
+<p id="stepStatus" class="sr" aria-live="polite"></p>
+<div id="textPanel" class="textpanel" role="region" aria-label="Text version" tabindex="-1" hidden><div class="tp-head"><strong>Text version</strong><button id="textClose" type="button">Back to the visual</button></div><div id="textView"></div></div>
 <div class="bar" id="params"></div>
 <div class="bar" id="transport" hidden>
   <button id="prev" type="button" aria-label="Previous step">&#9664;&#9664;</button>
@@ -72,6 +97,7 @@ addEventListener('unhandledrejection', e => __errors.push('Unhandled rejection: 
   <select id="speed" aria-label="Speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="4">4×</option></select>
 </div>
 <div id="courseBottom"></div>
+</main>
 <script>
 const SPEC = {{SPEC_JSON}};
 const COURSE = {{COURSE_JSON}};
@@ -90,16 +116,22 @@ document.documentElement.dataset.look = window.LAB_THEME;
   const runCheck = () => { try { window.__check = typeof check === 'function' ? check(Object.assign({}, P)) : { pass: true, detail: 'no check' }; } catch (e) { window.__check = { pass: false, detail: 'check() threw: ' + e.message }; } const cl = $('checkLine'); if (cl && window.__check) { cl.innerHTML = ''; const b = document.createElement('b'); b.textContent = window.__check.pass ? 'What the model confirms: ' : 'Check failed: '; cl.append(b, window.__check.detail || ''); } };
   // Text version of what the visual shows, for screen readers and for verify.mjs: the model's summary when it has one, else the check line
   const updateStatus = () => { let t = ''; try { const m = typeof model === 'function' ? model(Object.assign({}, P)) : null; if (m && typeof m.summary === 'string') t = m.summary; } catch (e) {} if (!t && window.__check) t = (window.__check.pass ? '' : 'Check failed: ') + (window.__check.detail || ''); $('status').textContent = t; window.__status = t; };
+  // Text version: summary, steps, key numbers and the check, from the model (kit/textview.js)
+  const renderText = () => { if (!window.labText) return; let v = null; try { v = typeof model === 'function' ? labText.view(model(Object.assign({}, P))) : null; } catch (e) {} window.__text = v; const box = $('textView'); box.innerHTML = ''; box.append(labText.render(document, v, window.__check)); };
+  $('textLink').onclick = e => { e.preventDefault(); const d = $('courseText'); if (d) { d.open = true; d.querySelector('summary').focus(); d.scrollIntoView(); return; } $('textPanel').hidden = false; $('textPanel').focus(); };
+  $('textClose').onclick = () => { $('textPanel').hidden = true; $('textLink').focus(); };
+  addEventListener('keydown', e => { if (e.key === 'Escape' && !$('textPanel').hidden) $('textClose').click(); });
   if (COURSE) buildCourse();
+  renderText();   // from the model alone, so the text version is there even when a library fails to load
   if (!window.lab || typeof lab.mount !== 'function') { __errors.push('window.lab.mount is missing'); return; }
   try { lab.mount(root, Object.assign({}, P)); } catch (e) { __errors.push('mount() failed: ' + e.message); return; }
-  runCheck(); updateStatus();
+  runCheck(); updateStatus(); renderText();
   // Learner controls come from the spec, never from the visual's own code
   const inputs = {};
   for (const q of SPEC.params) {
     const out = document.createElement('output'), inp = Object.assign(document.createElement('input'), { type: 'range', min: q.min, max: q.max, step: q.step, value: q.value });
     out.textContent = text(q, q.value);
-    inp.oninput = () => { P[q.id] = Number(inp.value); out.textContent = text(q, P[q.id]); try { lab.update(Object.assign({}, P)); runCheck(); updateStatus(); restart(); } catch (e) { __errors.push('update() failed: ' + e.message); } };
+    inp.oninput = () => { P[q.id] = Number(inp.value); out.textContent = text(q, P[q.id]); try { lab.update(Object.assign({}, P)); runCheck(); updateStatus(); renderText(); restart(); } catch (e) { __errors.push('update() failed: ' + e.message); } };
     const lab_ = document.createElement('label'); lab_.append(q.label + ' ', inp, out); $('params').append(lab_);
     inputs[q.id] = inp;
   }
@@ -111,7 +143,10 @@ document.documentElement.dataset.look = window.LAB_THEME;
   const dur = () => Number(lab.duration) > 0 ? Number(lab.duration) : 10;
   const marks = () => { try { return Array.isArray(lab.markers) ? lab.markers.map(Number).sort((a, b) => a - b) : []; } catch (e) { return []; } };
   const apply = () => { try { lab.seek(T.frac * dur()); } catch (e) { __errors.push('seek() failed: ' + e.message); T.playing = false; } };
-  const ui = () => { $('scrub').value = Math.round(T.frac * 1000); $('play').textContent = T.playing ? 'Pause' : (T.frac >= 1 ? 'Replay' : 'Play'); $('time').textContent = (T.frac * dur()).toFixed(1) + ' / ' + dur().toFixed(1) + ' s'; };
+  // Screen readers hear the step the lesson is on (debounced, so scrubbing does not queue announcements)
+  let lastStep = -2, stepTimer = 0;
+  const announce = () => { if (!window.labText || !window.__text) return; const i = labText.stepAt(window.__text, T.frac * dur()); if (i === lastStep || i < 0) return; lastStep = i; clearTimeout(stepTimer); stepTimer = setTimeout(() => { $('stepStatus').textContent = labText.say(window.__text, i); }, 350); };
+  const ui = () => { announce(); $('scrub').value = Math.round(T.frac * 1000); $('play').textContent = T.playing ? 'Pause' : (T.frac >= 1 ? 'Replay' : 'Play'); $('time').textContent = (T.frac * dur()).toFixed(1) + ' / ' + dur().toFixed(1) + ' s'; };
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   function restart() { if (!has()) return; T.frac = reduce ? 1 : 0; T.playing = !reduce; apply(); ui(); }
   window.__seekFrac = f => { T.frac = Math.max(0, Math.min(1, f)); T.playing = false; if (has()) apply(); ui(); };
@@ -129,7 +164,7 @@ document.documentElement.dataset.look = window.LAB_THEME;
   }
   window.__ready = true;
   function buildCourse() {
-    document.body.classList.add('course');
+    document.body.classList.add('course'); $('pageTitle').remove();
     document.title = COURSE.title || document.title;
     const h = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
     const top = $('courseTop'), bottom = $('courseBottom');
@@ -139,6 +174,7 @@ document.documentElement.dataset.look = window.LAB_THEME;
     if (COURSE.explain) { const c = h('div', 'course-card'); c.append(h('div', 'k', 'Now explain'), h('p', null, COURSE.explain)); bottom.append(c); }
     const notes = (COURSE.assumptions || []).concat(COURSE.units || []);
     if (notes.length) { const d = h('details', 'course-notes'); d.append(h('summary', null, 'Assumptions and units')); const ul = h('ul'); for (const n of notes) ul.append(h('li', null, n)); d.append(ul); bottom.append(d); }
+    const tx = h('details', 'course-notes course-text'); tx.id = 'courseText'; tx.append(h('summary', null, 'Text version: what the visual shows, as text')); tx.append($('textView')); bottom.append(tx);
     const foot = h('div', 'course-foot'); foot.append(h('span', null, 'Interactive lesson built with Visualization Lab'), h('span', null, COURSE.library ? 'Drawn with ' + COURSE.library : ''), h('span', null, 'Space plays or pauses; ← and → step')); bottom.append(foot);
   }
 })();

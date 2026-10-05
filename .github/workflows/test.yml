@@ -36,7 +36,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .cdn
-          key: cdn-${{ hashFiles('kit/libraries.json', 'scripts/mirror.mjs') }}
+          key: cdn-${{ hashFiles('kit/libraries.json', 'scripts/mirror.mjs', 'scripts/libfiles.mjs') }}
 
       - name: Mirror the pinned packages
         run: npm run mirror
@@ -96,7 +96,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .cdn
-          key: cdn-${{ hashFiles('kit/libraries.json', 'scripts/mirror.mjs') }}
+          key: cdn-${{ hashFiles('kit/libraries.json', 'scripts/mirror.mjs', 'scripts/libfiles.mjs') }}
 
       - name: Mirror the pinned packages
         if: steps.tested.outputs.cache-hit != 'true'

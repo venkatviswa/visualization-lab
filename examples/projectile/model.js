@@ -7,5 +7,7 @@ function model(p) {
     const t = tFlight * i / n;
     points.push({ t, x: vx * t, y: Math.max(0, vy * t - 0.5 * g * t * t) });
   }
-  return { g, vx, vy, tFlight, range: vx * tFlight, maxHeight: vy * vy / (2 * g), points };
+  const range = vx * tFlight, maxHeight = vy * vy / (2 * g);
+  const summary = 'Launched at ' + p.angle + '\u00b0 and ' + v + ' m/s, the ball lands ' + range.toFixed(1) + ' m away after ' + tFlight.toFixed(2) + ' s, peaking at ' + maxHeight.toFixed(1) + ' m.';
+  return { g, vx, vy, tFlight, range, maxHeight, points, summary };
 }

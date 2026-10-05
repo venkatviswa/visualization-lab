@@ -1,4 +1,5 @@
 <meta charset="utf-8">
+<script>document.documentElement.lang = document.documentElement.lang || "en";</script>
 <title>Visualization Lab</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -9,7 +10,7 @@
   --bg:#f3f5f8; --surface:#ffffff; --sunk:#eef1f5; --ink:#1b2130; --muted:#5b6475; --line:#dbe0e8;
   --accent:#2b59c3; --accent-ink:#ffffff; --a:#2b59c3; --b:#b4530f; --c:#0f766e; --d:#6d28d9; --e:#be185d; --f:#4d7c0f;
   --good:#1f7a4d; --bad:#b42318; --warn:#9a5b00; --focus:#2b59c3;
-  --hl-kw:#7a3e9d; --hl-str:#a3412a; --hl-num:#1f6f8b; --hl-com:#6b7280; --hl-fn:#2b59c3; --hl-def:#1b2130;
+  --hl-kw:#7a3e9d; --hl-str:#a3412a; --hl-num:#1f6f8b; --hl-com:#555c6b; --hl-fn:#2b59c3; --hl-def:#1b2130;
   --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
 }
@@ -70,6 +71,7 @@ textarea{resize:vertical;min-height:84px}
 .inspire-filters{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between}
 .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .chip .n{opacity:.7;margin-left:4px;font-family:var(--mono);font-size:11px}
+.chip[aria-pressed=true] .n{opacity:1}
 .ggrid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr))}
 .gcard{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow:hidden;min-width:0;transition:box-shadow .2s,border-color .2s}
 .gcard:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
@@ -153,14 +155,27 @@ body.has-max{overflow:hidden}
 .tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
 .view{position:relative;min-height:440px}
 .frame{display:block;width:100%;height:440px;border:0;background:#fff}
-@media (min-height:900px){.view{min-height:540px}.frame,.code,.explain,.srcwrap{height:540px}}   /* a tall laptop or desktop screen: the preview gets the room, so wide story layouts are not scaled down */
+@media (min-height:900px){.view{min-height:540px}.frame,.code,.explain,.srcwrap,.textview{height:540px}}   /* a tall laptop or desktop screen: the preview gets the room, so wide story layouts are not scaled down */
 .busy{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:color-mix(in srgb,var(--surface) 88%,transparent);text-align:center;padding:16px}
 .spinner{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--accent);animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spinner{animation:none}}
 .code{margin:0;height:440px;overflow:auto;padding:12px 14px;font:12px/1.55 var(--mono);background:var(--sunk);white-space:pre;tab-size:2}
+/* Text tab: the lesson as text (kit/textview.js) */
+.textview{height:440px;overflow:auto;padding:14px 16px;font-size:13.5px;display:flex;flex-direction:column;gap:10px}
+.textview h3{margin:4px 0 0;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.textview p,.textview ol{margin:0}.textview ol{padding-left:22px;display:flex;flex-direction:column;gap:4px}
+.textview .tv-summary{font-size:14.5px;font-weight:500}.textview .tv-time{color:var(--muted);font-family:var(--mono);font-size:12px}
+.textview .tv-check,.textview .tv-note{color:var(--muted)}
+.textview table{border-collapse:collapse;font-size:12.5px;max-width:100%}
+.textview caption{text-align:left;font-weight:600;padding:4px 0}
+.textview th,.textview td{text-align:left;padding:3px 10px 3px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.textview th{font-weight:500;color:var(--muted)}
+.pane.max .textview,.pane:fullscreen .textview{height:100%}
+.skip{position:absolute;left:12px;top:-60px;z-index:50;padding:8px 12px;border-radius:8px;background:var(--accent);color:var(--accent-ink);font-weight:600;text-decoration:none}
+.skip:focus{top:12px}
 .explain{height:440px;overflow:auto;padding:14px 16px;font-size:13.5px;display:flex;flex-direction:column;gap:10px}
-.explain h4{margin:0;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.explain h3{margin:0;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .explain p,.explain ul{margin:0}
 .explain pre{margin:0;font:11.5px/1.5 var(--mono);background:var(--sunk);padding:8px 10px;border-radius:6px;overflow:auto;white-space:pre}
 .libfail{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:12px;padding:24px;font-size:14px;line-height:1.5;background:var(--surface)}
@@ -188,7 +203,8 @@ body.has-max{overflow:hidden}
 .pane-foot{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-top:1px solid var(--line);background:var(--sunk)}
 .refine{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
 .refine input{background:var(--surface)}
-.foot-actions{display:flex;flex-wrap:wrap;gap:6px}
+.foot-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.foot-actions .chk{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);cursor:pointer;padding:0 4px}
 .empty{border:1px dashed var(--line);border-radius:10px;padding:28px 20px;text-align:center;color:var(--muted);display:flex;flex-direction:column;gap:10px;align-items:center}
 .chat{display:flex;flex-direction:column;gap:10px;position:sticky;top:env(safe-area-inset-top,0px);max-height:calc(100vh - 24px)}
 @media (max-width:1280px){.chat{position:static;max-height:none}}
@@ -250,9 +266,11 @@ table.rubric td.win{color:var(--good)}
 .flag .foot-actions{display:flex;flex-wrap:wrap;gap:6px}
 .json{font:12px/1.5 var(--mono);min-height:220px}
 details summary{cursor:pointer;color:var(--muted);font-size:12.5px}
-.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 </style>
 
+<a class="skip" href="#versions">Skip to the versions</a>
+<p class="sr" id="announce" aria-live="polite"></p>
 <header class="top">
   <div class="brand">
     <span class="mark" aria-hidden="true"></span>
@@ -281,7 +299,8 @@ details summary{cursor:pointer;color:var(--muted);font-size:12.5px}
 </header>
 
 <main class="grid">
-  <section class="panel" aria-label="Lesson setup">
+  <section class="panel" aria-labelledby="setupTitle">
+    <h2 class="sr" id="setupTitle">Lesson setup</h2>
     <div class="step">
       <div class="eyebrow"><span class="num">1</span>Describe the goal</div>
       <textarea id="goal" aria-label="What should learners understand?" placeholder="What should learners understand? Paste notes, Markdown or a numbered list as is."></textarea>
@@ -330,7 +349,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:12.5px}
       <div class="prompts" id="prompts"></div>
     </div>
     <div class="banner" id="compareBanner" hidden></div>
-    <div class="versions" id="versions"></div>
+    <div class="versions" id="versions" tabindex="-1" aria-label="Versions"></div>
   </section>
 
   <aside class="panel chat" aria-label="Ask Claude">
@@ -348,7 +367,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:12.5px}
   </aside>
 </main>
 
-<section class="inspire" id="inspire" hidden aria-labelledby="inspireTitle">
+<main class="inspire" id="inspire" hidden aria-labelledby="inspireTitle">
   <div class="inspire-head">
     <div>
       <h2 id="inspireTitle">Get inspired</h2>
@@ -363,10 +382,10 @@ details summary{cursor:pointer;color:var(--muted);font-size:12.5px}
   </div>
   <p class="note" id="galCount" aria-live="polite"></p>
   <div class="ggrid" id="galGrid"></div>
-</section>
+</main>
 
 <div class="guide-backdrop" id="guideBackdrop" hidden></div>
-<aside class="guide" id="guide" role="dialog" aria-modal="true" aria-labelledby="guideTitle" hidden>
+<div class="guide" id="guide" role="dialog" aria-modal="true" aria-labelledby="guideTitle" hidden>
   <div class="guide-head">
     <h2 id="guideTitle">Guide</h2>
     <div class="seg" role="tablist" aria-label="Guide section" id="guideTabs">
@@ -376,7 +395,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:12.5px}
     <button class="btn small" type="button" id="btnGuideClose" aria-label="Close the guide">Close</button>
   </div>
   <div class="guide-body" id="guideBody" tabindex="0"></div>
-</aside>
+</div>
 
 <script type="text/plain" id="rfcss">/*@RFCSS@*/</script>
 
@@ -386,15 +405,22 @@ details summary{cursor:pointer;color:var(--muted);font-size:12.5px}
 
 /* ---------- Libraries: pinned versions + generation notes ---------- */
 const JSD = "https://cdn.jsdelivr.net/npm/";
-// Library servers for the previews, tried in order: when a library fails to load from one, the previews move to the next for the rest of the session
-const CDNS = [{ base: JSD, name: "jsDelivr" }, { base: "https://unpkg.com/", name: "unpkg" }];
-let cdnAt = 0;
+
 /*@LIBS@*/
 /*@STORY3D_KIT@*/
 /*@LOOK2D@*/
+/*@OFFLINE@*/
+/*@TEXTVIEW@*/
 /*@TEMPLATE@*/
 /*@LIBS_STORY3D_AND_RUNTIME@*/
 const LIB_IDS = Object.keys(LIBS);
+// Library servers for the previews, tried in order: when a library fails to load from one, the previews move to the next for the rest of the session
+// A hosted copy (GitHub Pages, any web server) carries the library files in lib/ beside the page (scripts/build.mjs); outside Claude
+// its previews try those first. Inside Claude the previews start at jsDelivr.
+const LOCAL_LIB = new URL("lib/", location.href).href;
+const CDNS = [...(!window.claude && /^https?:$/.test(location.protocol) ? [{ base: LOCAL_LIB, name: "this site" }] : []),
+  { base: JSD, name: "jsDelivr" }, { base: "https://unpkg.com/", name: "unpkg" }];
+let cdnAt = 0;
 const RF_CSS = document.getElementById("rfcss").textContent;
 
 /*@STARTERS@*/
@@ -475,6 +501,7 @@ const HARNESS = `(function(){
   var nLog=0;['log','info','warn','debug'].forEach(function(k){var o=(console[k]||console.log).bind(console);console[k]=function(){if(nLog<200)post({type:'log',level:k,message:fmt(arguments).slice(0,2000)});else if(nLog===200)post({type:'log',level:'warn',message:'Console output stopped after 200 messages.'});nLog++;o.apply(null,arguments)}});
   var P=null,mounted=false,reduce=false;try{reduce=matchMedia('(prefers-reduced-motion: reduce)').matches}catch(e){}
   var root=function(){return document.getElementById('root')};
+  var postText=function(p){try{if(typeof window.model==='function'&&window.labText)post({type:'text',view:window.labText.view(window.model(p))})}catch(e){}};
   var runCheck=function(p){if(typeof window.check!=='function')return;try{var r=window.check(p);post({type:'check',pass:!!(r&&r.pass),detail:String((r&&r.detail)||'')})}catch(e){post({type:'check',pass:false,detail:'check() threw: '+e.message})}};
   var probe=function(p){if(typeof window.model!=='function'){post({type:'probe',issues:['model() is not defined']});return}try{var m=window.model(p),seen={},issues=[];
     var add=function(x){if(!seen[x]&&issues.length<6){seen[x]=1;issues.push(x)}};
@@ -488,11 +515,11 @@ const HARNESS = `(function(){
   var tlStart=function(){TL.on=!!(window.lab&&typeof window.lab.seek==='function');if(TL.on){TL.frac=reduce?1:0;TL.playing=!reduce;apply()}post({type:'timeline',on:TL.on,duration:dur(),frac:TL.frac,playing:TL.playing,markers:mk()})};
   var tick=function(now){if(TL.on&&TL.playing){var dt=TL.last?Math.min(0.1,(now-TL.last)/1000):0;TL.frac=Math.min(1,TL.frac+dt*TL.speed/dur());apply();if(TL.frac>=1)TL.playing=false}TL.last=now;if(TL.on&&now-TL.lastPost>120){TL.lastPost=now;post({type:'time',frac:TL.frac,playing:TL.playing,duration:dur()})}requestAnimationFrame(tick)};
   requestAnimationFrame(tick);
-  window.__labUpdate=function(p){P=p;if(!mounted)return;try{if(typeof window.lab.update==='function')window.lab.update(p);else{if(window.lab.destroy)window.lab.destroy();root().innerHTML='';window.lab.mount(root(),p)}runCheck(p);tlStart()}catch(e){post({type:'error',message:'update() failed: '+e.message,line:lineOf(e)})}};
+  window.__labUpdate=function(p){P=p;if(!mounted)return;try{if(typeof window.lab.update==='function')window.lab.update(p);else{if(window.lab.destroy)window.lab.destroy();root().innerHTML='';window.lab.mount(root(),p)}runCheck(p);postText(p);tlStart()}catch(e){post({type:'error',message:'update() failed: '+e.message,line:lineOf(e)})}};
   window.__boot=function(p){P=p;if(libFailed)return;probe(p);
     if(!window.lab||typeof window.lab.mount!=='function'){post({type:'error',message:'The code did not define window.lab.mount(root, params).'});return}
     try{window.lab.mount(root(),p);mounted=true}catch(e){post({type:'error',message:'mount() failed: '+(e&&e.message),line:lineOf(e)});return}
-    runCheck(p);tlStart();
+    runCheck(p);postText(p);tlStart();
     setTimeout(function(){var r=root(),n=r&&r.querySelector('canvas,svg,div,table'),b=n?n.getBoundingClientRect():{width:0,height:0};post({type:'ready',hasContent:!!n&&b.width>20&&b.height>20})},1800);
   };
   window.addEventListener('message',function(e){var d=e.data||{};if(d.__host!==1)return;
@@ -515,8 +542,8 @@ function buildDoc(lib, code, spec, p) {
   const type = L.module ? "module" : "text/javascript";
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escHtml(spec.title)} — ${L.name}</title>
 <style>html,body{margin:0;height:100%;background:#fff;color:#1d2433;font:13px/1.4 system-ui,sans-serif}#root{position:relative;width:100%;height:100%;overflow:hidden}</style>
-<script>window.LAB_THEME=${JSON.stringify(state.theme || "night")};<\/script><script>${HARNESS}<\/script>${L.head}${lib === "reactflow" ? "<style>" + RF_CSS + "</style>" : ""}${lib === "story" ? "<style id=\"look2d\">" + look2dCss(code, state.theme || "night") + "</style>" : ""}
-</head><body><div id="root"></div>
+<script>window.LAB_THEME=${JSON.stringify(state.theme || "night")};<\/script><script>${TEXTVIEW_SRC}<\/script><script>${HARNESS}<\/script>${L.head}${lib === "reactflow" ? "<style>" + RF_CSS + "</style>" : ""}${lib === "story" ? "<style id=\"look2d\">" + look2dCss(code, state.theme || "night") + "</style>" : ""}
+</head><body><div id="root" role="figure" aria-label="${escHtml(spec.title)}, drawn with ${escHtml(L.name)}"></div>
 <script>${esc(spec.modelCode)}\n${esc(spec.checkCode || "")}<\/script>
 <script type="${type}">${esc(code)}<\/script>
 <script type="${type}">window.__boot(${JSON.stringify(p)});<\/script>
@@ -532,7 +559,8 @@ window.addEventListener("message", e => {
   const id = Object.keys(panes).find(k => panes[k].iframe && panes[k].iframe.contentWindow === e.source);
   if (!id) return;
   const pn = panes[id];
-  if (d.type === "time") { pn.time = { frac: d.frac, playing: d.playing, duration: d.duration }; renderTimeline(); renderPaneTransport(id); return; }
+  if (d.type === "time") { pn.time = { frac: d.frac, playing: d.playing, duration: d.duration }; renderTimeline(); renderPaneTransport(id); announceStep(id); return; }
+  if (d.type === "text") { pn.text = d.view; if (pn.tab === "text") renderTextTab(id); return; }
   if (d.type === "timeline") {
     pn.timeline = d.on; pn.time = { frac: d.frac, playing: d.playing, duration: d.duration }; pn.markers = d.markers || [];
     const sp = pn.speed || tlSpeed;
@@ -568,6 +596,26 @@ function libFailed(id, url) {
 function retryLibraries() {
   cdnAt = 0;
   for (const k in panes) if (panes[k].libFail) loadPreview(k);
+}
+
+// Screen readers hear the step the lesson is on, from the first version whose model has timed steps (they all share the model).
+// One polite live region for the page, debounced so scrubbing does not queue a dozen announcements.
+let announced = { key: "", timer: 0 };
+function announceStep(id) {
+  const lead = VIDS.find(k => panes[k] && panes[k].time && panes[k].text && panes[k].text.steps.some(s => s.time != null));
+  if (lead !== id) return;
+  const pn = panes[id], i = labText.stepAt(pn.text, pn.time.frac * pn.time.duration);
+  const key = (state.spec && state.spec.title) + "|" + i;
+  if (i < 0 || key === announced.key) return;
+  announced.key = key; clearTimeout(announced.timer);
+  announced.timer = setTimeout(() => { $("announce").textContent = labText.say(pn.text, i); }, 350);
+}
+function renderTextTab(id) {
+  const pn = panes[id], view = pn.node && pn.node.querySelector("[data-r=view]"); if (!view) return;
+  view.querySelectorAll(".textview").forEach(n => n.remove());
+  const box = labText.render(document, pn.text, pn.check);
+  box.tabIndex = 0; box.setAttribute("aria-label", "Version " + id + " as text");   // a scrolling region must be reachable from the keyboard
+  view.append(box);
 }
 
 function sendParams() {
@@ -910,10 +958,11 @@ function buildPane(id) {
       el("span", { class: "spacer" }),
       el("span", { "data-r": "status" }),
       el("button", { class: "btn small", type: "button", "data-r": "fs", title: "Show this version full screen (Esc to exit)", onclick: () => toggleFull(id) }, "Full screen")),
-    el("div", { class: "tabs", role: "tablist" },
-      ["preview", "source", "how"].map(t => el("button", { type: "button", role: "tab", "data-tab": t, text: { preview: "Preview", source: "Edit code", how: "How it works" }[t],
+    el("div", { class: "tabs", role: "tablist", "aria-label": "Version " + id + " views", onkeydown: e => tabKeys(e, id) },
+      ["preview", "text", "source", "how"].map(t => el("button", { type: "button", role: "tab", "data-tab": t, id: "tab-" + id + "-" + t, "aria-controls": "view-" + id,
+        text: { preview: "Preview", text: "Text", source: "Edit code", how: "How it works" }[t], title: t === "text" ? "What the visual shows, as text: summary, steps, key numbers and the check" : null,
         onclick: () => { pn.tab = t; renderPaneBody(id); } }))),
-    el("div", { class: "view", "data-r": "view" }),
+    el("div", { class: "view", "data-r": "view", id: "view-" + id, role: "tabpanel" }),
     el("div", { class: "transport", "data-r": "transport", hidden: true },
       el("button", { class: "tbtn", type: "button", "data-r": "tprev", title: "Previous step", "aria-label": "Previous step", onclick: () => stepPane(id, -1) }, svgIcon("prev")),
       el("button", { class: "tbtn primary", type: "button", "data-r": "tplay", "aria-label": "Play", onclick: () => togglePane(id) }, svgIcon("play")),
@@ -937,6 +986,8 @@ function buildPane(id) {
         el("button", { class: "btn small", type: "button", "data-r": "repair", hidden: true, "data-gen": "1", "data-claude": "1", text: "Fix errors", onclick: () => repair(id) }),
         el("button", { class: "btn small", type: "button", text: "Reload preview", onclick: () => loadPreview(id) }),
         el("button", { class: "btn small", type: "button", "data-r": "dl", text: "Download HTML", title: "This version as a standalone page with its controls", onclick: () => download(id) }),
+        el("label", { class: "chk", title: "Put the libraries inside the downloaded file (adds 0.1 to 4.6 MB) so it runs with no internet: for a workshop, a classroom or a locked-down network" },
+          el("input", { type: "checkbox", "data-r": "offline", checked: state.offlineDl ? "checked" : null, onchange: e => setOfflineDl(e.target.checked) }), " Works offline"),
         el("button", { class: "btn small", type: "button", "data-r": "course", text: "Export for course", title: "This version as a lesson page: objective, predict prompt, the visual, the check, explain prompt, assumptions", onclick: () => download(id, true) }),
         el("button", { class: "btn small", type: "button", "data-r": "undo", text: "Undo last change", onclick: () => undo(id) }),
         id !== "A" ? el("button", { class: "btn small", type: "button", text: "Remove " + id, onclick: () => removeVersion(id) }) : null))
@@ -945,7 +996,7 @@ function buildPane(id) {
   const box = $("versions");
   const after = [...box.children].find(n => n.dataset && n.dataset.vid && n.dataset.vid > id);
   if (after) box.insertBefore(node, after); else box.append(node);
-  const iframe = el("iframe", { class: "frame", sandbox: "allow-scripts", title: "Preview of version " + id });
+  const iframe = el("iframe", { class: "frame", sandbox: "allow-scripts", title: "Version " + id + " preview" });
   pn.iframe = iframe;
   node.querySelector("[data-r=view]").append(iframe, el("div", { class: "libfail", "data-r": "libfail", role: "alert", hidden: true }));   // shown over the preview when a library cannot load
   if (state.versions.some(v => v.id === id)) loadPreview(id);
@@ -968,26 +1019,38 @@ function loadPreview(id) {
   renderPaneStatus(id);
 }
 
+// Arrow keys, Home and End move between a pane's tabs (the ARIA tabs pattern); only the selected tab is in the Tab order
+function tabKeys(e, id) {
+  const order = ["preview", "text", "source", "how"], pn = panes[id];
+  let i = order.indexOf(pn.tab);
+  if (e.key === "ArrowRight") i = (i + 1) % order.length; else if (e.key === "ArrowLeft") i = (i + order.length - 1) % order.length;
+  else if (e.key === "Home") i = 0; else if (e.key === "End") i = order.length - 1; else return;
+  e.preventDefault(); e.stopPropagation(); pn.tab = order[i]; renderPaneBody(id);
+  pn.node.querySelector('[data-tab="' + pn.tab + '"]').focus();
+}
 function renderPaneBody(id) {
   const pn = panes[id], v = state.versions.find(x => x.id === id), node = pn.node;
   if (!node) return;
   node.querySelector("[data-r=title]").textContent = v ? libName(v.lib) : "Generating…";
+  if (v) pn.iframe.title = "Version " + id + " preview: " + (state.spec.title || "lesson") + ", " + libName(v.lib) + (v.form ? " " + v.form : "") + ". The Text tab has the same content as text.";
   node.querySelector("[data-r=sub]").textContent = v ? (LIBS[v.lib]?.dim || "") + (v.form ? " · " + v.form : "") + (v.history?.length ? " · revision " + (v.history.length + 1) : "") : "";
-  for (const b of node.querySelectorAll(".tabs button")) b.setAttribute("aria-selected", String(b.dataset.tab === pn.tab));
+  for (const b of node.querySelectorAll(".tabs button")) { const on = b.dataset.tab === pn.tab; b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1; }
+  node.querySelector("[data-r=view]").setAttribute("aria-labelledby", "tab-" + id + "-" + pn.tab);
   markSourceTab(id);
   const view = node.querySelector("[data-r=view]");
   pn.iframe.hidden = pn.tab !== "preview";
   renderPaneTransport(id);
-  view.querySelectorAll(".code,.explain,.busy,.copybtn,.srcwrap").forEach(n => n.remove());
+  view.querySelectorAll(".code,.explain,.busy,.copybtn,.srcwrap,.textview").forEach(n => n.remove());
+  if (pn.tab === "text" && v) renderTextTab(id);
   if (pn.editor) { pn.editor.destroy(); pn.editor = null; }
   pn.ta = null;
   if (pn.tab === "source" && v) buildSource(id, view);
   if (pn.tab === "how" && v) {
-    view.append(el("div", { class: "explain" },
-      el("h4", { text: "What this version does" }), el("p", { text: (v.form ? "Chart form: " + v.form + ". " : "") + (v.explanation || "No explanation returned.") }),
-      v.caveats?.length ? [el("h4", { text: "Caveats" }), el("ul", {}, v.caveats.map(c => el("li", { text: c })))] : null,
-      el("h4", { text: "Shared model (same for every version)" }), el("pre", { text: state.spec.modelCode }),
-      state.spec.checkCode ? [el("h4", { text: "Check" }), el("pre", { text: state.spec.checkCode })] : null));
+    view.append(el("div", { class: "explain", tabindex: "0", "aria-label": "How version " + id + " works" },
+      el("h3", { text: "What this version does" }), el("p", { text: (v.form ? "Chart form: " + v.form + ". " : "") + (v.explanation || "No explanation returned.") }),
+      v.caveats?.length ? [el("h3", { text: "Caveats" }), el("ul", {}, v.caveats.map(c => el("li", { text: c })))] : null,
+      el("h3", { text: "Shared model (same for every version)" }), el("pre", { tabindex: "0", text: state.spec.modelCode }),
+      state.spec.checkCode ? [el("h3", { text: "Check" }), el("pre", { tabindex: "0", text: state.spec.checkCode })] : null));
   }
   if (pn.busy) {
     const stop = el("button", { class: "btn small", type: "button", text: "Stop", onclick: () => pn.ctl?.abort() });
@@ -1423,9 +1486,10 @@ function buildStandalone(v, course) {
   const head = L.head + (v.lib === "reactflow" ? "<style>" + RF_CSS + "</style>" : "") + (v.lib === "story" && theme !== "studio" ? '<style id="look2d">' + look2dCss(v.code, theme) + "</style>" : "");
   const courseJson = course ? { title: s.title, objective: s.objective || "", predict: s.learnerPrompts && s.learnerPrompts.predict || "", explain: s.learnerPrompts && s.learnerPrompts.explain || "", assumptions: s.assumptions || [], units: s.units || [], library: L.name } : null;
   return KIT_TEMPLATE
-    .replace("{{TITLE}}", escHtml(s.title || "Lesson visual"))
+    .replaceAll("{{TITLE}}", () => escHtml(s.title || "Lesson visual"))
     .replace("{{THEME}}", theme)
     .replace("{{ROOT_BG}}", (v.lib === "story3d" || (v.lib === "story" && theme !== "studio")) ? "var(--bg)" : "#ffffff")
+    .replace("{{TEXTVIEW}}", () => TEXTVIEW_SRC)
     .replace("{{HEAD}}", () => head)
     .replace("{{SPEC_JSON}}", () => esc(JSON.stringify(specLite)))
     .replace("{{COURSE_JSON}}", () => esc(JSON.stringify(courseJson)))
@@ -1434,14 +1498,32 @@ function buildStandalone(v, course) {
     .replace("{{CODE}}", () => esc(v.code))
     .replaceAll("{{CODE_TYPE}}", L.module ? "module" : "text/javascript");
 }
+// A library file for an offline copy: from lib/ beside the page when it is there (a hosted copy, the published artifact), else a CDN
+async function fetchLibText(path) {
+  for (const base of [LOCAL_LIB, JSD, "https://unpkg.com/"]) {
+    try { const r = await fetch(base + path); if (r.ok) return await r.text(); } catch (e) {}
+  }
+  throw new Error("Could not fetch " + path);
+}
 async function download(id, course) {
   const v = state.versions.find(x => x.id === id); if (!v) return;
-  const btn = panes[id].node.querySelector(course ? "[data-r=course]" : "[data-r=dl]"), label = btn.textContent;
-  const html = buildStandalone(v, !!course);
-  const name = slug(state.spec.title) + (course ? ".course.html" : "-" + id + "-" + v.lib + ".html");
-  try { const r = await saveTextFile(name, html, "text/html"); btn.textContent = r === "saved" ? "Saved" : "Exported"; }
+  const btn = panes[id].node.querySelector(course ? "[data-r=course]" : "[data-r=dl]"), label = btn.textContent, offline = !!state.offlineDl;
+  let html = buildStandalone(v, !!course), missing = [];
+  if (offline) {
+    btn.textContent = "Preparing…"; btn.disabled = true;
+    try { const r = await labOffline.inline(html, { cdn: JSD, fetchText: fetchLibText }); html = r.html; missing = r.missing; }
+    catch (e) { missing = ["(all libraries)"]; }
+    btn.disabled = false;
+    if (missing.length) pushLog(id, "warn", "Offline copy: " + missing.join(", ") + " could not be fetched, so the file loads " + (missing.length === 1 ? "it" : "them") + " from the internet.");
+  }
+  const name = slug(state.spec.title) + (course ? "" : "-" + id + "-" + v.lib) + (offline ? ".offline" : "") + (course ? ".course.html" : ".html");
+  try { const r = await saveTextFile(name, html, "text/html"); btn.textContent = (r === "saved" ? "Saved" : "Exported") + (missing.length ? " (needs internet)" : ""); }
   catch (e) { btn.textContent = "Export failed"; }
   setTimeout(() => { btn.textContent = label; }, 2500);
+}
+function setOfflineDl(on) {
+  state.offlineDl = on; save();
+  for (const k in panes) { const c = panes[k].node && panes[k].node.querySelector("[data-r=offline]"); if (c) c.checked = on; }
 }
 
 /* ---------- Chat ---------- */
@@ -1789,6 +1871,7 @@ async function showGuideDoc(name, anchor) {
   for (const b of $("guideTabs").querySelectorAll("button")) b.setAttribute("aria-selected", String(b.dataset.doc === name));
   const body = $("guideBody"); body.innerHTML = '<p class="note" style="padding:12px 0">Loading…</p>';
   body.innerHTML = mdRender(await loadGuideDoc(name));
+  body.querySelectorAll("pre").forEach(p => { p.tabIndex = 0; });   // code blocks scroll sideways: reachable from the keyboard
   body.querySelectorAll("a[data-doc]").forEach(a => a.addEventListener("click", e => { e.preventDefault(); showGuideDoc(a.dataset.doc); }));
   body.scrollTop = 0;
   if (anchor) { const t = body.querySelector("#" + anchor) || [...body.querySelectorAll("h1,h2,h3")].find(h => h.textContent.toLowerCase().includes(anchor.replace(/-/g, " "))); if (t) { t.scrollIntoView({ block: "start" }); t.classList.add("target"); } }

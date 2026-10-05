@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'fs';
 import path from 'path';
 import { spawnSync } from 'child_process';
-import { root, startServer } from '../helpers.mjs';
+import { root, startServer, launch, sleep } from '../helpers.mjs';
 
 let server;
 before(async () => { server = await startServer(); });
@@ -102,4 +102,32 @@ test('verify.mjs fails a page that scrolls inside the standard embed, and report
   assert.equal(a.embedClipped, true); assert.equal(a.pass, false);
   assert.equal(b.embedClipped, null, 'course pages scroll by design and are not embed-tested');
   assert.notEqual(r.status, 0);
+});
+
+test('build.mjs --offline: every library family runs with the network switched off', async () => {
+  const cases = [['examples', 'rocket', 'a', 'p5'], ['examples', 'rocket', 'b', 'chartjs'], ['examples', 'projectile', 'b', 'three'], ['examples', 'pipeline', 'a', 'story'],
+    ['examples', 'pipeline', 'b', 'reactflow'], ['examples', 'pipeline', 'c', 'story3d'], ['examples', 'terms', 'a', 'wordcloud'],
+    ['gallery', 'regional-hires', 'b', 'd3'], ['gallery', 'ea-record-flow', 'a', 'plotly'], ['gallery', 'ea-record-flow', 'b', 'd3sankey']];
+  const browser = await launch();
+  try {
+    for (const [where, ex, v, lib] of cases) {
+      const spec = where === 'examples' ? path.join(root, 'dist/examples', ex + '.spec.json') : path.join(root, 'gallery/items', ex, 'spec.json');
+      const code = where === 'examples' ? path.join(root, 'examples', ex, v + '.js') : path.join(root, 'gallery/items', ex, v + '.js');
+      const out = path.join(work, `offline_${ex}_${lib}.html`);
+      const extra = lib === 'story3d' ? ['--kit', kit('story3d_kit.js')] : lib === 'reactflow' ? ['--rfcss', kit('reactflow.css')] : [];
+      const r = run('build.mjs', [spec, code, lib, 'studio', out, '--offline', '--libdir', path.join(root, '.cdn'), ...extra]);
+      assert.equal(r.status, 0, lib + ': ' + r.stderr + r.stdout);
+      const html = fs.readFileSync(out, 'utf8');
+      assert.ok(!/<script src="https?:/.test(html), lib + ': a library tag still points at the internet');
+      for (const m of html.matchAll(/<script type="importmap">([\s\S]*?)<\/script>/g))
+        for (const [k, u] of Object.entries(JSON.parse(m[1]).imports)) if (!k.endsWith('/')) assert.match(u, /^data:/, lib + ': ' + k + ' is not inlined');
+      const ctx = await browser.newContext({ viewport: { width: 900, height: 640 } });
+      const net = []; await ctx.route(/^https?:/, q => { if (!/fonts\.g/.test(q.request().url())) net.push(q.request().url()); q.abort(); });
+      const page = await ctx.newPage(); const pe = []; page.on('pageerror', e => pe.push(e.message));
+      await page.goto('file://' + out); await sleep(lib === 'plotly' || lib === 'story3d' ? 4000 : 2500);
+      const st = await page.evaluate(() => ({ ready: !!window.__ready, errors: window.__errors, pass: !!(window.__check && window.__check.pass) }));
+      assert.deepEqual([st.ready, st.errors, st.pass, net, pe], [true, [], true, [], []], lib + ' offline: ' + JSON.stringify({ st, net, pe }));
+      await ctx.close();
+    }
+  } finally { await browser.close(); }
 });
