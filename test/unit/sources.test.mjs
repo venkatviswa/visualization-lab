@@ -70,6 +70,31 @@ test('gallery: gallery.json lists every item folder, and every item has the file
   }
 });
 
+test('chart forms: every gallery and example version names a form that is in the guide\'s forms table, and the page carries the vocabulary', () => {
+  const guide = read('AUTHORING.md'), m = guide.match(/<!-- lab:forms -->\n([\s\S]*?)<!-- \/lab -->/);
+  assert.ok(m, 'AUTHORING.md needs a <!-- lab:forms --> block');
+  const rows = m[1].split('\n').filter(l => l.startsWith('| ') && !l.startsWith('| Form') && !l.startsWith('| ---')).map(l => l.split('|').slice(1, -1).map(c => c.trim()));
+  const names = rows.map(r => r[0]);
+  assert.ok(names.length >= 30, 'forms table is short');
+  assert.equal(new Set(names).size, names.length, 'duplicate form names');
+  for (const r of rows) assert.ok(r[1] && r[2], `form ${r[0]} needs a fit and a library list`);
+  const gal = json('gallery/gallery.json'), used = new Set();
+  for (const slug of gal.order) {
+    if (gal.refs[slug]) continue;
+    const meta = json(`gallery/items/${slug}/meta.json`);
+    for (const k of ['a', 'b', 'c']) if (meta[k]) { assert.ok(meta[k].form, `${slug} ${k}: missing form`); assert.ok(names.includes(meta[k].form), `${slug} ${k}: form "${meta[k].form}" is not in the guide's forms table`); used.add(meta[k].form); }
+  }
+  for (const ex of fs.readdirSync(path.join(root, 'examples'))) {
+    const lesson = json(`examples/${ex}/lesson.json`);
+    for (const v of lesson.versions) { assert.ok(v.form, `${ex} ${v.id}: missing form`); assert.ok(names.includes(v.form), `${ex} ${v.id}: form "${v.form}" is not in the guide's forms table`); used.add(v.form); }
+  }
+  for (const r of rows) if (r[3] === 'planned' || r[3].startsWith('planned')) assert.ok(!used.has(r[0]), `form ${r[0]} is marked planned but a lesson uses it`);
+  const page = read('dist/vislab.html');
+  assert.ok(page.includes('Chart forms. Name the form each version should take'), 'the spec prompt carries the forms line');
+  assert.ok(page.includes('Chart form names (use one of these for "form"'), 'the renderer prompt carries the form names');
+  for (const n of ['Gantt timeline', 'swimlane', 'heatmap']) assert.ok(page.includes(n), n);
+});
+
 test('docs/SKILL.lesson-visual-bakeoff.md: every library is a contender with a notes row, and the kit files it names exist', () => {
   const skill = read('docs/SKILL.lesson-visual-bakeoff.md');
   const table = skill.slice(skill.indexOf('## 2. Choose three contenders'), skill.indexOf('## 3.'));

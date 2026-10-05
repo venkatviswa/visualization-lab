@@ -78,6 +78,7 @@
     {
       "id": "A",
       "lib": "story",
+      "form": "step-by-step story",
       "explanation": "One SVG holds a station track and a scene panel. A single paused GSAP timeline, built from model(), plays one scene per event: story cards arriving, the planner agent assembling a plan, code typing through RED, GREEN and REFACTOR, a reviewer scanning for findings, a package landing in the sandbox while the live org stays locked, the trace chain, governance mode, the scorecard filling, and the human gate. The host's play, pause and scrub controls call seek(t), which moves the timeline and updates the station highlights.",
       "caveats": [
         "Pictures are Lucide icons and SVG shapes, because the preview cannot load external images.",
@@ -87,12 +88,14 @@
     {
       "id": "B",
       "lib": "reactflow",
+      "form": "flow chart",
       "explanation": "React Flow draws the same nine stages as a node diagram with a dashed rework edge from Review to Build. It follows the same timeline, highlighting the active stage and the stages already done, and clicking a stage shows its full description. Compare it with version A to judge how much the animation adds.",
       "caveats": []
     },
     {
       "id": "C",
       "lib": "story3d",
+      "form": "3D story",
       "explanation": "The same nine stages as a three.js world: stations on a winding path, each with a 3D prop (story cards, a robot planner, a monitor whose screen goes RED, GREEN, REFACTOR, a magnifier that finds bugs, server racks with the live org locked, a chain of trace links, a shield and evidence graph, scorecard bars with board-packet pages, and a gate that lifts only when the person approves). A story token hops between stations and the camera flies to each step. Everything is computed from playback time, so pausing, stepping and scrubbing stay exact; drag to look around and the guided camera resumes at the next step.",
       "caveats": [
         "Heavier than the 2D story: it needs WebGL, so it will not run on virtual desktops without a GPU."

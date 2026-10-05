@@ -62,7 +62,13 @@ const specRules = 'Rules that matter most (from the lesson authoring guide):\n' 
   + '\n\nLibrary ids: ' + libs.map(l => `${l.id} (${l.purpose})`).join('; ') + '.\n'
   + 'Default comparisons, used for "alternative" unless the request clearly calls for something else: '
   + comps.map(c => `${c.when} -> recommended ${c.a}, alternative ${c.b} (${c.learn.replace(/\.$/, '')})`).join('; ') + '.';
-const renderContract = 'Contract (mandatory, from the lesson authoring guide):\n' + block('renderer-contract') + '\n\nLook:\n' + block('look') + '\n\nPhone:\n' + block('phone');
+// Chart forms: the vocabulary table in the guide becomes one line for the spec prompt (names and what each fits) and the renderer prompt (names only)
+const forms = block('forms').split('\n').filter(l => l.startsWith('| ') && !l.startsWith('| Form') && !l.startsWith('| ---'))
+  .map(l => l.split('|').slice(1, -1).map(c => c.trim())).map(([name, fits, libs, where]) => ({ name, fits, libs, where }));
+if (forms.length < 20) throw new Error('AUTHORING.md forms table looks truncated');
+const formsLine = 'Chart forms. Name the form each version should take in recommended.why and alternative.why, using these names: ' + forms.map(f => `${f.name} (${f.fits})`).join('; ') + '.';
+const renderContract = 'Contract (mandatory, from the lesson authoring guide):\n' + block('renderer-contract') + '\n\nLook:\n' + block('look') + '\n\nPhone:\n' + block('phone')
+  + '\n\nChart form names (use one of these for "form" when it fits, otherwise two to four plain words): ' + forms.map(f => f.name).join(', ') + '.';
 
 let page = read('src/vislab.html');
 const fill = (ph, val) => { if (!page.includes(ph)) throw new Error('src/vislab.html is missing ' + ph); page = page.replace(ph, () => val); };
@@ -75,7 +81,7 @@ fill('/*@LIBS_STORY3D_AND_RUNTIME@*/\n', STORY3D);
 fill('/*@STARTERS@*/\n', STARTERS);
 fill('/*@EXAMPLES@*/\n', EXAMPLES);
 fill('/*@PAIRS@*/\n', PAIRS);
-fill('@@SPEC_RULES@@', inLiteral(specRules));
+fill('@@SPEC_RULES@@', inLiteral(specRules + '\n\n' + formsLine));
 fill('@@RENDER_CONTRACT@@', inLiteral(renderContract));
 if (/\/\*@[A-Z0-9_]+@\*\/|@@[A-Z_]+@@/.test(page)) throw new Error('Unfilled placeholder: ' + page.match(/\/\*@[A-Z0-9_]+@\*\/|@@[A-Z_]+@@/)[0]);
 

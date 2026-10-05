@@ -197,6 +197,69 @@ When a drafted spec recommends the first library of a pair, the lab sets the sec
 
 Worked examples for each library are in `examples/` next to the toolkit (and under `items/` in the gallery source).
 
+### Chart forms
+
+A library is how a version is drawn; its **form** is what the picture is: a Gantt timeline, a swimlane, a heatmap. Every gallery version names its form in `meta.json` (`"form"`), the card and the version pane show it beside the library, **Get inspired** filters by it, and the code generator returns one for each version it writes. Use the names below so that the same picture is called the same thing everywhere; add a row here before using a new name (a unit test checks that every gallery form is in this table). Forms marked *planned* have a backlog item and no lesson yet.
+
+<!-- lab:forms -->
+| Form | Fits | Libraries | In the gallery |
+| --- | --- | --- | --- |
+| step-by-step story | a process or journey told one scene at a time with a narrator caption | story | agent pipeline, address change, identity resolution, data platform, PHI, GitHub workflow, agent loop, next token |
+| 3D story | the same story as a camera journey between stations, when the spatial path helps | story3d | agent pipeline, lead to cash, address change, data platform |
+| flow chart | every possible route through a process, with the route taken lit up | reactflow, svg | claims lifecycle, agent pipeline, lead to cash |
+| swimlane | process steps in the lane of whoever acts, with hand-offs and waiting visible | svg, reactflow | claims lifecycle |
+| architecture diagram | layered systems and their integrations, as a design review draws them | reactflow | address change, data platform |
+| loop diagram | a cycle with its gates and exits | reactflow | agent loop |
+| Gantt timeline | steps as bars on a time axis: where the minutes go, what waits on what | chartjs, plotly, d3 | GitHub workflow |
+| commit graph | branches as lanes and commits as dots, in time order | d3 | git branches |
+| 3D commit graph | the same graph with branches at different depths | three | git branches |
+| node-link graph | records or systems as nodes and relations as edges, forming clusters | d3 | identity resolution |
+| network diagram | terms or systems joined by labelled relations that read as sentences | d3 | vocabulary network |
+| ring network | systems on a ring with every integration drawn between them | d3 | spaghetti hub |
+| arc diagram | links as arcs above a line of items, weight as thickness | d3 | attention |
+| heatmap | a matrix of values shown by colour | svg, plotly, d3 | attention |
+| highlight table | a grid of states by colour and word, for exposure, permission or coverage matrices | svg | PHI |
+| line chart | a quantity over time or over a parameter, one line per series | chartjs, d3, plotly | regional hires, spaghetti hub, ticket backlog, model learning, fraud threshold |
+| ranked bar chart | items sorted by value, largest first | chartjs, d3 | key terms |
+| grouped bar chart | two or more series side by side per category | chartjs | Simpson's paradox |
+| annotated bar chart | bars that split, move and get captions as a story unfolds | d3 | Simpson's paradox |
+| stacked bar chart | parts of a total per category | chartjs, plotly | context window |
+| probability bars | one bar per candidate, the bars summing to one | chartjs | next token |
+| scatter with fit line | points, a fitted line and the residuals | svg, chartjs, p5 | model learning, regression outlier |
+| strip plot | every case as a dot along one axis, split by class, with a threshold line | d3 | fraud threshold |
+| scatter map | vectors flattened to a 2D map with distances drawn | d3 | RAG retrieval |
+| 3D scatter | points in three dimensions, on a sphere or in space | three, plotly | RAG retrieval |
+| word cloud | terms sized by importance | wordcloud | key terms |
+| 3D word helix | terms on a turning helix, most important at the top | three | key terms |
+| flashcards | one card at a time, in a chosen order | story | flashcards |
+| card grid | every card at once, grouped or ordered | svg | flashcards, vocabulary glossary |
+| queue simulation | arrivals, a waiting area and servers, animated | p5 | ticket backlog |
+| stacked blocks | a budget filling toward a limit, block by block | p5 | context window |
+| 2D simulation | motion drawn from the model's physics | p5 | projectile, rocket (examples) |
+| 3D simulation | the same motion with depth | three | projectile (example) |
+| Sankey | flows between stages, width as volume, drop-offs labelled | plotly, d3 (d3-sankey) | planned |
+| control chart | a metric over time with control limits and breaches marked | chartjs, plotly | planned |
+| distribution plot | a box, violin or ridge of a measure such as latency | plotly, d3 | planned |
+| slope chart | before and after for each item, as a line | d3, chartjs | planned |
+| dot plot with ranges | an estimate per item with its uncertainty bar | d3, chartjs, svg | planned |
+| cohort chart | a measure by cohort over time, as a grid or stacked lines | chartjs, d3 | planned |
+| ER diagram | objects and their relations in a data model | reactflow | planned |
+| org chart | a hierarchy of people or owners | reactflow, d3 | planned |
+| chord diagram | relations between items on a circle, width as volume | d3 | planned |
+| waterfall | how parts add up to a total, step by step | plotly, chartjs | planned |
+| radar | several items scored on the same axes | chartjs, plotly | planned |
+| parallel coordinates | items as lines across several axes | plotly, d3 | planned |
+| bullet graph | a measure against a target and bands | d3, svg | planned |
+| treemap | parts of a whole as nested rectangles | plotly, d3 | planned |
+| icicle | a hierarchy or trace as stacked bands | plotly, d3 | planned |
+| Voronoi | nearest-neighbour regions around points | d3 | planned |
+| Venn diagram | overlapping sets | d3, svg | planned |
+| cumulative flow | stacked areas of work by state over time | chartjs, plotly | planned |
+| fishbone | causes grouped by category leading to an effect | svg, reactflow | planned |
+| journey map | a person's steps, touchpoints and feelings along a timeline | story, svg | planned |
+| choropleth | regions coloured by value on a map | plotly | planned (needs a library decision) |
+<!-- /lab -->
+
 ---
 
 ## 7. Build, check and verify
@@ -249,12 +312,13 @@ shots/         verify screenshots
   "category": "Data stories",
   "title": "Why a support backlog explodes",
   "goal": "Explain why a support backlog explodes when tickets arrive faster than agents can resolve them, and how one extra agent changes it.",
-  "a": { "lib": "p5",      "explanation": "3 to 5 sentences: how it works and what the library contributes, honest about weaknesses.", "caveats": ["…"] },
-  "b": { "lib": "chartjs", "explanation": "…", "caveats": [] }
+  "a": { "lib": "p5",      "form": "queue simulation", "explanation": "3 to 5 sentences: how it works and what the library contributes, honest about weaknesses.", "caveats": ["…"] },
+  "b": { "lib": "chartjs", "form": "line chart",       "explanation": "…", "caveats": [] }
 }
 ```
 
 - `goal` is the prompt a designer would type. It is what **Use this prompt** copies into the goal box.
+- `form` is the chart form of the version, one name from the *Chart forms* table in section 6. It shows on the card beside the library and drives the **Chart form** filter.
 - `category` is one of: Vocabulary, Enterprise process, Enterprise architecture, Data stories, ML and LLM, Math. A new category needs adding to `GAL_CATS` in the page.
 - `explanation` is shown on the How it works tab. Say what the version does badly as well as well; the comparison depends on it.
 

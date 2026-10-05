@@ -5,6 +5,7 @@
   "goal": "Show how moving a fraud model's decision threshold trades false alarms against missed fraud, using a confusion matrix, precision and recall. Use about 400 synthetic transactions with roughly 8 % fraud and overlapping scores, and let learners change the threshold and the fraud rate.",
   "a": {
     "lib": "d3",
+    "form": "strip plot",
     "explanation": "Every one of the 400 transactions is a dot on the score line, split into a legitimate row and a fraud row, with the threshold as a vertical line. Dots take the colour of their outcome, so learners can see exactly which cases become false alarms or missed fraud, and the confusion matrix and precision and recall bars beside them use the same colours and update live during the sweep. D3 contributes the scales, axis and data join that make this custom combined view possible. The cost is that the trade-off across all thresholds is never drawn as a curve: learners only see one threshold at a time and have to remember what came before.",
     "caveats": [
       "With 380 or more legitimate dots, some overlap; the counts in the matrix are the exact numbers.",
@@ -13,6 +14,7 @@
   },
   "b": {
     "lib": "chartjs",
+    "form": "line chart",
     "explanation": "Precision and recall are plotted against every threshold from 0.05 to 0.95 as two standard curves, with the current threshold marked and its values labelled. The four counts sit above the chart as tiles. Chart.js gives a clean, familiar line chart with tooltips for very little code, and the whole trade-off is visible at once, including where the curves cross. What it hides is the individual transactions: learners see that recall falls, but not which fraud cases slipped under the line or why rare fraud makes precision so low.",
     "caveats": [
       "Precision is undefined when nothing is flagged, so the precision curve stops where no transaction scores above the threshold.",

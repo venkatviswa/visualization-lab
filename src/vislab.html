@@ -338,6 +338,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:12.5px}
   <div class="inspire-filters">
     <div class="chips" id="galCats" role="group" aria-label="Filter by subject"></div>
     <label class="sync">Library <select id="galLib" aria-label="Filter by library"></select></label>
+    <label class="sync">Chart form <select id="galForm" aria-label="Filter by chart form"></select></label>
   </div>
   <p class="note" id="galCount" aria-live="polite"></p>
   <div class="ggrid" id="galGrid"></div>
@@ -921,7 +922,7 @@ function renderPaneBody(id) {
   const pn = panes[id], v = state.versions.find(x => x.id === id), node = pn.node;
   if (!node) return;
   node.querySelector("[data-r=title]").textContent = v ? libName(v.lib) : "Generating…";
-  node.querySelector("[data-r=sub]").textContent = v ? (LIBS[v.lib]?.dim || "") + (v.history?.length ? " · revision " + (v.history.length + 1) : "") : "";
+  node.querySelector("[data-r=sub]").textContent = v ? (LIBS[v.lib]?.dim || "") + (v.form ? " · " + v.form : "") + (v.history?.length ? " · revision " + (v.history.length + 1) : "") : "";
   for (const b of node.querySelectorAll(".tabs button")) b.setAttribute("aria-selected", String(b.dataset.tab === pn.tab));
   markSourceTab(id);
   const view = node.querySelector("[data-r=view]");
@@ -933,7 +934,7 @@ function renderPaneBody(id) {
   if (pn.tab === "source" && v) buildSource(id, view);
   if (pn.tab === "how" && v) {
     view.append(el("div", { class: "explain" },
-      el("h4", { text: "What this version does" }), el("p", { text: v.explanation || "No explanation returned." }),
+      el("h4", { text: "What this version does" }), el("p", { text: (v.form ? "Chart form: " + v.form + ". " : "") + (v.explanation || "No explanation returned.") }),
       v.caveats?.length ? [el("h4", { text: "Caveats" }), el("ul", {}, v.caveats.map(c => el("li", { text: c })))] : null,
       el("h4", { text: "Shared model (same for every version)" }), el("pre", { text: state.spec.modelCode }),
       state.spec.checkCode ? [el("h4", { text: "Check" }), el("pre", { text: state.spec.checkCode })] : null));
@@ -1262,7 +1263,7 @@ If the user picked a specific library, set recommended.library to it and say hon
 function renderPrompt(v, lib, mode, extra) {
   const s = state.spec, L = LIBS[lib];
   const specLite = { title: s.title, objective: s.objective, view: s.view, assumptions: s.assumptions, units: s.units, params: s.params, learnerPrompts: s.learnerPrompts };
-  let p = `You write the renderer for one version of a Visualization Lab lesson. Reply with ONLY one JSON object: {"code": "full JavaScript source", "explanation": "3 to 5 plain sentences: how it works and what this library contributes", "caveats": ["..."]}.
+  let p = `You write the renderer for one version of a Visualization Lab lesson. Reply with ONLY one JSON object: {"code": "full JavaScript source", "explanation": "3 to 5 plain sentences: how it works and what this library contributes", "form": "the chart form in two to four words from the chart-form vocabulary, such as Gantt timeline, swimlane, heatmap, step-by-step story", "caveats": ["..."]}.
 @@RENDER_CONTRACT@@
 Library: ${L.name}. ${L.notes}${(() => { const pr = PAIRS.find(x => x.a === s.recommended?.library); const f = pr && (lib === pr.a ? pr.formA : lib === pr.b ? pr.formB : null); return f ? "\nDraw this version as " + f + ", so it compares cleanly with the other version of the pair." : ""; })()}
 View for this version: ${lib === "three" ? "3D" : lib === "plotly" ? s.view : "2D"}.
@@ -1321,7 +1322,7 @@ async function callRenderer(id, lib, mode, extra, busyText) {
   try {
     const out = await sample.json(renderPrompt(prev, lib, mode, extra), { signal: pn.ctl.signal, cache: false });
     if (!out || typeof out.code !== "string" || !/window\.lab\s*=/.test(out.code)) throw new Error("The reply didn't include code that defines window.lab.");
-    const v = { id, lib, code: out.code, explanation: String(out.explanation || ""), caveats: Array.isArray(out.caveats) ? out.caveats.map(String) : [], history: [] };
+    const v = { id, lib, code: out.code, form: String(out.form || "").trim().slice(0, 40), explanation: String(out.explanation || ""), caveats: Array.isArray(out.caveats) ? out.caveats.map(String) : [], history: [] };
     if (prev && mode !== "fresh") v.history = (prev.history || []).concat([{ lib: prev.lib, code: prev.code, explanation: prev.explanation, caveats: prev.caveats }]).slice(-5);
     state.versions = state.versions.filter(x => x.id !== id).concat(v).sort((a, b) => a.id.localeCompare(b.id));
     pn.draft = null; state.source = null; dropScore(id);
@@ -1477,7 +1478,7 @@ function loadGallery() {
   return galLoad;
 }
 const GAL_CATS = ["All", "Vocabulary", "Enterprise process", "Enterprise architecture", "Data stories", "ML and LLM", "Math"];
-const gal = { cat: "All", lib: "all", armed: null, armTimer: 0 };
+const gal = { cat: "All", lib: "all", form: "all", armed: null, armTimer: 0 };
 function galLab(it) { return it.ref === "TERMS" ? TERMS : it.ref === "PIPELINE" ? PIPELINE : it.lab; }
 function galTeaches(lab) {
   const v = lab.versions, a = v[0] && v[0].lib, b = v[1] && v[1].lib;
@@ -1485,7 +1486,7 @@ function galTeaches(lab) {
   return p ? p.learn : (lab.spec.alternative && lab.spec.alternative.why) || "";
 }
 function galFiltered() {
-  return (GALLERY || []).filter(it => (gal.cat === "All" || it.category === gal.cat) && (gal.lib === "all" || galLab(it).versions.some(v => v.lib === gal.lib)));
+  return (GALLERY || []).filter(it => (gal.cat === "All" || it.category === gal.cat) && (gal.lib === "all" || galLab(it).versions.some(v => v.lib === gal.lib)) && (gal.form === "all" || galLab(it).versions.some(v => v.form === gal.form)));
 }
 function hasOwnWork() { return !!(state.spec && state.versions.length && !state.source); }
 // Confirm-by-second-click guard for anything that replaces the designer's own lesson (gallery, Draft spec, New lab)
@@ -1532,6 +1533,13 @@ function renderGallery() {
     for (const id of used) sel.append(el("option", { value: id, text: libName(id) + " · " + (LIBS[id] ? LIBS[id].dim : "") }));
   }
   sel.value = gal.lib;
+  const fsel = $("galForm");
+  if (!fsel.options.length) {
+    const forms = [...new Set(GALLERY.flatMap(it => galLab(it).versions.map(v => v.form).filter(Boolean)))].sort((a, b) => a.localeCompare(b));
+    fsel.append(el("option", { value: "all", text: "All forms" }));
+    for (const f of forms) fsel.append(el("option", { value: f, text: f }));
+  }
+  fsel.value = gal.form;
   const list = galFiltered(), grid = $("galGrid"); grid.innerHTML = "";
   $("galCount").textContent = list.length === GALLERY.length ? GALLERY.length + " lessons" : list.length + " of " + GALLERY.length + " lessons";
   if (!list.length) grid.append(el("p", { class: "note", text: "No lessons match these filters yet." }));
@@ -1547,15 +1555,16 @@ function renderGallery() {
         el("div", { class: "eyebrow", text: it.category }),
         el("h3", { text: it.title }),
         el("p", { class: "ggoal", title: lab.goal, text: lab.goal }),
-        el("div", { class: "glibs" }, lab.versions.map(v => el("span", { class: "glib" }, el("span", { class: "tag " + v.id, text: v.id }), libName(v.lib) + " · " + (LIBS[v.lib] ? LIBS[v.lib].dim : "")))),
+        el("div", { class: "glibs" }, lab.versions.map(v => el("span", { class: "glib" }, el("span", { class: "tag " + v.id, text: v.id }), libName(v.lib) + " · " + (v.form || (LIBS[v.lib] ? LIBS[v.lib].dim : ""))))),
         el("p", { class: "gteach" }, el("b", { text: "Compare: " }), galTeaches(lab)),
         el("div", { class: "gact" }, open, reuse))));
   }
 }
 $("galLib").addEventListener("change", e => { gal.lib = e.target.value; renderGallery(); });
+$("galForm").addEventListener("change", e => { gal.form = e.target.value; renderGallery(); });
 $("btnSurprise").addEventListener("click", () => {
   if (!GALLERY) return;
-  let list = galFiltered(); if (!list.length) { gal.cat = "All"; gal.lib = "all"; renderGallery(); list = GALLERY; }
+  let list = galFiltered(); if (!list.length) { gal.cat = "All"; gal.lib = "all"; gal.form = "all"; renderGallery(); list = GALLERY; }
   const prev = document.querySelector(".gcard.pulse"), pool = list.filter(it => !prev || it.slug !== prev.dataset.slug);
   const it = pool[Math.floor(Math.random() * pool.length)] || list[0];
   document.querySelectorAll(".gcard.pulse").forEach(n => n.classList.remove("pulse"));
@@ -1583,7 +1592,7 @@ const LESSON_FORMAT = 1;
 function lessonExport() {
   const { goal, view, libChoice, spec, versions, chat, theme, sync, scores } = state;
   return { visualizationLab: LESSON_FORMAT, exportedAt: new Date().toISOString(), title: spec ? spec.title : (goal || "Untitled lesson"),
-    lesson: { goal: goal || "", view: view || "Auto", libChoice: libChoice || "recommend", spec: spec || null, versions: (versions || []).map(v => ({ id: v.id, lib: v.lib, code: v.code, explanation: v.explanation || "", caveats: v.caveats || [], handEdited: !!v.handEdited })), chat: chat || [], theme: theme || "night", sync: sync !== false, scores: scores || null } };
+    lesson: { goal: goal || "", view: view || "Auto", libChoice: libChoice || "recommend", spec: spec || null, versions: (versions || []).map(v => ({ id: v.id, lib: v.lib, form: v.form || "", code: v.code, explanation: v.explanation || "", caveats: v.caveats || [], handEdited: !!v.handEdited })), chat: chat || [], theme: theme || "night", sync: sync !== false, scores: scores || null } };
 }
 async function saveTextFile(name, text, mime) {
   if (downloads) { try { const r = await downloads.save({ filename: name, data: text }); return r && r.status === "saved" ? "saved" : "done"; } catch (e) { if (!(e && e.code === "unavailable")) throw e; } }
@@ -1610,7 +1619,7 @@ function parseLesson(text) {
   if (Array.isArray(L.versions)) for (const v of L.versions) {
     if (!v || !/^[A-F]$/.test(v.id) || typeof v.code !== "string") continue;
     if (!LIB_IDS.includes(v.lib)) throw new Error("Version " + v.id + " uses a library this lab doesn't have: " + v.lib + ".");
-    out.versions.push({ id: v.id, lib: v.lib, code: v.code, explanation: String(v.explanation || ""), caveats: Array.isArray(v.caveats) ? v.caveats.map(String) : [], handEdited: !!v.handEdited, history: [] });
+    out.versions.push({ id: v.id, lib: v.lib, form: String(v.form || "").slice(0, 40), code: v.code, explanation: String(v.explanation || ""), caveats: Array.isArray(v.caveats) ? v.caveats.map(String) : [], handEdited: !!v.handEdited, history: [] });
   }
   if (out.versions.length && !out.spec) throw new Error("The file has versions but no spec; the versions need the spec's model to run.");
   out.versions.sort((a, b) => a.id.localeCompare(b.id));

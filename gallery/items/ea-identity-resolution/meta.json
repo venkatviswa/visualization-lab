@@ -5,12 +5,20 @@
   "goal": "Tell the story of a health plan trying to build one view of a member from four systems (member portal, contact centre, claims, marketing). Show how the strictness of the match rules decides whether we get the right profiles, wrongly merge two different people, or leave duplicates. Let me switch the match rule and switch between generic and Salesforce system names.",
   "a": {
     "lib": "story",
+    "form": "step-by-step story",
     "explanation": "An SVG story driven by one paused GSAP timeline: record cards land in their four source columns, the fields the chosen rule compares light up, the cards fly into groups, each link is labelled with the reason it matched, and gold profile frames form. At the reveal every card gets its true person's colour, a link that joins two different people turns red, and each frame turns green (correct), red (false merge) or amber (duplicate), with the counts and a so-what panel at the bottom. Following individual cards makes the cause of each error concrete: you can point at the shared home phone that pulled Mario into Maria's profile. The cost is space: cards are large, so with many profiles the layout shrinks them on phones, and it shows only the links that chain each profile together, not every matching pair.",
-    "caveats": ["Each profile shows one chain of links; other matching pairs inside the profile are not drawn", "On phones, layouts with many profiles shrink the cards a little"]
+    "caveats": [
+      "Each profile shows one chain of links; other matching pairs inside the profile are not drawn",
+      "On phones, layouts with many profiles shrink the cards a little"
+    ]
   },
   "b": {
     "lib": "d3",
+    "form": "node-link graph",
     "explanation": "A D3 match graph: records start in source lanes, then become nodes coloured by source that move into their profile groups, with an edge for every matching pair and a hull around each profile. At the reveal the nodes take their true person's colour, every edge between different people turns red, and a metrics panel counts correct profiles, false merges and duplicates. Because all pairs are drawn, the loose rule's danger is unmissable: 'Fuzzy name only' turns one profile into a web of red edges, and you see that Maria Lopes and Mario Lopez never match directly but are chained together through Maria Lopez. D3 gives exact control of every mark, but the record details (email, phone, birth date) only show in the lanes and in hover tooltips, so it is harder to see why a pair matched.",
-    "caveats": ["Edge reasons are labelled only on two-record profiles; larger groups use a caption (and solid or dashed lines for email or phone)", "Record details after grouping are in hover tooltips, which do not work on touch screens"]
+    "caveats": [
+      "Edge reasons are labelled only on two-record profiles; larger groups use a caption (and solid or dashed lines for email or phone)",
+      "Record details after grouping are in hover tooltips, which do not work on touch screens"
+    ]
   }
 }

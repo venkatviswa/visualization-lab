@@ -5,12 +5,20 @@
   "goal": "Tell the story of a developer building a feature on a branch while a teammate ships an urgent fix to main, then opening a pull request, getting a review and merging. Show how merge, rebase and squash change the history, and when a merge conflict happens.",
   "a": {
     "lib": "d3",
+    "form": "commit graph",
     "explanation": "D3 draws a flat git graph like the GitHub network view: one lane per branch, each commit a dot with its id and message, and pull request, review and conflict notes attached to the commits they belong to. A narrator box below says who acts, when, what state pull request #42 is in, and why each step happens. Every frame is redrawn from the model at the playback time, so scrubbing back shows the exact state, including rebased commits sliding onto main and squashed commits folding into one. On a phone the graph turns vertical, like git log --graph, so every message stays readable. It is precise but flat: the two lanes are just lines on a page, and nothing invites the learner to explore.",
-    "caveats": ["Long commit messages wrap to two lines and are cut with an ellipsis on narrow columns", "The conflict marker only says which file and line; it does not show the conflicting text"]
+    "caveats": [
+      "Long commit messages wrap to two lines and are cut with an ellipsis on narrow columns",
+      "The conflict marker only says which file and line; it does not show the conflicting text"
+    ]
   },
   "b": {
     "lib": "three",
+    "form": "3D commit graph",
     "explanation": "three.js builds the same graph in 3D, in the spirit of the masterclass scene: branches are glowing rails at different depths, commits are lit spheres with a soft halo, and edges draw themselves in as commits appear. The merge commit, the rebase slide onto main and the squash fold all animate from the same model, and learners can drag to orbit and see the branch lift away from main. Labels are an HTML overlay, so text stays crisp at any angle. The depth looks good but adds little information: perspective shrinks the far lane and its labels, and turning the scene can make lines cross that do not meet.",
-    "caveats": ["Perspective makes the far end of each rail smaller, so the spacing of commits looks uneven", "Labels can crowd when the scene is turned to a steep angle"]
+    "caveats": [
+      "Perspective makes the far end of each rail smaller, so the spacing of commits looks uneven",
+      "Labels can crowd when the scene is turned to a steep angle"
+    ]
   }
 }

@@ -54,6 +54,7 @@ Do not add a feature without a test, and do not change a prompt rule without upd
 - Plain modern JavaScript, no framework, no bundler for the page; ES modules for scripts and tests; `node --test` for tests; Playwright for the browser.
 - Lesson contract: see `AUTHORING.md` sections 2–6. Renderers never compute, never create inputs, never run their own clock; `seek(t)` is exact and cheap; `destroy()` leaves `root` empty.
 - Libraries load from jsDelivr at pinned versions; adding one means `kit/libraries.json` (+ a head), `scripts/mirror.mjs` picks it up, a toolkit test case in `test/unit/toolkit.test.mjs`, a contender row and a notes row in `docs/SKILL.lesson-visual-bakeoff.md` (a unit test checks this), and a row appears in the guide automatically.
+- Every version names its chart form (`form` in `meta.json` and `examples/*/lesson.json`); the names come from the *Chart forms* table in `AUTHORING.md` (`<!-- lab:forms -->`), which also feeds both generator prompts. Add a row before using a new name; a unit test checks.
 - The compare step's rubric (`RUBRIC` in the page) must match the judge table in `docs/SKILL.lesson-visual-bakeoff.md`; a unit test checks it, so change both together.
 - Colours and layout conventions are in the guide's `look` block; white preview background; phone width 420 px must not overflow.
 - Everything in the gallery is illustrative data; say so in each lesson's assumptions. No real customer names.

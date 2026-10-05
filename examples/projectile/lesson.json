@@ -57,12 +57,14 @@
     {
       "id": "A",
       "lib": "p5",
+      "form": "2D simulation",
       "explanation": "The p5.js sketch calls model() once per parameter change and animates the ball along the returned points in real time. Distances are drawn to a fixed scale for the current speed, so changing only the angle shows true differences in range. The last three completed launches stay as faint paths, which supports the predict-then-compare activity.",
       "caveats": []
     },
     {
       "id": "B",
       "lib": "three",
+      "form": "3D simulation",
       "explanation": "The three.js scene draws the same model() trajectory in 3D over a grid where ten squares equal the longest possible range at this speed. Learners can orbit the camera, but the flight stays in one plane, so depth adds little information here. It is a useful contrast: same spec and controls, more setup and more for the learner to manage.",
       "caveats": [
         "Reading exact distances is harder in perspective; the overlay carries the numbers."

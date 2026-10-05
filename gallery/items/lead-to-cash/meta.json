@@ -5,12 +5,20 @@
   "goal": "Show how a B2B deal moves from lead to cash (qualify, quote, discount approval, contract, order, invoice, payment) and where deals stall. Let learners change the discount and the credit check result and see the extra steps and days.",
   "a": {
     "lib": "story3d",
+    "form": "3D story",
     "explanation": "The Story3D kit turns each stage the deal visits into a platform with its own object: a team for the lead, a magnifier for qualifying, a screen showing the quote, a gate with a manager for discount approval, a stack of contract pages, a shield for the credit check, a second gate for a credit hold, a rack for the order, cards for the invoice and a ledger for payment. The camera flies from stage to stage with the timeline, and the title shows how many days each stage takes. The scene is built to be memorable, and the look follows the viewer's chosen theme. The weaknesses: you only see one stage at a time until the closing overview, short stages pass quickly while the camera moves, and stages a deal skips are simply absent, so learners do not see what they avoided.",
-    "caveats": ["On a phone the closing overview crops the outer stages", "Stage durations show as text only; there is no day scale in the scene"]
+    "caveats": [
+      "On a phone the closing overview crops the outer stages",
+      "Stage durations show as text only; there is no day scale in the scene"
+    ]
   },
   "b": {
     "lib": "reactflow",
+    "form": "flow chart",
     "explanation": "React Flow lays out all ten stages as a two-row snake, with discount approval and credit hold as detours that the deal either takes or bypasses. The path lights up as the timeline plays, each stage shows its days and the day it finished, and a strip above the diagram sizes every stage by its days, so the stalls stand out in orange. Clicking a stage explains it. It answers \"where does the time go?\" much faster than the 3D scene, but it reads like any process diagram and gives the stages no visual identity to remember them by.",
-    "caveats": ["The day strip abbreviates short stages to a number of days", "On a phone the bypass routes run along the screen edges without labels"]
+    "caveats": [
+      "The day strip abbreviates short stages to a number of days",
+      "On a phone the bypass routes run along the screen edges without labels"
+    ]
   }
 }

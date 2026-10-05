@@ -5,12 +5,20 @@
   "goal": "Walk new claims processors through how a health insurance claim moves from intake to payment, including prior authorization, pends for missing information, denials and appeals. Let them switch prior auth, missing information and the appeal outcome and watch the route change.",
   "a": {
     "lib": "reactflow",
+    "form": "flow chart",
     "explanation": "React Flow draws every possible route as a diagram of nine steps, then lights up the route this claim takes as the host timeline plays: the active step in blue, finished steps in green, trouble steps (pend, denial, a lost appeal) in orange. Learners can click any step to read its rule in the panel below. The library gives you edge routing, labels, zoom and fitting to the screen almost for free, and switching to a vertical layout on phones was a few lines. The price is the look: it always reads as a generic flowchart, and it cannot show who does each step without extra work.",
-    "caveats": ["Edge labels get tight on phones, so some are hidden there", "Showing the steps this claim never touches as dashed boxes gives away the route before playback"]
+    "caveats": [
+      "Edge labels get tight on phones, so some are hidden there",
+      "Showing the steps this claim never touches as dashed boxes gives away the route before playback"
+    ]
   },
   "b": {
     "lib": "svg",
+    "form": "swimlane",
     "explanation": "A hand-built SVG swimlane puts each step in the lane of whoever acts on it (provider, payer system, claims processor, member), draws every possible route faintly, and moves a claim token along the route this claim takes, drawing the line behind it. Because every line is hand-placed, the swimlanes, the pend loop and the denial branch can be laid out exactly as a trainer would draw them, and the lanes turn into columns on a phone. The cost is effort: every route, offset and label fit was written by hand, and nothing here is clickable beyond a hover tooltip.",
-    "caveats": ["Routes are fixed per step; adding a new step means hand-placing new lines", "Step details are only in hover tooltips, which do not work on touch screens"]
+    "caveats": [
+      "Routes are fixed per step; adding a new step means hand-placing new lines",
+      "Step details are only in hover tooltips, which do not work on touch screens"
+    ]
   }
 }

@@ -50,7 +50,7 @@ Validate: `node bakeoff/kit/check_spec.mjs bakeoff/<slug>/spec.json`. It must pr
 
 ## 2. Choose three contenders
 
-Pick three that differ in kind, not just library. Always include at least one 2D candidate.
+Pick three that differ in kind, not just library. Always include at least one 2D candidate. Name the **form** each contender will take (a Gantt timeline, a swimlane, a heatmap, a step-by-step story) using the *Chart forms* table in `AUTHORING.md`, and pass it in the builder brief; the hand-over records the form beside the library so a course author can ask for "the swimlane version".
 
 | Concept | Default trio |
 | --- | --- |

@@ -5,12 +5,20 @@
   "goal": "Explain how retrieval-augmented generation finds the right policy passages: document chunks and a question as points in embedding space, nearest neighbours by cosine similarity, and how top-k changes what the model sees.",
   "a": {
     "lib": "three",
+    "form": "3D scatter",
     "explanation": "Each of the 24 policy chunks and the question is drawn as a point on a unit sphere, so a chunk's direction from the origin is its meaning and cosine similarity is the angle between two directions. three.js gives a real 3D dome the learner can orbit, a ray from the origin to the question, and lines from the question to the k nearest chunks, while the panel ranks the scores and then shows the context sent to the model. The view turns so the question's own topic faces the camera and drifts slowly so depth stays readable. The weakness is that clusters on the far side of the dome are foreshortened and overlapping labels are hard to avoid, so exact scores have to come from the panel, not from the picture.",
-    "caveats": ["The vectors are hand-placed synthetic 3D unit vectors, not real embeddings (which have hundreds of dimensions).", "Clusters on the far side of the dome look squeezed; drag to orbit for a better angle."]
+    "caveats": [
+      "The vectors are hand-placed synthetic 3D unit vectors, not real embeddings (which have hundreds of dimensions).",
+      "Clusters on the far side of the dome look squeezed; drag to orbit for a better angle."
+    ]
   },
   "b": {
     "lib": "d3",
+    "form": "scatter map",
     "explanation": "The same vectors are flattened onto a 2D map, with lines from the question to the top-k chunks, next to a ranked list of every chunk's cosine similarity drawn as bars. D3 scales and data joins make the full ranking, the cut-off line after k and the negative scores easy to read at a glance. Because all 24 scores are visible, learners can see how close the off-topic VPN chunk comes to the travel chunks on the taxi question. The flat map distorts distances a little, so it hints at closeness while the bars carry the exact numbers.",
-    "caveats": ["The 2D map is a projection of synthetic 3D vectors, so distances on it are only approximate.", "On a phone only the top rows of the ranking fit; the rest are summarised as a count."]
+    "caveats": [
+      "The 2D map is a projection of synthetic 3D vectors, so distances on it are only approximate.",
+      "On a phone only the top rows of the ranking fit; the rest are summarised as a count."
+    ]
   }
 }

@@ -5,12 +5,20 @@
   "goal": "Tell the story of a company that keeps adding systems, year after year, and show how point-to-point integrations turn into spaghetti while a hub or event-driven integration layer grows linearly. Include how many integrations break when one system changes its API.",
   "a": {
     "lib": "d3",
+    "form": "ring network",
     "explanation": "D3 places every system on a fixed ring and adds one per year, drawing each new point-to-point link from the newcomer to every existing system, so the ring fills with curves until it reads as spaghetti. Switched to the hub, the same systems connect with one spoke each to a central node (MuleSoft Anypoint with Salesforce names). At the turning point Billing pulses, the broken links turn red one by one and the side panel counts the integrations and teams that need rework, followed by the closing \"so what\". It is the version people remember, but the growth is felt rather than measured: you cannot read the curve or compare the two architectures without flipping the control.",
-    "caveats": ["The other architecture appears only as a one-line number in the panel", "At 12 systems point-to-point, individual links can no longer be told apart (which is the point, but nothing can be traced)"]
+    "caveats": [
+      "The other architecture appears only as a one-line number in the panel",
+      "At 12 systems point-to-point, individual links can no longer be told apart (which is the point, but nothing can be traced)"
+    ]
   },
   "b": {
     "lib": "chartjs",
+    "form": "line chart",
     "explanation": "Chart.js plots integrations against the number of systems for both architectures, revealed one year at a time: the chosen architecture as a solid line with points, the other as a dashed reference, with the current year marked and both lines labelled at their tips. At the turning point a bar chart counts the integrations broken by Billing's API change for the chosen architecture, next to a faint reference bar for the other, and the \"so what\" note closes the story. It makes the quadratic-versus-linear gap and the crossover at three systems precise and quotable for a steering committee. What it loses is the felt mess: there are no systems, teams or links to look at, so the cost stays abstract.",
-    "caveats": ["The right-hand bar chart stays empty until the API change", "Individual systems are not named on the chart; names appear only in the captions"]
+    "caveats": [
+      "The right-hand bar chart stays empty until the API change",
+      "Individual systems are not named on the chart; names appear only in the captions"
+    ]
   }
 }

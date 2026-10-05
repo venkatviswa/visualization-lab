@@ -170,6 +170,12 @@ test('gallery: loads on demand, filters, surprise me, open in lab, use this prom
   await page.selectOption('#galLib', 'd3'); await sleep(200);
   assert.ok(await page.$$eval('.gcard', ns => ns.every(n => n.textContent.includes('D3'))));
   await page.click('#galCats button:nth-child(1)'); await page.selectOption('#galLib', 'all'); await sleep(200);
+  // chart form filter: cards show "library · form" and the filter keeps only lessons with a version of that form
+  assert.ok(await page.$$eval('.gcard .glib', ns => ns.length > 0 && ns.every(n => / · \S/.test(n.textContent))), 'every version chip names its form');
+  await page.selectOption('#galForm', 'Gantt timeline'); await sleep(200);
+  assert.ok(await page.$$eval('.gcard', ns => ns.length >= 1 && ns.length < 5 && ns.every(n => n.textContent.includes('Gantt timeline'))), 'the form filter narrows to the Gantt lessons');
+  assert.match(await page.$eval('#galCount', n => n.textContent), /^\d+ of \d+ lessons$/);
+  await page.selectOption('#galForm', 'all'); await sleep(200);
   // surprise me
   await page.click('#btnSurprise'); await sleep(600);
   assert.equal(await page.$$eval('.gcard.pulse', n => n.length), 1);

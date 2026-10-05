@@ -5,6 +5,7 @@
   "goal": "Show how an LLM picks the next word: probabilities over candidate tokens, and how temperature and top-p change which words are possible. Use a fixed context such as \"The customer asked for a ___\" with about 12 candidates and walk through raw scores, softmax, temperature, the top-p cut and one sampled pick.",
   "a": {
     "lib": "chartjs",
+    "form": "probability bars",
     "explanation": "One horizontal bar per candidate word walks through the five steps: raw scores on a logit axis, then probabilities after softmax, then the bars stretching or flattening as temperature is applied, with the original probabilities kept as faint ghost bars for comparison. At the top-p cut the dropped words turn grey, and at the sampling step the kept bars are renormalised and the picked word is highlighted and written into the sentence. Chart.js gives exact, labelled values with very little code, so learners can read off precise numbers. The weakness is that sampling itself stays abstract: the chart shows the odds but not how a random draw turns them into one word.",
     "caveats": [
       "The axis switches from scores to percent after the first step, which some learners may miss.",
@@ -13,6 +14,7 @@
   },
   "b": {
     "lib": "story",
+    "form": "step-by-step story",
     "explanation": "A five-stage pipeline (raw scores, softmax, temperature, top-p cut, sample) runs across the top while word chips below grow and shrink with their probability. At the top-p cut a dashed line drops under the last kept word and the rest fade out, and at the sampling step the kept words are laid end to end on a 100 % strip where the seeded random number lands, before the picked chip flies into the sentence. GSAP drives the motion from one paused timeline and Lucide icons label each stage. It makes sampling and the cut feel concrete, but chip lengths are harder to compare exactly than bars on an axis, and the extra explanation card adds reading time.",
     "caveats": [
       "Chip length includes the word itself, so only the extra length beyond the word tracks probability.",

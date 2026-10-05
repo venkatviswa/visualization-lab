@@ -76,16 +76,16 @@ Start from: *Agentic delivery pipeline* for the method overview, *Watch an agent
 
 Switch to **Get inspired** (top right) to browse 24 finished lessons:
 
-| Subject | Lessons |
-| --- | --- |
-| Vocabulary | Key terms of agentic AI · Data governance terms and how they connect · Data privacy terms in plain English |
-| Enterprise process | Health claim lifecycle · Agentic delivery pipeline · Lead to cash · Branches: a safe place to try ideas (Git) · One push, one workflow, one deploy (GitHub Actions) |
-| Enterprise architecture | One address change, eight systems · From spaghetti to hub: why an integration layer · Who is Maria? Identity resolution · One member, five sources, one profile (data moving through a customer data platform) · Where does PHI travel? |
-| Data stories | Which region is hiring fastest? · Simpson’s paradox in win rates · Why a support backlog explodes |
-| ML and LLM | How a model learns: nudging two dials · Attention: what does "it" refer to? · The context window is the model's desk · Watch an agent resolve a billing dispute · Choosing a fraud threshold · How an LLM picks the next word · How RAG finds the right policy passages |
-| Math | How one outlier pulls a least-squares line |
+| Subject | Lessons | Chart forms |
+| --- | --- | --- |
+| Vocabulary | Key terms of agentic AI · Data governance terms and how they connect · Data privacy terms in plain English | word cloud, ranked bar chart, 3D word helix, network diagram, card grid, flashcards |
+| Enterprise process | Health claim lifecycle · Agentic delivery pipeline · Lead to cash · Branches: a safe place to try ideas (Git) · One push, one workflow, one deploy (GitHub Actions) | flow chart, swimlane, step-by-step story, 3D story, commit graph, Gantt timeline |
+| Enterprise architecture | One address change, eight systems · From spaghetti to hub: why an integration layer · Who is Maria? Identity resolution · One member, five sources, one profile (data moving through a customer data platform) · Where does PHI travel? | step-by-step story, 3D story, architecture diagram, ring network, line chart, node-link graph, highlight table |
+| Data stories | Which region is hiring fastest? · Simpson’s paradox in win rates · Why a support backlog explodes | line chart, annotated bar chart, grouped bar chart, queue simulation |
+| ML and LLM | How a model learns: nudging two dials · Attention: what does "it" refer to? · The context window is the model's desk · Watch an agent resolve a billing dispute · Choosing a fraud threshold · How an LLM picks the next word · How RAG finds the right policy passages | scatter with fit line, line chart, arc diagram, heatmap, stacked blocks, stacked bar chart, loop diagram, strip plot, probability bars, 3D scatter, scatter map |
+| Math | How one outlier pulls a least-squares line | scatter with fit line |
 
-Each card shows the prompt, the libraries used for each version, and what comparing them teaches.
+Each card shows the prompt, the library and **chart form** of each version (a Gantt timeline, a swimlane, a heatmap), and what comparing them teaches. The **Chart form** filter finds every lesson that uses a form, so "show me a heatmap" or "what does a swimlane look like here" is one click. The vocabulary of forms, what each fits, which libraries draw it and which forms are still planned, is the *Chart forms* table in the authoring guide; the code generator uses the same names, so a version you generate in the lab names its form too (in the Explain tab and the pane header).
 
 - **Open in lab** loads the full lesson (spec, model, controls and every version) so you can explore it, edit the code, refine it or add a version with another library.
 - **Use this prompt** starts a fresh lesson from the same prompt, so you can draft your own spec and pick your own view and library.

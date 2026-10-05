@@ -59,6 +59,7 @@
     {
       "id": "A",
       "lib": "wordcloud",
+      "form": "word cloud",
       "explanation": "D3 with the d3-cloud layout places each term once, sized by importance and coloured by theme, all horizontal so they read easily. The layout uses a seeded random source, so it stays stable when you change the sliders; playback only reveals the words in rank order. It is a strong hook, but word length distorts importance: long terms look bigger than their score.",
       "caveats": [
         "Terms that do not fit at the current size are dropped and reported on screen."
@@ -67,12 +68,14 @@
     {
       "id": "B",
       "lib": "chartjs",
+      "form": "ranked bar chart",
       "explanation": "Chart.js shows the same terms as a ranked horizontal bar chart, largest at the top, coloured by theme. Playback reveals the bars in the same order as the cloud. It is less eye-catching, but learners can read each term's exact rank and compare any two terms.",
       "caveats": []
     },
     {
       "id": "C",
       "lib": "three",
+      "form": "3D word helix",
       "explanation": "three.js places the same terms on a slowly turning helix, most important at the top, with words at the back faded. Drag to orbit. It looks striking, but depth adds no information here: terms hide behind each other and rank is harder to read than in either 2D version.",
       "caveats": [
         "Needs WebGL; on machines without a graphics card it can be slow or blank."

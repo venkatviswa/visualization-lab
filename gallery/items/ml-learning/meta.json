@@ -5,12 +5,22 @@
   "goal": "Show how a model learns by gradient descent: a line with two dials (slope and intercept) predicts weekly support tickets from the number of active customers, measures its error, and nudges both dials a little each step until the error stops falling. Show what a learning rate that is too big does.",
   "a": {
     "lib": "p5",
+    "form": "scatter with fit line",
     "explanation": "Twenty weeks of illustrative data are plotted, and the model's line starts flat or steep with every prediction's error drawn as a red gap. Each training step moves the line and turns two gauge dials for slope and intercept, while a fading trail of earlier lines shows the path it took and a readout gives the error and the size of this step's nudge. At the end the least-squares line and the dial targets appear in green, so learners can check that the trained line landed on the best answer, or see that a too-big rate flung it off the dials. p5 makes the custom gauges, trail and per-step redraw easy, but every axis, legend and label is hand-drawn, and the error itself is only a number here, so it is hard to see how it changes over time.",
-    "caveats": ["Playback gives early steps more time than late ones, so the speed of the line is not the speed of learning.", "With Too big the line soon leaves the plot and the dials pin at their limits; the readout keeps the true numbers.", "Data are seeded synthetic numbers, not real support data."]
+    "caveats": [
+      "Playback gives early steps more time than late ones, so the speed of the line is not the speed of learning.",
+      "With Too big the line soon leaves the plot and the dials pin at their limits; the readout keeps the true numbers.",
+      "Data are seeded synthetic numbers, not real support data."
+    ]
   },
   "b": {
     "lib": "chartjs",
+    "form": "line chart",
     "explanation": "The same training run is drawn as a loss curve: the error at every step on a log scale, with the best possible (least-squares) error as a dashed green floor and the current step marked. A smaller chart traces the slope and intercept over the steps against their least-squares values, so learners see them settle, creep or zigzag outward. Chart.js supplies axes, a log scale, legends and tooltips for free, and the curve makes rates easy to compare: steep drop then flat for Just right, nearly flat for Too small, a straight climb for Too big. What it hides is the data: learners never see the line, the points or why a given error is large.",
-    "caveats": ["The log scale makes the climb for Too big look like a straight line; the numbers grow by millions of times.", "Dial values outside the gauge ranges are left off the small chart and flagged as off the scale.", "Data are seeded synthetic numbers, not real support data."]
+    "caveats": [
+      "The log scale makes the climb for Too big look like a straight line; the numbers grow by millions of times.",
+      "Dial values outside the gauge ranges are left off the small chart and flagged as off the scale.",
+      "Data are seeded synthetic numbers, not real support data."
+    ]
   }
 }

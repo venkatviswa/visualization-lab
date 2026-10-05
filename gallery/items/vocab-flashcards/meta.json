@@ -5,6 +5,7 @@
   "goal": "Explain 8 data privacy terms in plain English, one at a time, with a short workplace example for each.",
   "a": {
     "lib": "story",
+    "form": "flashcards",
     "explanation": "A flashcard deck: one card at a time slides in with a Lucide icon, its lifecycle stage, the term, a plain-English definition and an amber workplace-example box. GSAP builds one paused timeline with a scene per card, so the host can scrub, step between cards with the markers and replay exactly. A progress row of the 8 terms fills as each card plays, and a lifecycle track under the deck shows where the current term belongs, even in A to Z order. The pacing keeps attention on one idea, but learners never see the terms side by side, and at 3.5 seconds per card the whole deck takes about half a minute, which suits a first read better than revision.",
     "caveats": [
       "Each card gets 3.5 s of playback, enough for a definition and a short example at normal reading speed; slower readers may still pause, and the full deck takes 28 s.",
@@ -13,6 +14,7 @@
   },
   "b": {
     "lib": "svg",
+    "form": "card grid",
     "explanation": "All eight cards sit in a grid at once, in the chosen order, each with its number, lifecycle stage, definition and optional workplace example. Playback only moves a highlight: the current card turns blue with a NOW tag, earlier cards get a green tick and a thin bar fills across the top. Plain SVG keeps every word crisp and the whole set scannable, which suits revision and comparison. The trade-off is that nothing directs attention, so a first-time learner faces the whole glossary page at once.",
     "caveats": [
       "On a phone the cards stack in one scrolling column and playback scrolls to the current card, so the overview is lost on small screens.",
