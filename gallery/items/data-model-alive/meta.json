@@ -1,0 +1,34 @@
+{
+  "slug": "data-model-alive",
+  "category": "Enterprise architecture",
+  "title": "The data model comes alive",
+  "goal": "Show a health plan's core data model (member, policy, provider, prior authorization, claim, claim line, payment, case, appeal, letter) as an entity diagram that a process walks through: enrolment, a claim, or an appeal creates and touches the objects in order, the relations it travels light up, and the owning teams show who has to agree before the model changes. Let me switch the process, turn ownership on and off, and switch between generic and Salesforce names.",
+  "a": {
+    "lib": "reactflow",
+    "form": "ER diagram",
+    "explanation": "A React Flow entity diagram: ten objects as entity boxes with their key fields, the seventeen relations as lines, the two hubs (member and claim) placed in the middle. The clock walks the chosen process: the object being created or updated gets an orange ring and a step number, the relation it arrived along animates and shows its label and cardinality, objects already touched keep their owning team's colour when ownership is on, and objects the process never reaches fade. Clicking an object lists its fields and relations. It is the picture architects already draw, with the one thing a static ER diagram lacks: a process moving across it. Seventeen relations cross, so the untravelled ones stay unlabelled to keep it readable.",
+    "caveats": [
+      "Relations that the process does not travel are drawn without labels; click an object to read them",
+      "Bezier edges cross entity boxes in places, especially on a phone where the diagram is two columns",
+      "In the lab's preview pane the boxes are small; full screen shows the fields"
+    ]
+  },
+  "b": {
+    "lib": "d3",
+    "form": "org chart",
+    "explanation": "A D3 org chart of data ownership: the plan's data at the root, the five owning teams beneath it, each team's objects stacked under it, laid out by hand so that nothing overlaps. The clock numbers the objects as the process touches them, lights their team's branch, and draws the hops between consecutive objects: a dashed grey hop stays inside one team, a solid orange hop crosses from one team's branch to another, so the hand-off count in the header is also a count of orange arcs. With ownership off the teams are anonymous and the chart still shows how scattered the process is. It is the governance picture: who has to be in the room before this model changes.",
+    "caveats": [
+      "Hops are drawn as arcs below the objects and can cross other boxes on a phone",
+      "Teams with one object (provider network, finance) have a short branch; the chart does not imply they matter less"
+    ]
+  },
+  "c": {
+    "lib": "story",
+    "form": "step-by-step story",
+    "explanation": "A story: the process as a growing tableau of record cards. Each event slides a card for its object into the next slot with its icon, owner and key fields, draws the relation it arrived along from the card it came from with the relation's name, marks the card 'created', 'linked' or 'updated' while the step is on, and the narrator caption says what happened and who owns it. Objects the process never touches never appear, which is the point: this is the data model as a story of one claim, not a schema. It is the version for a product owner or a new analyst.",
+    "caveats": [
+      "Relation arrows are drawn between card centres and fade after their step, so later cards can cover them",
+      "Only the fields that fit are shown (two on a phone); the ER version lists them all"
+    ]
+  }
+}

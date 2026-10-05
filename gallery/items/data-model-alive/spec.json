@@ -1,0 +1,74 @@
+{
+  "title": "The data model comes alive",
+  "objective": "Learners see a health plan's core data model (member, policy, provider, authorization, claim, claim line, payment, case, appeal, letter) as a picture that a process walks through, so the boxes and lines of an entity diagram become the records a real enrolment, claim or appeal creates and touches, and the owning teams show who has to agree before the model changes.",
+  "view": "2D",
+  "recommended": {
+    "library": "reactflow",
+    "why": "An entity diagram is boxes with fields and labelled lines; React Flow gives both and lets the process light up objects and relations in order."
+  },
+  "alternative": {
+    "library": "d3",
+    "why": "The entity diagram shows how the objects relate; the ownership tree shows who owns them and how often a process crosses a team boundary. Which one makes the governance conversation easier?"
+  },
+  "assumptions": [
+    "The ten objects, their fields, relations, owning teams and the three processes are illustrative; they are not a product schema or a real plan's model",
+    "Generic names map to Salesforce-flavoured ones (Account, Member Plan, Healthcare Provider, Care Request, Claim, Claim Line Item, Payment, Case, Communication) for the names switch; the structure is identical",
+    "Each event creates, links or updates exactly one object and arrives along one existing relation; events are three playback seconds apart",
+    "A hand-off is two consecutive events on objects owned by different teams",
+    "Ownership colours the objects by team and counts hand-offs; it does not change the events"
+  ],
+  "units": [
+    "playback: three seconds per event",
+    "counts: objects touched, teams involved, hand-offs"
+  ],
+  "params": [
+    {
+      "id": "process",
+      "label": "Process",
+      "min": 0,
+      "max": 2,
+      "step": 1,
+      "value": 1,
+      "unit": "",
+      "labels": [
+        "Enrolment",
+        "A claim",
+        "An appeal"
+      ]
+    },
+    {
+      "id": "ownership",
+      "label": "Show ownership",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 1,
+      "unit": "",
+      "labels": [
+        "Off",
+        "On"
+      ]
+    },
+    {
+      "id": "names",
+      "label": "Names",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 0,
+      "unit": "",
+      "labels": [
+        "Generic",
+        "Salesforce"
+      ]
+    }
+  ],
+  "checkDescription": "Every event, relation and path entry refers to an existing object; the touched set is exactly the objects the events visit; every link an event travels is a relation of the model; teams involved and hand-offs follow from the owners; events are three seconds apart with one marker each; the names switch changes labels only.",
+  "expectAtDefaults": "m.process === \"claim\" && m.touched.length === 7 && m.teamsInvolved.length >= 3 && m.handoffs >= 3",
+  "learnerPrompts": {
+    "predict": "Switch to An appeal before you play. Which objects will the process touch that a claim does not, and how many teams will be involved?",
+    "explain": "With ownership on, the claim process crosses team boundaries several times. Which single relation would you put a data contract on first, and why?"
+  },
+  "modelCode": "function model(p) {\n  // A health plan's core data model (ten objects, their relations and owning teams) and three processes that walk it:\n  // enrolment, a claim, and an appeal. Each event creates, links or updates one object; the picture follows the path.\n  // Names, fields, owners and the processes are illustrative, not a product's schema.\n  const process = Math.max(0, Math.min(2, Math.round(p.process)));\n  const ownership = Math.round(p.ownership) === 1;\n  const sf = Math.round(p.names) === 1;\n  const TEAMS = [\n    { id: 'membership', label: 'Membership' }, { id: 'network', label: 'Provider network' }, { id: 'claims', label: 'Claims operations' },\n    { id: 'service', label: 'Member services' }, { id: 'finance', label: 'Finance' }\n  ];\n  // [id, generic label, Salesforce-flavoured label, owning team, key fields]\n  const O = [\n    ['member', 'Member', 'Account (Person)', 'membership', ['member number', 'date of birth', 'address']],\n    ['policy', 'Policy', 'Member Plan', 'membership', ['plan', 'effective date', 'group']],\n    ['provider', 'Provider', 'Healthcare Provider', 'network', ['NPI', 'specialty', 'network status']],\n    ['auth', 'Prior authorization', 'Care Request', 'claims', ['service', 'decision', 'valid until']],\n    ['claim', 'Claim', 'Claim', 'claims', ['claim number', 'service date', 'status']],\n    ['line', 'Claim line', 'Claim Line Item', 'claims', ['procedure code', 'billed', 'allowed']],\n    ['payment', 'Payment', 'Payment', 'finance', ['amount', 'payee', 'run date']],\n    ['case', 'Case', 'Case', 'service', ['reason', 'channel', 'owner']],\n    ['appeal', 'Appeal', 'Care Request (appeal)', 'service', ['grounds', 'reviewer', 'outcome']],\n    ['letter', 'Letter', 'Communication', 'service', ['template', 'sent on', 'channel']]\n  ];\n  const objects = O.map(([id, g, s, team, fields], k) => ({ id, label: sf ? s : g, generic: g, team, teamLabel: TEAMS.find(t => t.id === team).label, fields, k }));\n  const R = [\n    ['member', 'policy', 'is covered by', '1 : n'], ['member', 'claim', 'has', '1 : n'], ['provider', 'claim', 'submits', '1 : n'], ['policy', 'claim', 'pays under', '1 : n'],\n    ['claim', 'line', 'contains', '1 : n'], ['member', 'auth', 'requests', '1 : n'], ['provider', 'auth', 'asks for', '1 : n'], ['claim', 'payment', 'settled by', '1 : 1'],\n    ['provider', 'payment', 'paid to', '1 : n'], ['member', 'case', 'raises', '1 : n'], ['claim', 'appeal', 'disputed by', '1 : n'], ['case', 'appeal', 'tracks', '1 : 1'],\n    ['member', 'letter', 'receives', '1 : n'], ['claim', 'letter', 'explained by', '1 : n'],\n    ['member', 'provider', 'chooses as PCP', 'n : 1'], ['auth', 'claim', 'covers', '1 : n'], ['appeal', 'auth', 're-opens', '1 : 1']\n  ];\n  const relations = R.map(([from, to, label, card], i) => ({ i, from, to, label, card }));\n  const P = [\n    { id: 'enrolment', title: 'Enrolment', events: [\n      ['member', 'create', 'A new member record is created from the enrolment file.'],\n      ['policy', 'create', 'The plan and effective date become a policy linked to the member.', 'member'],\n      ['provider', 'link', 'A primary care provider from the network is assigned.', 'member'],\n      ['letter', 'create', 'The welcome letter and ID card are generated for the member.', 'member'] ] },\n    { id: 'claim', title: 'A claim', events: [\n      ['provider', 'update', 'A provider sees the member; the visit becomes a claim they submit.'],\n      ['claim', 'create', 'The claim is created against the member, the provider and the policy.', 'member'],\n      ['line', 'create', 'Each procedure on the visit is a claim line with its codes and billed amount.', 'claim'],\n      ['auth', 'update', 'Adjudication checks whether the service needed, and had, a prior authorization.', 'claim'],\n      ['policy', 'update', 'Benefits and the provider contract set the allowed amounts; the claim is approved.', 'claim'],\n      ['payment', 'create', 'The payment run pays the provider for the claim.', 'claim'],\n      ['letter', 'create', 'An explanation of benefits goes to the member.', 'claim'] ] },\n    { id: 'appeal', title: 'An appeal', events: [\n      ['claim', 'update', 'A claim is denied: no prior authorization on file for the service.'],\n      ['letter', 'create', 'The denial letter reaches the member with the reason code.', 'claim'],\n      ['case', 'create', 'The member calls; member services opens a case.', 'member'],\n      ['appeal', 'create', 'An appeal is filed against the claim and tracked by the case.', 'claim'],\n      ['auth', 'update', 'Clinical review finds the service was medically necessary; the authorization is granted after the fact.', 'appeal'],\n      ['claim', 'update', 'The claim is re-adjudicated and approved.', 'appeal'],\n      ['payment', 'create', 'The next payment run pays the provider.', 'claim'],\n      ['letter', 'create', 'A corrected explanation of benefits goes to the member; the case is closed.', 'claim'] ] }\n  ];\n  const proc = P[process], STEP = 3;\n  const events = proc.events.map(([object, action, note, via], i) => ({ i, object, action, note, via: via || null, start: i * STEP, dur: STEP }));\n  const path = [...new Set(events.map(e => e.object))];\n  const touched = objects.filter(o => path.includes(o.id)).map(o => o.id);\n  const teamsInvolved = [...new Set(touched.map(id => objects.find(o => o.id === id).team))];\n  let handoffs = 0; for (let i = 1; i < events.length; i++) { const a = objects.find(o => o.id === events[i - 1].object).team, b = objects.find(o => o.id === events[i].object).team; if (a !== b) handoffs++; }\n  // Relations the process travels: each event's link to the object it came from\n  const travelled = events.filter(e => e.via).map(e => { const r = relations.find(x => (x.from === e.via && x.to === e.object) || (x.from === e.object && x.to === e.via)); return r ? r.i : null; }).filter(i => i !== null);\n  const duration = events.length * STEP + 2;\n  const steps = events.map(e => ({ id: 'e' + e.i, t: e.start, title: (e.action === 'create' ? 'Create ' : e.action === 'link' ? 'Link ' : 'Update ') + objects.find(o => o.id === e.object).label, note: e.note }));\n  const summary = proc.title + ' touches ' + touched.length + ' of ' + objects.length + ' objects across ' + teamsInvolved.length + ' teams with ' + handoffs + ' hand-off' + (handoffs === 1 ? '' : 's') + (ownership ? '; the owners decide who must agree before the model changes.' : '.');\n  return { process: proc.id, processTitle: proc.title, ownership, sf, teams: TEAMS, objects, relations, events, path, touched, travelled, teamsInvolved, handoffs, steps, duration, markers: steps.map(s => s.t), summary };\n}",
+  "checkCode": "function check(p) {\n  const m = model(p), ids = new Set(m.objects.map(o => o.id));\n  // Every event, relation and path entry points at a real object, and the touched set is exactly the objects the events visit\n  const eventsOk = m.events.every(e => ids.has(e.object) && (!e.via || ids.has(e.via)));\n  const relOk = m.relations.every(r => ids.has(r.from) && ids.has(r.to) && r.from !== r.to);\n  const visited = new Set(m.events.map(e => e.object));\n  const touchedOk = m.touched.length === visited.size && m.touched.every(id => visited.has(id)) && m.path.every(id => visited.has(id));\n  // Every 'via' link is an existing relation, so the picture never draws an edge the model does not have\n  const viaOk = m.events.filter(e => e.via).every(e => m.relations.some(r => (r.from === e.via && r.to === e.object) || (r.from === e.object && r.to === e.via)));\n  // Teams involved and hand-offs follow from the owners of the touched objects\n  const teamOf = id => m.objects.find(o => o.id === id).team;\n  const teams = new Set(m.touched.map(teamOf));\n  let h = 0; for (let i = 1; i < m.events.length; i++) if (teamOf(m.events[i - 1].object) !== teamOf(m.events[i].object)) h++;\n  const teamsOk = teams.size === m.teamsInvolved.length && h === m.handoffs;\n  // Events run back to back and the markers match them; the names switch changes labels only\n  const timeOk = m.events.every((e, i) => e.start === i * 3) && m.markers.length === m.events.length && m.duration > m.events[m.events.length - 1].start;\n  const other = model(Object.assign({}, p, { names: Math.round(p.names) === 1 ? 0 : 1 }));\n  const namesOk = JSON.stringify(other.path) === JSON.stringify(m.path) && other.handoffs === m.handoffs && other.relations.length === m.relations.length;\n  const pass = eventsOk && relOk && touchedOk && viaOk && teamsOk && timeOk && namesOk;\n  return {\n    pass,\n    detail: m.processTitle + ': ' + m.events.length + ' events over ' + m.touched.length + ' objects' + (touchedOk ? '' : ' (touched set wrong)') + ', ' + m.teamsInvolved.length + ' teams, ' + m.handoffs + ' hand-offs' + (teamsOk ? '' : ' (recount differs)') +\n      '; every link travelled is a relation of the model' + (viaOk ? '' : ' (violated)') + '; the names switch changes labels only' + (namesOk ? '.' : ' (it changed the structure).')\n  };\n}"
+}

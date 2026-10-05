@@ -70,7 +70,8 @@ for (const page of pages) {
     }
   }
   const bytes = fs.existsSync(page) ? fs.statSync(page).size : null;
-  const errors = errorsAfter.concat(consoleErrors);
+  // Chromium reports a benign warning when a ResizeObserver callback resizes its own target during a busy frame; it is not a page error
+  const errors = errorsAfter.concat(consoleErrors).filter(e => !/ResizeObserver loop/.test(String(e)));
   const pass = st.ready && !errors.length && (!st.check || st.check.pass) && !blank && !overflow && !embedClipped;
   if (!pass) failed++;
   console.log(JSON.stringify({ page: name, pass, ready: st.ready, errors, check: st.check, timeline: st.timeline, blank, overflow, embedClipped, status: st.status, extremes, kb: bytes && Math.round(bytes / 1024), shots }));

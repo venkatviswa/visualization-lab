@@ -20,5 +20,14 @@
       "Bars show the desk after each turn, so the moment of compaction appears as a marker and a drop rather than an animation.",
       "On a phone the Turn column of the facts table is hidden and the plan.md card shows a count instead of the list."
     ]
+  },
+  "c": {
+    "lib": "plotly",
+    "form": "waterfall",
+    "explanation": "A Plotly waterfall: the context window as a running total. It starts with the system instructions, every turn adds its tokens as a rising green step, every compaction removes most of them as a falling orange step with its size, the limit is a dashed red line and the compaction threshold a dotted orange one; at the end a dark total shows what is on the desk now. The clock hands Plotly the steps that have happened so far and the trace does the cumulative bookkeeping. It is the version that explains compaction in one shape: a sawtooth that never crosses the red line, and every tooth is where facts can fall out. It cannot show which facts; the desk and the stacked bars do.",
+    "caveats": [
+      "With 28 turns the x axis is dense; labels rotate on a phone",
+      "Plotly's waterfall colours by direction only (rise, fall, total), which is exactly what the lesson needs here"
+    ]
   }
 }

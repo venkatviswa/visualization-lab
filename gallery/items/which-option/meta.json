@@ -1,0 +1,33 @@
+{
+  "slug": "which-option",
+  "category": "Enterprise architecture",
+  "title": "Which option? Scoring architecture choices",
+  "goal": "Compare three or four architecture options (native platform tools, an integration platform, custom services, and optionally keeping it manual) scored on five criteria: cost, time to value, compliance fit, flexibility and operational burden. Let me pick what matters most (balanced, cost first, compliance first, speed first) and a target score, and show that the weighted score a steering committee asks for is decided by the weights. Show it three ways: a radar per option, parallel coordinates, and bullet graphs against the target next to the gauges executives ask for.",
+  "a": {
+    "lib": "chartjs",
+    "form": "radar",
+    "explanation": "A Chart.js radar: one polygon per option over the five criteria, raw scores 1 to 10. The clock reveals the criteria one at a time, so the audience sees that no polygon is largest everywhere before the weights arrive; then the axes are rescaled by the weights (a criterion with the heaviest weight keeps its full length, the others shrink), the legend gains the weighted scores and the winner's polygon fills in. It is the picture committees expect and it is honest about shape; its weakness is that a bigger area is not a higher score, and with four options the polygons overlap.",
+    "caveats": [
+      "Weighted axes are a presentation choice: a polygon's area is not its weighted score, which is why the legend carries the number",
+      "Four polygons overlap; the parallel coordinates version separates them"
+    ]
+  },
+  "b": {
+    "lib": "plotly",
+    "form": "parallel coordinates",
+    "explanation": "Plotly parallel coordinates: one vertical axis per criterion, one line per option, coloured by option, and once the weights apply a last axis for the weighted score so a line can be followed from its trade-offs to its number. The clock reveals the axes left to right; crossing lines are the trade-offs, and an option high on the heavy axes ends high whatever it does elsewhere. Dragging along an axis filters the lines, which is Plotly's own interaction. It is the version that handles four or five options without overlap, and it makes 'keep it manual' visibly a line that is high on two axes and at the floor on three.",
+    "caveats": [
+      "Plotly colours parcoords lines through a colourscale, so the option colours are stops on it; the legend above the plot is drawn by the renderer",
+      "Axis labels are shortened below 900 px wide and the plot cannot be read comfortably on a phone"
+    ]
+  },
+  "c": {
+    "lib": "svg",
+    "form": "bullet graph",
+    "explanation": "Plain SVG bullet graphs: one row per option, the weighted score as a bar over three bands (poor, acceptable, good) with the target as a thick tick, and, on wide screens, the same number as a gauge beside it so the comparison is explicit: the bullet carries the score, what good looks like and the target in one strip, the gauge carries the score alone and takes four times the space. Bars fill as the weights apply; before that the raw scores sit under each name, because there is no single number to show yet. Nothing but rectangles, arcs and text, drawn by hand.",
+    "caveats": [
+      "The gauges are deliberately plain: a gauge with bands would be a bent bullet graph, which is the point",
+      "On a phone the gauges are dropped and the option names shorten"
+    ]
+  }
+}

@@ -205,7 +205,7 @@ A library is how a version is drawn; its **form** is what the picture is: a Gant
 <!-- lab:forms -->
 | Form | Fits | Libraries | In the gallery |
 | --- | --- | --- | --- |
-| step-by-step story | a process or journey told one scene at a time with a narrator caption | story | agent pipeline, address change, identity resolution, data platform, where the records go, PHI, GitHub workflow, one claim four desks, agent loop, next token |
+| step-by-step story | a process or journey told one scene at a time with a narrator caption | story | agent pipeline, address change, identity resolution, data platform, where the records go, PHI, the data model comes alive, GitHub workflow, one claim four desks, agent loop, next token |
 | 3D story | the same story as a camera journey between stations, when the spatial path helps | story3d | agent pipeline, lead to cash, address change, data platform |
 | flow chart | every possible route through a process, with the route taken lit up | reactflow, svg | claims lifecycle, agent pipeline, lead to cash |
 | swimlane | process steps in the lane of whoever acts, with hand-offs and waiting visible | svg, reactflow | claims lifecycle, one claim four desks |
@@ -244,13 +244,13 @@ A library is how a version is drawn; its **form** is what the picture is: a Gant
 | slope chart | before and after for each item, as a line | d3, chartjs | before and after |
 | dot plot with ranges | an estimate per item with its uncertainty bar | d3, chartjs, svg | before and after |
 | cohort chart | a measure by cohort over time, as a grid or stacked lines | svg, chartjs, d3 | before and after |
-| ER diagram | objects and their relations in a data model | reactflow | planned |
-| org chart | a hierarchy of people or owners | reactflow, d3 | planned |
-| chord diagram | relations between items on a circle, width as volume | d3 | planned |
-| waterfall | how parts add up to a total, step by step | plotly, chartjs | planned |
-| radar | several items scored on the same axes | chartjs, plotly | planned |
-| parallel coordinates | items as lines across several axes | plotly, d3 | planned |
-| bullet graph | a measure against a target and bands | d3, svg | planned |
+| ER diagram | objects and their relations in a data model | reactflow | the data model comes alive |
+| org chart | a hierarchy of people or owners | reactflow, d3 | the data model comes alive |
+| chord diagram | relations between items on a circle, width as volume | d3 | spaghetti hub |
+| waterfall | how parts add up to a total, step by step | plotly, chartjs | GitHub workflow, context window |
+| radar | several items scored on the same axes | chartjs, plotly | which option |
+| parallel coordinates | items as lines across several axes | plotly, d3 | which option |
+| bullet graph | a measure against a target and bands | d3, svg | which option |
 | treemap | parts of a whole as nested rectangles | plotly, d3 | planned |
 | icicle | a hierarchy or trace as stacked bands | plotly, d3 | planned |
 | Voronoi | nearest-neighbour regions around points | d3 | planned |
@@ -277,7 +277,7 @@ node kit/verify.mjs shots/ a.html b.html
 
 **build** needs `--kit` for story3d and `--rfcss` for reactflow. `--cdn` points at a mirror for offline work. `--course` wraps the visual as a lesson page (title, objective, predict prompt, check line, explain prompt, assumptions and units), the same page the lab's **Export for course** writes.
 
-**verify** opens each page in headless Chromium and prints one JSON line per page, then exits 1 if any page failed. Fields: `pass`, `errors`, `check`, `timeline`, `blank` (a screenshot with fewer than four colours), `overflow` (horizontal scroll at 420px), `embedClipped` (the page scrolls inside the standard embed below, on a 390×844 phone or in a 560px column; `null` for `--course` pages, which are whole documents and scroll by design), `status` (the text status line), `extremes` (for up to four controls, the check result and status at the control's min and max), and `shots`: `t00`, `t35`, `t70`, `t100` along the timeline, `phone` at 420px, and `x-<param>-min` / `x-<param>-max` for each control at the end of the timeline, so a reviewer can see what every slider does. `pass` requires ready, no errors, check passing, not blank, no overflow and not clipped in the embed. A lesson is done when every version passes and someone has looked at the screenshots: verify cannot see an overlapping label or a misleading picture.
+**verify** opens each page in headless Chromium and prints one JSON line per page, then exits 1 if any page failed. Fields: `pass`, `errors`, `check`, `timeline`, `blank` (a screenshot with fewer than four colours), `overflow` (horizontal scroll at 420px), `embedClipped` (the page scrolls inside the standard embed below, on a 390×844 phone or in a 560px column; `null` for `--course` pages, which are whole documents and scroll by design), `status` (the text status line), `extremes` (for up to four controls, the check result and status at the control's min and max), and `shots`: `t00`, `t35`, `t70`, `t100` along the timeline, `phone` at 420px, and `x-<param>-min` / `x-<param>-max` for each control at the end of the timeline, so a reviewer can see what every slider does. `pass` requires ready, no errors (Chromium's benign "ResizeObserver loop" warning is ignored), check passing, not blank, no overflow and not clipped in the embed. A lesson is done when every version passes and someone has looked at the screenshots: verify cannot see an overlapping label or a misleading picture.
 
 The standalone page has its own sliders and transport bar. Embed it with this rule, which gives a lab the height it needs (about 680px) whatever the column width; the bake-off skill and verify use the same rule:
 

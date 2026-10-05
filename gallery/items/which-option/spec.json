@@ -1,0 +1,72 @@
+{
+  "title": "Which option? Scoring architecture choices",
+  "objective": "Learners compare three or four architecture options scored on five criteria, apply a weighting profile, and see that the weighted score (the number a steering committee asks for) is decided by the weights, not by the options; and they see three honest ways to show it: a radar, parallel coordinates, and bullet graphs against a target.",
+  "view": "2D",
+  "recommended": {
+    "library": "chartjs",
+    "why": "A radar per option is the picture committees expect; Chart.js draws it from configuration and the host clock can reveal one axis at a time."
+  },
+  "alternative": {
+    "library": "plotly",
+    "why": "The radar shows shape; parallel coordinates show every option as a line across the criteria and make the trade-offs legible with four options. Which one would you put in the decision paper?"
+  },
+  "assumptions": [
+    "Options, scores and weighting profiles are illustrative for a fictional integration decision; no vendor or product is being rated",
+    "Every criterion is scored 1 to 10 with higher better; operational burden is scored as its inverse so that 10 means little burden",
+    "The weighted score is the weighted mean of the criteria scored out of 100; the four profiles are balanced, cost first, compliance first and speed first",
+    "Bands: 70 and above is good, 50 to 69 acceptable, below 50 poor; the target is the minimum the chosen option must clear",
+    "Playback: four scenes over about 17 s (criteria, weights, verdict, so what)"
+  ],
+  "units": [
+    "criterion scores: 1 to 10",
+    "weighted score: 0 to 100",
+    "weights: relative, 0.5 to 3"
+  ],
+  "params": [
+    {
+      "id": "profile",
+      "label": "What matters most",
+      "min": 0,
+      "max": 3,
+      "step": 1,
+      "value": 0,
+      "unit": "",
+      "labels": [
+        "Balanced",
+        "Cost first",
+        "Compliance first",
+        "Speed first"
+      ]
+    },
+    {
+      "id": "target",
+      "label": "Target score",
+      "min": 50,
+      "max": 80,
+      "step": 5,
+      "value": 65,
+      "unit": ""
+    },
+    {
+      "id": "statusQuo",
+      "label": "Include \"keep it manual\"",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 0,
+      "unit": "",
+      "labels": [
+        "No",
+        "Yes"
+      ]
+    }
+  ],
+  "checkDescription": "Weighted scores recompute from the raw scores and the profile weights, the winner and runner-up are the top two scores with the stated margin, bands and target flags follow the score, raw scores do not change with the profile, and under the balanced profile the ranking equals the ranking by mean score.",
+  "expectAtDefaults": "m.winner === \"native\" && m.runnerUp === \"ipaas\" && m.options.length === 3 && m.margin < 10",
+  "learnerPrompts": {
+    "predict": "Switch to Cost first before you play. Which option wins now, and by how much?",
+    "explain": "Include \"keep it manual\" and set Cost first. It now scores above the integration platform. Explain to the committee why the radar and the parallel coordinates would have stopped that number being taken seriously."
+  },
+  "modelCode": "function model(p) {\n  // Three (or four) architecture options scored 1-10 on five criteria, a weighting profile that says what the\n  // organisation cares about, a weighted score out of 100 per option and a target the chosen option must clear.\n  // Options, scores and weights are illustrative; the lesson is about reading the comparison, not the verdict.\n  const profile = Math.max(0, Math.min(3, Math.round(p.profile)));\n  const target = Math.max(50, Math.min(80, Math.round(p.target / 5) * 5));\n  const statusQuo = Math.round(p.statusQuo) === 1;\n  const criteria = [\n    { id: 'cost', label: 'Cost (3 years)', short: 'Cost' },\n    { id: 'speed', label: 'Time to value', short: 'Speed' },\n    { id: 'compliance', label: 'Compliance fit', short: 'Compliance' },\n    { id: 'flex', label: 'Flexibility', short: 'Flexibility' },\n    { id: 'ops', label: 'Operational burden (low is good)', short: 'Operations' }\n  ];\n  const profiles = [\n    { id: 'balanced', label: 'Balanced', w: [1, 1, 1, 1, 1], note: 'Every criterion counts the same.' },\n    { id: 'cost', label: 'Cost first', w: [3, 1, 1, 0.5, 1.5], note: 'Cost weighs three times a normal criterion; flexibility half.' },\n    { id: 'compliance', label: 'Compliance first', w: [1, 0.5, 3, 1, 1.5], note: 'Compliance fit weighs three times; speed half.' },\n    { id: 'speed', label: 'Speed first', w: [0.5, 3, 1, 1, 1], note: 'Time to value weighs three times; cost half.' }\n  ];\n  const prof = profiles[profile];\n  // scores: higher is better on every axis (operational burden is scored as its inverse)\n  const O = [\n    { id: 'native', label: 'Native platform tools', s: [8, 8, 7, 4, 8], blurb: 'configure what the platform already offers' },\n    { id: 'ipaas', label: 'Integration platform (iPaaS)', s: [6, 7, 8, 7, 6], blurb: 'a managed integration layer with connectors' },\n    { id: 'custom', label: 'Custom services', s: [3, 4, 6, 10, 3], blurb: 'build and run bespoke services' },\n    { id: 'manual', label: 'Keep it manual', s: [10, 10, 1, 1, 3], blurb: 'spreadsheets and people, no change' }\n  ].slice(0, statusQuo ? 4 : 3);\n  const wsum = prof.w.reduce((a, v) => a + v, 0);\n  const options = O.map((o, k) => {\n    const weighted = o.s.map((v, i) => v * prof.w[i]), score = Math.round(100 * weighted.reduce((a, v) => a + v, 0) / (10 * wsum));\n    const mean = +(o.s.reduce((a, v) => a + v, 0) / o.s.length).toFixed(2);\n    return { ...o, k, weighted: weighted.map(v => +v.toFixed(2)), score, mean, clears: score >= target, band: score >= 70 ? 'good' : score >= 50 ? 'ok' : 'poor' };\n  });\n  const ranked = options.slice().sort((a, b) => b.score - a.score || a.k - b.k);\n  const winner = ranked[0], runnerUp = ranked[1], margin = winner.score - runnerUp.score;\n  const best = criteria.map((c, i) => options.slice().sort((a, b) => b.s[i] - a.s[i])[0].id);\n  const steps = [\n    { id: 'axes', t: 0, title: 'Five criteria, scored 1 to 10', note: 'Each option is scored on cost, time to value, compliance fit, flexibility and operational burden. No option wins everywhere: the criteria are revealed one by one.' },\n    { id: 'weights', t: 6, title: 'Weights: ' + prof.label, note: prof.note + ' The weighted score out of 100 is what the decision is made on, so the weights are the decision.' },\n    { id: 'verdict', t: 10, title: winner.label + ' scores ' + winner.score + (winner.clears ? ', above the target of ' + target : ', below the target of ' + target), note: margin >= 10 ? 'A clear lead of ' + margin + ' points over ' + runnerUp.label + '.' : 'Only ' + margin + ' point' + (margin === 1 ? '' : 's') + ' ahead of ' + runnerUp.label + ': change one weight and the verdict can flip.' },\n    { id: 'sowhat', t: 14, title: 'So what for the decision', note: 'Show the raw scores, show the weights, then the verdict, in that order. A single number hides that the ranking belongs to the weights.' }\n  ];\n  const summary = prof.label + ': ' + ranked.map(o => o.label + ' ' + o.score).join(', ') + '; target ' + target + ', ' + options.filter(o => o.clears).length + ' of ' + options.length + ' clear it.';\n  return { profile: prof, profiles: profiles.map(x => x.label), target, criteria, options, ranked: ranked.map(o => o.id), winner: winner.id, runnerUp: runnerUp.id, margin, best, steps, duration: 17, markers: steps.map(s => s.t), summary };\n}",
+  "checkCode": "function check(p) {\n  const m = model(p), w = m.profile.w, wsum = w.reduce((a, v) => a + v, 0);\n  // Weighted scores recomputed from the raw scores and the weights; winner is the top score; bands and target flags follow\n  const scoresOk = m.options.every(o => o.score === Math.round(100 * o.s.reduce((a, v, i) => a + v * w[i], 0) / (10 * wsum)) && o.score >= 0 && o.score <= 100);\n  const sorted = m.options.slice().sort((a, b) => b.score - a.score || a.k - b.k);\n  const winnerOk = sorted[0].id === m.winner && sorted[1].id === m.runnerUp && m.margin === sorted[0].score - sorted[1].score && JSON.stringify(sorted.map(o => o.id)) === JSON.stringify(m.ranked);\n  const flagsOk = m.options.every(o => o.clears === (o.score >= m.target) && o.band === (o.score >= 70 ? 'good' : o.score >= 50 ? 'ok' : 'poor'));\n  // Raw scores do not depend on the profile; under the balanced profile the ranking equals the ranking by mean\n  const other = model(Object.assign({}, p, { profile: (Math.round(p.profile) + 1) % 4 }));\n  const rawOk = m.options.every((o, k) => JSON.stringify(o.s) === JSON.stringify(other.options[k].s));\n  const bal = model(Object.assign({}, p, { profile: 0 })), byMean = bal.options.slice().sort((a, b) => b.mean - a.mean || a.k - b.k).map(o => o.id);\n  const balancedOk = JSON.stringify(byMean) === JSON.stringify(bal.ranked);\n  const countOk = m.options.length === (Math.round(p.statusQuo) === 1 ? 4 : 3) && m.criteria.length === 5 && m.best.length === 5;\n  const pass = scoresOk && winnerOk && flagsOk && rawOk && balancedOk && countOk;\n  return {\n    pass,\n    detail: m.profile.label + ': ' + m.options.map(o => o.label + ' ' + o.score).join(', ') + (scoresOk ? '' : ' (weighted scores off)') + '; winner ' + m.winner + ' by ' + m.margin + (winnerOk ? '' : ' (ranking wrong)') +\n      '; ' + m.options.filter(o => o.clears).length + ' clear the target of ' + m.target + '; raw scores independent of the profile' + (rawOk ? '.' : ' (they changed).')\n  };\n}"
+}

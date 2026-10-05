@@ -21,5 +21,14 @@
       "Skipped steps leave an empty row rather than a marked one",
       "On a phone the step labels are small and the legend wraps"
     ]
+  },
+  "c": {
+    "lib": "plotly",
+    "form": "waterfall",
+    "explanation": "A Plotly waterfall: every stretch of real time between two events is a floating bar that starts where the previous one ended, green on the runner, orange while waiting (the runner queue, the reviewer, the second queue), red for a failing step, and a dark total at the bottom once the story ends. Bars appear as the clock reaches them and each carries its seconds; the header splits the elapsed time into runner time and waiting. It is the version that makes the four-minute wait for a reviewer the widest thing on the page, which neither the story nor the timeline does. Built from Plotly bars with a base rather than the waterfall trace so that every bar keeps its own colour.",
+    "caveats": [
+      "Labels for very short stretches (2 s) sit right of the bar and can touch the next label",
+      "On a phone the list is long and the tick labels are small; the status line carries the totals"
+    ]
   }
 }

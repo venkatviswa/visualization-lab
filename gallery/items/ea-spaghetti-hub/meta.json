@@ -20,5 +20,14 @@
       "The right-hand bar chart stays empty until the API change",
       "Individual systems are not named on the chart; names appear only in the captions"
     ]
+  },
+  "c": {
+    "lib": "d3",
+    "form": "chord diagram",
+    "explanation": "A D3 chord diagram: every system is an arc on a ring sized by how many integrations it carries, every integration a ribbon between two arcs, or between a system and the hub's arc when the hub exists. The clock rebuilds the matrix from the connections that exist at that moment, so the ring thickens year by year; the current year's new ribbons are teal, and in the change scene the ribbons the API change touches turn orange while the centre counts them. Point-to-point shows as a ring stuffed with ribbons; the hub shows as one wide arc that every system shares. It is the view that makes the count feel like weight.",
+    "caveats": [
+      "Ribbons are all one unit wide, so the diagram shows how many integrations a system carries, not how much traffic",
+      "Labels rotate with the ring and get small when there are twelve systems on a phone"
+    ]
   }
 }

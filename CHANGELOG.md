@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Gallery: *Which option? Scoring architecture choices*, three or four options scored on five criteria with a weighting profile and a target; a Chart.js radar with weighted axes, Plotly parallel coordinates with the weighted score as the last axis, and plain SVG bullet graphs beside the gauges executives ask for.
+- Toolkit: `verify.mjs` ignores Chromium's benign "ResizeObserver loop completed" warning, which a busy machine raises on pages that relayout in a resize callback.
+- Third versions for three lessons: a D3 chord diagram for *From spaghetti to hub*, a Plotly waterfall of where the minutes go for *One push, one workflow, one deploy*, and a Plotly waterfall of the token budget for *The context window is the model's desk*.
+- Gallery: *The data model comes alive*, a health plan's core data model as a React Flow entity diagram that enrolment, a claim or an appeal walks through, a D3 org chart of the owning teams with the hand-offs drawn as arcs, and a record-card story. Controls: process, show ownership, generic or Salesforce names.
 - Gallery: *Before and after: did the new way of working work?*, a staggered rollout to several teams as a D3 slope chart, a Chart.js dot plot with 95 % ranges (the newspaper poll chart) and a plain SVG cohort grid that fills as the calendar runs. Controls: true improvement, measurements per team, number of teams. This covers the deferred poll-chart item.
 - Gallery: *Is the agent healthy?*, one day of an AI agent's latency and error rate with a prompt or model change that drifts both upward; a Chart.js control chart with limits and breaches, Plotly violins with boxes per three-hour window, and a D3 ridge plot. Controls: traffic, the hour the change ships, the alert threshold in σ.
 - Gallery: *One claim, four desks*, a health claim across the member, intake, adjudication, payment and appeals desks, with the waits between desks as the lesson; React Flow swimlanes, a Chart.js Gantt by lane and a desk-and-day-strip story. Controls: automatic or manual adjudication, reviewers on duty, approved / denied / appealed.
