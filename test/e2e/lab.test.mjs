@@ -23,6 +23,8 @@ async function fresh(opts = {}) {
   return { ctx, page, errors };
 }
 const allPass = st => st.length > 0 && st.every(([, s]) => s === 'Check passed');
+// Text nodes that are exactly "null" or "undefined": a value leaked into the page (DOM append() writes null as text)
+const strayText = page => page.evaluate(() => { const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), out = []; let n; while ((n = w.nextNode())) { const t = n.textContent.trim(); if (t === 'null' || t === 'undefined') out.push((n.parentElement && n.parentElement.className) || '?'); } return out; });
 // The built-in examples load from the header's example picker (the four buttons became one select)
 const EX = { '#btnExample': 'projectile', '#btnRocket': 'rocket', '#btnPipeline': 'pipeline', '#btnTerms': 'terms' };
 const loadExample = (page, key) => page.selectOption('#examplePick', EX[key] || key);
@@ -35,6 +37,9 @@ test('a first visit opens on the gallery opener; built-in examples load, every v
   const opener = await statuses(page);
   assert.equal(opener.length, 3, 'opener versions');
   assert.ok(allPass(opener), 'opener: ' + JSON.stringify(opener));
+  assert.deepEqual(await strayText(page), [], 'no "null" or "undefined" printed in the page');
+  await page.click('#btnRubric'); await sleep(300); await page.click('#btnRubric'); await sleep(300);
+  assert.deepEqual(await strayText(page), [], 'none after showing and hiding the scores either');
   for (const [btn, versions] of [['projectile', 2], ['rocket', 2], ['pipeline', 3], ['terms', 3]]) {
     await loadExample(page, btn); await sleep(6000);
     const st = await statuses(page);
@@ -503,5 +508,63 @@ test('Export for course and Download HTML produce standalone pages that run on t
     if (course) { assert.equal(st.h1, 'Rocket liftoff and escape'); assert.match(st.checkLine, /What the model confirms/); }
     await p2.close();
   }
+  await ctx.close();
+});
+
+test('without Claude in the viewer the chat and the Claude-only buttons are hidden and the versions get the room; with Claude they are back', async () => {
+  const { ctx, page, errors } = await fresh();
+  await sleep(1500);
+  assert.ok(await page.$eval('body', b => b.classList.contains('no-claude')));
+  assert.ok(await page.$eval('.chat', n => getComputedStyle(n).display === 'none'), 'chat hidden');
+  assert.equal(await page.$eval('.grid', g => getComputedStyle(g).gridTemplateColumns.split(' ').length), 2, 'two columns: setup and versions');
+  assert.ok(await page.$eval('#genNote', n => !n.hidden && /opened in Claude/.test(n.textContent)));
+  assert.equal(await page.$$eval('[data-claude]', ns => ns.filter(n => n.offsetParent !== null).length), 0, 'no Claude-only button is visible');
+  assert.ok(await page.$eval('#compareBanner', n => !n.hidden), 'the comparison itself stays');
+  await ctx.close();
+  const ctx2 = await browser.newContext({ viewport: { width: 1500, height: 2600 } });
+  await ctx2.addInitScript(() => { window.claude = { use: async () => ({}) }; });
+  const page2 = await ctx2.newPage();
+  await page2.goto(url); await page2.evaluate(() => localStorage.clear()); await page2.reload(); await sleep(1500);
+  assert.ok(!(await page2.$eval('body', b => b.classList.contains('no-claude'))));
+  assert.ok(await page2.$eval('.chat', n => getComputedStyle(n).display !== 'none'), 'chat shown with Claude');
+  assert.equal(await page2.$eval('.grid', g => getComputedStyle(g).gridTemplateColumns.split(' ').length), 3);
+  assert.deepEqual(errors, []);
+  await ctx2.close();
+});
+
+test('a library that cannot load is explained in plain words with Retry (no Fix errors), and Retry recovers', async () => {
+  // both library servers are folders that do not exist yet; Retry is pressed after the first one "comes back"
+  const flaky = path.join(root, '.work/cdn-flaky'); try { fs.unlinkSync(flaky); } catch (e) {}
+  const u = labUrlForTests(server, { primary: server.base + '/.work/cdn-flaky/', fallback: server.base + '/.work/cdn-gone/', name: 'vislab.down.html' });
+  const ctx = await browser.newContext({ viewport: { width: 1500, height: 2600 } });
+  const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto(u); await page.evaluate(() => localStorage.clear()); await page.reload(); await sleep(500);
+  await loadExample(page, 'rocket'); await sleep(5000);
+  const st = await statuses(page);
+  assert.deepEqual(st.map(([, s]) => s), ["Couldn't load", "Couldn't load"], JSON.stringify(st));
+  const msg = await page.$eval('.pane[data-vid="A"] [data-r=libfail]', n => n.innerText);
+  assert.match(msg, /Couldn't load p5/); assert.match(msg, /tried jsDelivr, then unpkg/); assert.doesNotMatch(msg, /is not defined|mount\(\)/);
+  assert.ok(await page.$eval('.pane[data-vid="A"] [data-r=repair]', n => n.hidden), 'no Fix errors for a missing library');
+  assert.ok(await page.$eval('.pane[data-vid="A"] [data-r=problems]', n => n.hidden), 'the technical detail stays in the console');
+  fs.symlinkSync(path.join(root, '.cdn'), flaky);                                   // the first server is back
+  try {
+    await page.click('.pane[data-vid="A"] [data-r=retry]'); await sleep(5000);
+    assert.ok(allPass(await statuses(page)), 'Retry reloads every version that failed, starting from the first server');
+  } finally { fs.unlinkSync(flaky); }
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('when the first library server is unreachable the previews fall back to the second', async () => {
+  const u = labUrlForTests(server, { primary: server.base + '/.work/cdn-gone/', name: 'vislab.fallback.html' });
+  const ctx = await browser.newContext({ viewport: { width: 1500, height: 2600 } });
+  const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto(u); await page.evaluate(() => localStorage.clear()); await page.reload(); await sleep(500);
+  await loadExample(page, 'terms'); await sleep(8000);                               // word cloud, Chart.js and a three.js module import
+  const st = await statuses(page);
+  assert.ok(allPass(st), JSON.stringify(st));
+  const log = await page.$eval('.pane[data-vid="C"] [data-r=clog]', n => n.textContent);
+  assert.match(log, /load from unpkg because jsDelivr could not be reached/, 'the console says which server is in use');
+  assert.deepEqual(errors, []);
   await ctx.close();
 });

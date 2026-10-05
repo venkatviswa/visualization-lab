@@ -30,9 +30,9 @@ Generated and never hand-edited: the prompt text inside the page, the `LIBS`/`RU
 
 ```
 npm run build           # dist/ from the sources (fast)
-npm run build:gallery   # dist/gallery (verifies all versions, ~8 min; needed once before e2e)
-npm test                # build + unit + toolkit + e2e (~4 min)
-npm run test:gallery    # every gallery lesson at defaults, min, max (~15 min)
+npm run build:gallery   # dist/gallery (verifies all 83 versions, 25-30 min; needed once before e2e; run it in the background)
+npm test                # build + unit + toolkit + e2e (~10 min)
+npm run test:gallery    # every gallery lesson at defaults, min, max (longer still; CI runs it)
 npm run serve           # http://localhost:8766/dist/vislab.html
 npm run mirror          # pinned packages into .cdn/ (tests never use the network)
 ```
@@ -59,6 +59,10 @@ Do not add a feature without a test, and do not change a prompt rule without upd
 - Colours and layout conventions are in the guide's `look` block; white preview background; phone width 420 px must not overflow.
 - Everything in the gallery is illustrative data; say so in each lesson's assumptions. No real customer names.
 - Commit messages: imperative one-liner, then the why. Small, focused commits. Branch for anything larger than a fix.
+
+## CI and hosting
+
+`.github/workflows/test.yml` (test job on every push, cached gallery; gallery job on main and PRs) and `pages.yml` (deploys `dist/` to GitHub Pages after a green run on main). Keep `with:` blocks in block style, never `{ ... }` with a `${{ }}` inside (unit test). Outside claude.ai the page runs in explore mode (`body.no-claude`): elements marked `data-claude` are hidden.
 
 ## Publishing
 

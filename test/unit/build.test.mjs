@@ -19,6 +19,17 @@ test('build runs and is deterministic', () => {
 const page = () => read('dist/vislab.html');
 const scripts = () => [...page().matchAll(/<script(?![^>]*(type="text\/plain"|importmap|type="module"))[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[2]);
 
+test('built page: declares UTF-8 within its first 1024 bytes, so a file or a static host (GitHub Pages) shows no garbled characters', () => {
+  assert.match(page().slice(0, 1024), /<meta charset="utf-8">/i);
+});
+
+test('built page: previews have a fallback library server and say plainly when a library cannot load', () => {
+  const src = page();
+  assert.ok(src.includes('https://unpkg.com/'), 'fallback server');
+  assert.ok(src.includes("type:'libload'"), 'the preview harness reports library load failures');
+  assert.ok(src.includes('data-r": "retry"') || src.includes("\"data-r\": \"retry\""), 'Retry button');
+});
+
 test('built page: every inline script parses', () => {
   for (const s of scripts()) new Function(s);
   assert.ok(!/\/\*@[A-Z0-9_]+@\*\/|@@[A-Z_]+@@/.test(page()), 'placeholder left in the page');

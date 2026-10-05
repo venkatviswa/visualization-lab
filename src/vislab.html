@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Visualization Lab</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -45,6 +46,9 @@ h1,h2,h3{margin:0;text-wrap:balance}
 .grid{display:grid;gap:16px;max-width:1680px;margin:0 auto;grid-template-columns:330px minmax(0,1fr) 340px;align-items:start}
 @media (max-width:1280px){.grid{grid-template-columns:320px minmax(0,1fr)}.chat{grid-column:1 / -1}}
 @media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+/* Without Claude in the viewer (a file, GitHub Pages) the chat and the Claude-only buttons go, and the versions get the room */
+.no-claude .chat,.no-claude [data-claude]{display:none!important}
+@media (min-width:861px){.no-claude .grid{grid-template-columns:330px minmax(0,1fr)}}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
 .step{display:flex;flex-direction:column;gap:8px;padding-block:0 16px}
 .step + .step{border-top:1px solid var(--line);padding-top:14px}
@@ -159,6 +163,9 @@ body.has-max{overflow:hidden}
 .explain h4{margin:0;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .explain p,.explain ul{margin:0}
 .explain pre{margin:0;font:11.5px/1.5 var(--mono);background:var(--sunk);padding:8px 10px;border-radius:6px;overflow:auto;white-space:pre}
+.libfail{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:12px;padding:24px;font-size:14px;line-height:1.5;background:var(--surface)}
+.libfail[hidden]{display:none}
+.libfail p{margin:0;max-width:52ch;padding:12px 14px;border-radius:10px;background:color-mix(in srgb,var(--bad) 9%,transparent)}
 .problems{border-top:1px solid var(--line);padding:8px 12px;font-size:12.5px;display:flex;flex-direction:column;gap:6px}
 .problems ul{margin:0;padding-left:18px;font-family:var(--mono);font-size:11.5px;color:var(--bad);max-height:110px;overflow:auto}
 .frame[hidden]{display:block;position:absolute;inset:0 auto auto 0;visibility:hidden;pointer-events:none}
@@ -379,6 +386,9 @@ details summary{cursor:pointer;color:var(--muted);font-size:12.5px}
 
 /* ---------- Libraries: pinned versions + generation notes ---------- */
 const JSD = "https://cdn.jsdelivr.net/npm/";
+// Library servers for the previews, tried in order: when a library fails to load from one, the previews move to the next for the rest of the session
+const CDNS = [{ base: JSD, name: "jsDelivr" }, { base: "https://unpkg.com/", name: "unpkg" }];
+let cdnAt = 0;
 /*@LIBS@*/
 /*@STORY3D_KIT@*/
 /*@LOOK2D@*/
@@ -456,7 +466,9 @@ function checkViewMismatch() {
 const HARNESS = `(function(){
   var post=function(m){try{m.__lab=1;parent.postMessage(m,'*')}catch(e){}};
   var fmt=function(a){return Array.prototype.map.call(a,function(x){if(x&&x.stack)return String(x.stack).split('\\n').slice(0,2).join(' | ');if(typeof x==='object'){try{return JSON.stringify(x)}catch(e){}}return String(x)}).join(' ')};
-  window.addEventListener('error',function(e){var t=e.target;if(t&&t!==window&&(t.src||t.href)){var u=String(t.src||t.href);if(/fonts\.(googleapis|gstatic)\.com/.test(u))return;post({type:'error',message:'Failed to load '+u});return}post({type:'error',message:(e.message||'Script error'),line:e.lineno||lineOf(e.error)})},true);
+  // A library <script> (or a module import) that fails to load is reported as 'libload', and the version is not mounted: its own code is not at fault
+  var libFailed=false;
+  window.addEventListener('error',function(e){var t=e.target;if(t&&t!==window&&t.tagName){var u=String(t.src||t.href||'');if(/fonts\.(googleapis|gstatic)\.com/.test(u))return;if(t.tagName==='SCRIPT'||t.tagName==='LINK'){libFailed=true;post({type:'libload',url:u})}return}post({type:'error',message:(e.message||'Script error'),line:e.lineno||lineOf(e.error)})},true);
   window.addEventListener('unhandledrejection',function(e){post({type:'error',message:'Unhandled rejection: '+fmt([e.reason]),line:lineOf(e.reason)})});
   var ce=console.error.bind(console);console.error=function(){post({type:'error',message:fmt(arguments)});ce.apply(null,arguments)};
   var lineOf=function(e){var m=String(e&&e.stack||'').match(/about:srcdoc:(\\d+)/);return m?Number(m[1]):0};
@@ -477,7 +489,7 @@ const HARNESS = `(function(){
   var tick=function(now){if(TL.on&&TL.playing){var dt=TL.last?Math.min(0.1,(now-TL.last)/1000):0;TL.frac=Math.min(1,TL.frac+dt*TL.speed/dur());apply();if(TL.frac>=1)TL.playing=false}TL.last=now;if(TL.on&&now-TL.lastPost>120){TL.lastPost=now;post({type:'time',frac:TL.frac,playing:TL.playing,duration:dur()})}requestAnimationFrame(tick)};
   requestAnimationFrame(tick);
   window.__labUpdate=function(p){P=p;if(!mounted)return;try{if(typeof window.lab.update==='function')window.lab.update(p);else{if(window.lab.destroy)window.lab.destroy();root().innerHTML='';window.lab.mount(root(),p)}runCheck(p);tlStart()}catch(e){post({type:'error',message:'update() failed: '+e.message,line:lineOf(e)})}};
-  window.__boot=function(p){P=p;probe(p);
+  window.__boot=function(p){P=p;if(libFailed)return;probe(p);
     if(!window.lab||typeof window.lab.mount!=='function'){post({type:'error',message:'The code did not define window.lab.mount(root, params).'});return}
     try{window.lab.mount(root(),p);mounted=true}catch(e){post({type:'error',message:'mount() failed: '+(e&&e.message),line:lineOf(e)});return}
     runCheck(p);tlStart();
@@ -508,7 +520,7 @@ function buildDoc(lib, code, spec, p) {
 <script>${esc(spec.modelCode)}\n${esc(spec.checkCode || "")}<\/script>
 <script type="${type}">${esc(code)}<\/script>
 <script type="${type}">window.__boot(${JSON.stringify(p)});<\/script>
-</body></html>`;
+</body></html>`.split(JSD).join(CDNS[cdnAt].base);
 }
 function escHtml(s) { return String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
 
@@ -529,6 +541,8 @@ window.addEventListener("message", e => {
   }
   if (d.type === "probe") return;
   if (d.type === "boot") pn.booted = true;
+  if (d.type === "libload") { libFailed(id, d.url); return; }
+  if (d.type === "error" && pn.libFail) { pushLog(id, "error", d.message); return; }   // follow-on errors of a missing library are noise
   if (d.type === "log") { pushLog(id, d.level, d.message); return; }
   if (d.type === "error") {
     if (!pn.errors.includes(d.message)) pn.errors.push(d.message); pn.errors = pn.errors.slice(-12);
@@ -540,6 +554,21 @@ window.addEventListener("message", e => {
   if (d.type === "ready") pn.hasContent = d.hasContent;
   renderPaneStatus(id);
 });
+
+// A library failed to load in version `id`. Move to the next library server once and reload the versions that failed;
+// when every server has failed, say so in plain words with a Retry button (renderPaneStatus).
+function libFailed(id, url) {
+  const pn = panes[id];
+  if (!pn.libFail) pushLog(id, "error", "Failed to load " + (url || "a library module this version imports") + " from " + CDNS[pn.cdnAt].name);
+  pn.libFail = url || "module";
+  if (pn.cdnAt === cdnAt && cdnAt < CDNS.length - 1) cdnAt++;                // the first failure on this server moves every preview to the next one
+  if (pn.cdnAt < cdnAt) { setTimeout(() => { if (panes[id] && panes[id].libFail) loadPreview(id); }, 0); return; }
+  renderPaneStatus(id);                                                     // every server failed: explain, offer Retry
+}
+function retryLibraries() {
+  cdnAt = 0;
+  for (const k in panes) if (panes[k].libFail) loadPreview(k);
+}
 
 function sendParams() {
   for (const id in panes) {
@@ -901,11 +930,11 @@ function buildPane(id) {
       el("div", { class: "clog", "data-r": "clog", role: "log", "aria-live": "off" }),
       el("button", { class: "btn small", type: "button", text: "Clear", onclick: () => { pn.logs = []; renderConsole(id); } })),
     el("div", { class: "pane-foot" },
-      el("form", { class: "refine", onsubmit: e => { e.preventDefault(); const i = node.querySelector("[data-r=refine]"); if (i.value.trim()) { refine(id, i.value.trim()); i.value = ""; } } },
+      el("form", { class: "refine", "data-claude": "1", onsubmit: e => { e.preventDefault(); const i = node.querySelector("[data-r=refine]"); if (i.value.trim()) { refine(id, i.value.trim()); i.value = ""; } } },
         el("input", { type: "text", "data-r": "refine", "aria-label": "Describe a change to version " + id, placeholder: "Describe a change, e.g. label the peak height" }),
         el("button", { class: "btn", type: "submit", "data-gen": "1", text: "Refine" })),
       el("div", { class: "foot-actions" },
-        el("button", { class: "btn small", type: "button", "data-r": "repair", hidden: true, "data-gen": "1", text: "Fix errors", onclick: () => repair(id) }),
+        el("button", { class: "btn small", type: "button", "data-r": "repair", hidden: true, "data-gen": "1", "data-claude": "1", text: "Fix errors", onclick: () => repair(id) }),
         el("button", { class: "btn small", type: "button", text: "Reload preview", onclick: () => loadPreview(id) }),
         el("button", { class: "btn small", type: "button", "data-r": "dl", text: "Download HTML", title: "This version as a standalone page with its controls", onclick: () => download(id) }),
         el("button", { class: "btn small", type: "button", "data-r": "course", text: "Export for course", title: "This version as a lesson page: objective, predict prompt, the visual, the check, explain prompt, assumptions", onclick: () => download(id, true) }),
@@ -918,20 +947,21 @@ function buildPane(id) {
   if (after) box.insertBefore(node, after); else box.append(node);
   const iframe = el("iframe", { class: "frame", sandbox: "allow-scripts", title: "Preview of version " + id });
   pn.iframe = iframe;
-  node.querySelector("[data-r=view]").append(iframe);
+  node.querySelector("[data-r=view]").append(iframe, el("div", { class: "libfail", "data-r": "libfail", role: "alert", hidden: true }));   // shown over the preview when a library cannot load
   if (state.versions.some(v => v.id === id)) loadPreview(id);
 }
 
 function loadPreview(id) {
   const v = state.versions.find(x => x.id === id), pn = panes[id];
   if (!v || !pn) return;
-  pn.errors = []; pn.check = null; pn.booted = false; pn.hasContent = null; pn.timeline = false; pn.time = null; pn.markers = [];
+  pn.errors = []; pn.check = null; pn.booted = false; pn.hasContent = null; pn.timeline = false; pn.time = null; pn.markers = []; pn.libFail = null; pn.cdnAt = cdnAt;
   const trn = pn.node && pn.node.querySelector("[data-r=transport]"); if (trn) trn.hidden = true;
   pn.renderedCode = v.code + "|" + v.lib + "|" + state.spec.modelCode;
   const doc = buildDoc(v.lib, v.code, state.spec, Object.assign({}, params), false);
   const at = doc.indexOf(esc(v.code));
   pn.codeStart = at >= 0 ? doc.slice(0, at).split("\n").length : 0; pn.codeLines = v.code.split("\n").length;
   pn.errLine = {}; pn.logs = []; renderConsole(id);
+  if (cdnAt) pushLog(id, "info", "Libraries load from " + CDNS[cdnAt].name + " because " + CDNS.slice(0, cdnAt).map(c => c.name).join(" and ") + " could not be reached.");
   pn.iframe.srcdoc = doc;
   clearTimeout(pn.bootTimer);
   pn.bootTimer = setTimeout(() => { if (!pn.booted) { pn.errors.push("The preview did not start. This viewer may block embedded previews; try Download HTML and open the file in Chrome."); renderPaneStatus(id); } }, 7000);
@@ -1128,6 +1158,7 @@ function renderPaneStatus(id) {
   let pill;
   if (pn.busy) pill = el("span", { class: "pill idle", text: "Generating" });
   else if (!v) pill = null;
+  else if (pn.libFail) pill = el("span", { class: "pill bad", text: "Couldn't load" });
   else if (pn.errors.length) pill = el("span", { class: "pill bad", text: pn.errors.length + (pn.errors.length === 1 ? " error" : " errors") });
   else if (pn.hasContent === false) pill = el("span", { class: "pill warn", text: "Preview looks empty" });
   else if (pn.check) pill = el("span", { class: "pill " + (pn.check.pass ? "good" : "warn"), text: pn.check.pass ? "Check passed" : "Check failed" });
@@ -1135,12 +1166,19 @@ function renderPaneStatus(id) {
   if (pill) st.append(pill);
   const ck = node.querySelector("[data-r=check]");
   ck.textContent = pn.check ? pn.check.detail : (v ? "Waiting for the model check…" : "");
-  ck.hidden = !v;
+  ck.hidden = !v || !!pn.libFail;
+  const lf = node.querySelector("[data-r=libfail]"); lf.innerHTML = ""; lf.hidden = !(v && pn.libFail && pn.tab === "preview");
+  if (v && pn.libFail) {
+    const tried = CDNS.slice(0, pn.cdnAt + 1).map(c => c.name).join(", then ");
+    lf.append(el("p", {}, el("b", { text: "Couldn't load " + libName(v.lib) + "." }),
+      " The preview needs it from a library server on the internet (tried " + tried + "). Check the connection, or whether this network blocks those sites, then retry. Nothing is wrong with the lesson or its code."),
+      el("button", { class: "btn small primary", type: "button", "data-r": "retry", text: "Retry", onclick: retryLibraries }));
+  }
   const pr = node.querySelector("[data-r=problems]");
-  pr.hidden = !pn.errors.length; pr.innerHTML = "";
+  pr.hidden = !pn.errors.length || !!pn.libFail; pr.innerHTML = "";
   if (pn.errors.length) pr.append(el("b", { text: "Problems" }), el("ul", {}, pn.errors.map(m => el("li", {}, m,
     pn.errLine && pn.errLine[m] ? el("button", { class: "linkbtn", type: "button", text: "Line " + pn.errLine[m], title: "Show this line in the Source tab", onclick: () => goToLine(id, pn.errLine[m]) }) : null))));
-  node.querySelector("[data-r=repair]").hidden = !pn.errors.length && !(pn.check && !pn.check.pass) && pn.hasContent !== false;
+  node.querySelector("[data-r=repair]").hidden = !!pn.libFail || (!pn.errors.length && !(pn.check && !pn.check.pass) && pn.hasContent !== false);
   node.querySelector("[data-r=undo]").hidden = !(v && v.history && v.history.length);
   syncGenButtons();
 }
@@ -1156,12 +1194,12 @@ function renderCompare() {
     vs.map((v, k) => [k ? el("span", { class: "note", text: "vs" }) : null,
       el("span", {}, el("span", { class: "tag " + v.id, text: v.id }), " " + libName(v.lib) + " \u00b7 " + LIBS[v.lib].dim)]).flat(),
     el("span", { class: "spacer" }),
-    el("button", { class: "btn small", type: "button", text: "Ask which teaches better", onclick: () => askChat("Compare versions " + names + " against the learning objective. Which teaches it best, what does each do better, and does the extra dimension or library add real information?") })),
+    el("button", { class: "btn small", type: "button", "data-claude": "1", text: "Ask which teaches better", onclick: () => askChat("Compare versions " + names + " against the learning objective. Which teaches it best, what does each do better, and does the extra dimension or library add real information?") })),
     el("div", { class: "learn" }, el("b", { text: "What this comparison teaches" }),
       vs.slice(1).map(v => el("div", {}, el("span", { class: "tag " + vs[0].id, text: vs[0].id }), " vs ", el("span", { class: "tag " + v.id, text: v.id }), " " + lessonFor(vs[0].lib, v.lib)))),
     el("p", { class: "note", style: "margin-top:6px", text: "Same spec, model, controls and check in every version, so the differences come from the library alone. Keyboard: Space plays or pauses, \u2190 and \u2192 step." }),
     el("div", { style: "margin-top:8px" }, el("button", { class: "btn small", type: "button", id: "btnRubric", text: state.showRubric ? "Hide scores" : "Score the versions", onclick: () => { state.showRubric = !state.showRubric; save(); renderCompare(); } })),
-    state.showRubric ? renderRubric(vs) : null);
+    ...(state.showRubric ? [renderRubric(vs)] : []));   // DOM append() writes a null argument as the text "null"
 }
 
 /* ---------- Scoring rubric (the bake-off skill's judge rubric) ---------- */
@@ -1207,7 +1245,7 @@ function renderRubric(vs) {
       el("tr", { class: "total" }, el("td", { text: "Weighted score (of 100)" }),
         vs.map((v, i) => el("td", { class: "n" + (totals[i] != null && totals[i] === best && winners.length === 1 ? " win" : ""), "data-total": v.id, text: totals[i] == null ? "\u2013" : String(totals[i]) + (totals[i] === best && winners.length === 1 ? " \u2713" : "") })))));
   const bar = el("div", { class: "row", style: "margin-top:8px;align-items:center;gap:8px;flex-wrap:wrap" },
-    el("button", { class: "btn small", type: "button", id: "btnRubricClaude", text: "Ask Claude for a first pass", disabled: sample ? null : "disabled", onclick: scoreWithClaude }),
+    el("button", { class: "btn small", type: "button", id: "btnRubricClaude", "data-claude": "1", text: "Ask Claude for a first pass", disabled: sample ? null : "disabled", onclick: scoreWithClaude }),
     Object.keys(sc).length ? el("button", { class: "btn small", type: "button", id: "btnRubricClear", text: "Clear scores", onclick: () => { delete state.scores; save(); refreshRubric(vs); } }) : null,
     el("span", { class: "note", id: "rubricVerdict", text: winners.length === 1 ? "Winner so far: " + winners[0].id + " (" + libName(winners[0].lib) + ")." : winners.length > 1 ? "Tie between " + winners.map(w => w.id).join(" and ") + "; the rubric prefers the simpler or 2D version." : "Score each version 1 to 5, or let Claude fill a first pass and adjust it." }));
   const why = vs.filter(v => sc[v.id] && sc[v.id].why);
@@ -1791,7 +1829,11 @@ $("galSearch").placeholder = "Search " + GALLERY_COUNT + " lessons\u2026";
       downloads = await claude.use("downloads");
     }
   } catch (e) {}
-  if (!sample) { const n = $("genNote"); n.hidden = false; n.textContent = "Generation and chat need Claude in this viewer. You can still explore the example and edit the spec."; }
+  if (!sample) {
+    document.body.classList.add("no-claude");
+    const n = $("genNote"); n.hidden = false;
+    n.textContent = "Draft spec, Generate, Refine and Ask Claude work when this page is opened in Claude. Here you can explore every lesson, edit and run the code, compare and score the versions, and download them.";
+  }
   $("btnSend").disabled = !sample;
   syncGenButtons();
 })();

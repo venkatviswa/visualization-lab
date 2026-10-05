@@ -56,7 +56,7 @@ Say you are rolling out a new method: an AI-assisted delivery pipeline, a govern
 
 The lab's unit of work fits that shape: one concept, one visual, one check. A course is a list of them.
 
-**Outline the method as concepts.** One concept per thing a learner could get wrong, not one per slide. The gallery's *Agentic delivery pipeline* is a whole method in one visual: nine stages, three controls (how many review findings, governance in shadow or enforce mode, whether a human has approved) and a check that the guardrails hold at every setting: build runs once per finding, deployment reaches the sandbox only, the self-improvement fix never lands without a person. Most courses want that overview lesson, then one lesson per stage where a real decision lives. The five *ML and LLM* lessons in the gallery came out of a five-module masterclass the same way (one concept each: how a model learns, the context window, the ReAct loop, attention, branches), so that set is a worked example of a course outline turned into visuals.
+**Outline the method as concepts.** One concept per thing a learner could get wrong, not one per slide. The gallery's *Agentic delivery pipeline* is a whole method in one visual: nine stages, three controls (how many review findings, governance in shadow or enforce mode, whether a human has approved) and a check that the guardrails hold at every setting: build runs once per finding, deployment reaches the sandbox only, the self-improvement fix never lands without a person. Most courses want that overview lesson, then one lesson per stage where a real decision lives. Five lessons in the gallery came out of a five-module masterclass the same way (one concept each: how a model learns, the context window, the ReAct loop, attention, branches), so that set is a worked example of a course outline turned into visuals.
 
 **Write the goal, then let the spec write the questions.** For each concept, describe what the learner should understand and the choice you want them to see. The spec Claude drafts carries a *predict* prompt (asked before the learner touches the controls) and an *explain* prompt (asked after), and **Export for course** places them above and below the visual with the live check line between. Those two prompts are the course's questions; the check is the course's answer key, computed from the model rather than written by hand.
 
@@ -247,7 +247,7 @@ Paste the terms into the goal, ideally with a weight and a theme for each, for e
 
 ## Libraries
 
-All libraries load from jsDelivr at fixed versions.
+All libraries load from jsDelivr at fixed versions, with unpkg as the fallback for previews.
 
 | Library | View | Best for |
 | --- | --- | --- |
@@ -269,7 +269,7 @@ All libraries load from jsDelivr at fixed versions.
 
 **Before you start**
 - **Gallery data is illustrative.** Terms, scores, hiring numbers, claims rules and embeddings in the gallery are made up for teaching; each lesson's assumptions say so.
-- **Generation and chat need Claude available in the viewer.** If it isn't, you'll see *"Generation and chat need Claude in this viewer."* The examples, sliders, code editor and downloads still work.
+- **Generation and chat need Claude available in the viewer.** Opened anywhere else (a file, GitHub Pages), the lab runs in explore mode: the Ask Claude panel and the Claude-only buttons (Refine, Fix errors, Ask which teaches better, Claude's first pass at the scores) are hidden, the versions take the freed width, and a note under Draft spec says so. Every lesson, the sliders, the code editor, comparing, scoring and downloads still work.
 - **Your lab is saved in this browser only.** A different browser, device or private window starts fresh, and clearing site data erases it. Use **Export lesson** for anything you want to keep or share; Download HTML gives one version as a page.
 - **The page is private until you share it.** Others can't open the link until you share it from the page's Share menu.
 - **Don't paste confidential material into the goal or chat.** It's sent to Claude to draft the spec and code.
@@ -290,7 +290,7 @@ All libraries load from jsDelivr at fixed versions.
 
 **Previews and delivery**
 - **The gallery loads separately.** The lab page is small; the 35 lessons and their thumbnails load the first time you open Get inspired, so that tab takes a moment on first use.
-- **Libraries come from jsDelivr.** On a restricted network, in a strict LMS iframe or offline, previews and downloaded pages may fail with *"Failed to load …"*. For those environments, host the libraries yourself.
+- **Libraries come from a library server on the internet.** Previews load them from jsDelivr and switch to unpkg for the rest of the session if jsDelivr can't be reached (the console says so). If neither can be reached (offline, or a network that blocks both), each version says *Couldn't load p5.js* (or whichever library) in plain words with a **Retry** button; nothing is wrong with the lesson, so Fix errors is not offered. Downloaded pages still load from jsDelivr only; for an offline workshop, host the libraries yourself (an offline download is in the backlog).
 - **3D needs WebGL.** On machines without a capable graphics card (some virtual desktops), 3D versions can be slow or blank. Keep a 2D version as a fallback.
 - **"Reduce motion" changes playback.** With the operating system's reduce-motion setting on, animations open at their final state instead of playing. Press Play to watch them.
 - **Word clouds drop terms that don't fit.** The example cloud shrinks its fonts and says on screen if any terms are still missing; check that generated clouds do the same. Long words also look more important than they are, which is why the ranked chart is the default comparison.
@@ -301,6 +301,12 @@ All libraries load from jsDelivr at fixed versions.
 ## Writing your own lessons
 
 See **AUTHORING.md** (published beside this file): the spec format, the model and check rules, the renderer contract, library notes and traps, the build-and-verify loop, and how to add a lesson to the gallery.
+
+## Hosting it yourself
+
+The lab is a static site, so any static host serves it. The repository publishes itself to **GitHub Pages**: after the test workflow passes on `main`, `.github/workflows/pages.yml` builds `dist/` (reusing the verified gallery the tests cached) and deploys it, with `vislab.html` also served as `index.html`. Turn it on once under the repository's **Settings → Pages → Build and deployment → Source: GitHub Actions**; the address is then `https://<user>.github.io/<repository>/`. You can also run the **pages** workflow by hand from the Actions tab.
+
+A hosted copy runs in explore mode (see *Gotchas*): no Claude, so no drafting, generating, refining or chat, and no sign-in either. To generate on your own host you need a small server-side function that holds an API key and calls Claude for the page; that is in the backlog. Netlify, Vercel or Cloudflare Pages work the same way as GitHub Pages: publish the `dist/` folder after `npm run build` and `npm run build:gallery`.
 
 ## Taking it further
 

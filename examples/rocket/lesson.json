@@ -68,7 +68,7 @@
     {
       "id": "A",
       "lib": "p5",
-      "form": "line chart",
+      "form": "2D simulation",
       "explanation": "The p5.js sketch draws the rocket on an altitude scale with two force arrows, thrust and weight, scaled to each other, so learners see the moment thrust beats weight. The right panel traces the rocket's speed against the escape speed at its current altitude. Escape happens where the blue line crosses the dashed curve. The host's play, pause and scrub controls drive the sketch through seek(t).",
       "caveats": [
         "Vertical flight overstates the energy needed compared with a real gravity turn into orbit."
@@ -77,7 +77,7 @@
     {
       "id": "B",
       "lib": "chartjs",
-      "form": "2D simulation",
+      "form": "line chart",
       "explanation": "Chart.js plots the same run as standard lines: speed and escape speed on the left axis and altitude on the right. Scrubbing reveals the run up to that moment. It answers the same question with less custom code, but without the force arrows that explain liftoff.",
       "caveats": []
     }

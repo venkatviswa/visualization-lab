@@ -1,21 +1,120 @@
+# Tests on every push and pull request.
+#   test     build, unit and browser tests. The verified gallery (dist/gallery) is cached by a hash of everything it is
+#            built from, so it is rebuilt (25-30 minutes) only when a lesson, an example or the kit changes.
+#   gallery  every gallery lesson at its defaults, minimums and maximums, on main and pull requests, again only when
+#            the lessons, examples or kit changed since the last green run.
+# Keep the `with:` blocks in block style: a one-line { ... } mapping cannot hold a ${{ }} expression (the braces end the
+# mapping), and a workflow file that does not parse starts no jobs at all.
 name: test
-on: [push, pull_request]
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
+    name: Build, unit and browser tests
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: npm }
+        with:
+          node-version: 22
+          cache: npm
+
       - run: npm ci
+
       - run: npx playwright install --with-deps chromium
-      - name: Mirror the pinned packages (cached)
+
+      - name: Restore the package mirror
         uses: actions/cache@v4
-        with: { path: .cdn, key: cdn-${{ hashFiles('kit/libraries.json') }} }
-      - run: npm run mirror
-      - run: npm run build:gallery
+        with:
+          path: .cdn
+          key: cdn-${{ hashFiles('kit/libraries.json', 'scripts/mirror.mjs') }}
+
+      - name: Mirror the pinned packages
+        run: npm run mirror
+
+      - name: Restore the verified gallery
+        id: gallery
+        uses: actions/cache@v4
+        with:
+          path: dist/gallery
+          key: gallery-${{ hashFiles('gallery/**', 'examples/**', 'kit/**', 'scripts/build_gallery.mjs') }}
+
+      - name: Build and verify the gallery (only when a lesson, an example or the kit changed)
+        if: steps.gallery.outputs.cache-hit != 'true'
+        run: npm run build:gallery
+
       - run: npm test
-      - name: Gallery (every lesson at defaults, min and max)
-        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+
+      - name: Keep the screenshots of a failed run
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-screenshots
+          path: .work/**/*.png
+          if-no-files-found: ignore
+          retention-days: 7
+
+  gallery:
+    name: Every gallery lesson at defaults, min and max
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Skip if these lessons already passed
+        id: tested
+        uses: actions/cache@v4
+        with:
+          path: .work/gallery-passed
+          key: gallery-passed-${{ hashFiles('gallery/**', 'examples/**', 'kit/**', 'test/gallery/**', 'test/helpers.mjs') }}
+
+      - uses: actions/setup-node@v4
+        if: steps.tested.outputs.cache-hit != 'true'
+        with:
+          node-version: 22
+          cache: npm
+
+      - if: steps.tested.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - if: steps.tested.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Restore the package mirror
+        if: steps.tested.outputs.cache-hit != 'true'
+        uses: actions/cache@v4
+        with:
+          path: .cdn
+          key: cdn-${{ hashFiles('kit/libraries.json', 'scripts/mirror.mjs') }}
+
+      - name: Mirror the pinned packages
+        if: steps.tested.outputs.cache-hit != 'true'
+        run: npm run mirror
+
+      - name: Test every lesson
+        if: steps.tested.outputs.cache-hit != 'true'
         run: npm run test:gallery
+
+      - name: Remember that these lessons passed
+        if: steps.tested.outputs.cache-hit != 'true'
+        run: mkdir -p .work/gallery-passed && date -u > .work/gallery-passed/at.txt
+
+      - name: Keep the screenshots of a failed run
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gallery-screenshots
+          path: .work/gallery-test/**/*.png
+          if-no-files-found: ignore
+          retention-days: 7

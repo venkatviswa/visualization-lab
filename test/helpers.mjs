@@ -21,14 +21,16 @@ export function startServer() {
   });
 }
 
-// The lab loads libraries from jsDelivr; tests point it at the local mirror instead.
-export function labUrlForTests(server) {
-  const src = read('dist/vislab.html').replaceAll('https://cdn.jsdelivr.net/npm/', server.cdn);
+// The lab loads libraries from jsDelivr with unpkg as the fallback; tests point both at the local mirror instead.
+// A test can point either server somewhere else (a missing folder plays a server that is down; Playwright's request routing
+// does not see requests from the sandboxed preview frames, so blocking has to happen at the URL). `name` keeps variants apart.
+export function labUrlForTests(server, { primary = server.cdn, fallback = server.cdn, name = 'vislab.test.html' } = {}) {
+  const src = read('dist/vislab.html').replaceAll('https://cdn.jsdelivr.net/npm/', primary).replaceAll('https://unpkg.com/', fallback);
   const dir = path.join(root, '.work/lab'); fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, 'vislab.test.html'), src);
+  fs.writeFileSync(path.join(dir, name), src);
   // vendor/, gallery/ and the two guides are resolved relative to the page, so link them next to it
   for (const d of ['vendor', 'gallery', 'README.md', 'AUTHORING.md']) { const l = path.join(dir, d); try { fs.unlinkSync(l); } catch (e) {} fs.symlinkSync(path.join(root, 'dist', d), l); }
-  return server.base + '/.work/lab/vislab.test.html';
+  return server.base + '/.work/lab/' + name;
 }
 
 export async function launch() {

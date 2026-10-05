@@ -41,13 +41,19 @@ npm run mirror              # downloads the pinned packages into .cdn/ so tests 
 
 ```
 npm run build               # dist/vislab.html + kit + examples + docs (fast, no browser)
-npm run build:gallery       # dist/gallery/data.js + thumbnails; verifies all 83 versions incl. embed fit and slider extremes (about 15 minutes)
+npm run build:gallery       # dist/gallery/data.js + thumbnails; verifies all 83 versions incl. embed fit and slider extremes (25-30 minutes)
 npm run serve               # http://localhost:8766/dist/vislab.html
-npm test                    # build, then unit + toolkit + e2e (about 4 minutes; needs dist/gallery from one build:gallery)
-npm run test:gallery        # every gallery lesson at defaults, min and max (about 15 minutes)
+npm test                    # build, then unit + toolkit + e2e (about 10 minutes; needs dist/gallery from one build:gallery)
+npm run test:gallery        # every gallery lesson at defaults, min and max (longer than the gallery build; leave it to CI)
 ```
 
-Tests run against the local mirror in `.cdn/`, never against jsDelivr. Every library in `kit/libraries.json` is in the mirror, Plotly included; if jsDelivr is blocked where you are, `npm pack` the package and unpack it under `.cdn/<name>@<version>/`.
+Tests run against the local mirror in `.cdn/`, never against jsDelivr. Every library in `kit/libraries.json` is in the mirror, Plotly included; if jsDelivr is blocked where you are, `npm pack` the package and unpack it under `.cdn/<name>@<version>/`. The e2e tests point the fallback server (unpkg) at the mirror too; to play a server that is down they point it at a folder that does not exist, because Playwright's request routing does not see requests from the sandboxed preview frames.
+
+## Continuous integration
+
+`.github/workflows/test.yml` runs on every push and pull request. The **test** job runs `npm test`; the verified gallery it needs is cached by a hash of `gallery/`, `examples/`, `kit/` and `scripts/build_gallery.mjs`, so the 25-30 minute gallery build only happens when one of those changed. The **gallery** job (main and pull requests) runs `npm run test:gallery`, again only when the lessons, examples, kit or gallery tests changed since its last green run. Failed runs keep their screenshots as a downloadable artifact for a week. `.github/workflows/pages.yml` deploys `dist/` to GitHub Pages after a green test run on main (README, *Hosting it yourself*).
+
+Keep the workflow files' `with:` blocks in block style. A one-line `{ ... }` mapping cannot hold a `${{ }}` expression: the braces end the mapping, the file does not parse, and GitHub starts no jobs at all ("No jobs were run"). A unit test checks this; `npx @action-validator/cli <file>` checks a workflow against the schema before you push.
 
 ## Adding a gallery lesson
 

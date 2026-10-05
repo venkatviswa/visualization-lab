@@ -27,7 +27,11 @@ Open items, roughly in the order we plan to take them. Tick items here in the sa
 
 ## Hosting
 
-- [ ] **GitHub Pages**: a workflow that builds `dist/` (`npm run build` and `build:gallery`) and publishes it with `actions/deploy-pages`, so the gallery and player are public without a claude.ai login. Everything static works there; Draft spec, Generate, Ask Claude and the rubric's first pass need Claude in the viewer and stay disabled (the page already says so).
+- [x] **GitHub Pages**: `.github/workflows/pages.yml` builds `dist/` after a green test run on main (reusing the cached gallery) and deploys it with `actions/deploy-pages`. The page runs in explore mode there: the chat and Claude-only buttons are hidden.
+- [x] **CI that fits**: cached verified gallery, gallery sweep only when its inputs change, timeouts that fit, screenshots kept on failure, workflow files guarded by a unit test.
+- [ ] **Offline download**: an option on Download HTML and Export for course that inlines the libraries, so a workshop without internet still works (Plotly alone is about 3.5 MB); and ship the library files with a hosted copy so previews don't depend on a CDN at all. Check that the sandboxed preview frames can load files hosted beside the page.
+- [ ] **Accessibility pass**: a Text view per version generated from the model (steps, numbers, the check line), the current step announced while playing or stepping, a label on each preview, keyboard focus order, and an automated accessibility check in the e2e tests. The rules exist in AUTHORING.md (no hover-only, colour never alone, reduced motion); nothing enforces them yet.
+- [x] **Plain-language library failures**: jsDelivr then unpkg, "Couldn't load …" with Retry, no Fix errors for a missing library.
 - [ ] **Generation on your own host**: a `sample` adapter in the page that, when `window.claude` is absent, calls a small serverless function (Vercel, Netlify or Cloudflare Workers) holding the API key and a per-session limit; never put a key in the page. README note on the two deployments.
 
 ## Physics

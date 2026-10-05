@@ -1,0 +1,82 @@
+# Publishes the lab to GitHub Pages after the test workflow passes on main (or by hand from the Actions tab).
+# One-time setup: repository Settings -> Pages -> Build and deployment -> Source: GitHub Actions.
+# On Pages there is no Claude in the viewer, so the lab runs in explore mode: every lesson, the code editor, comparing,
+# scoring and downloads work; Draft spec, Generate, Refine and Ask Claude are hidden (see README, "Hosting").
+name: pages
+
+on:
+  workflow_run:
+    workflows: [test]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build the site
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Restore the verified gallery (built by the test workflow)
+        id: gallery
+        uses: actions/cache@v4
+        with:
+          path: dist/gallery
+          key: gallery-${{ hashFiles('gallery/**', 'examples/**', 'kit/**', 'scripts/build_gallery.mjs') }}
+
+      - name: Install Chromium (only if the gallery has to be built here)
+        if: steps.gallery.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Mirror the pinned packages (only if the gallery has to be built here)
+        if: steps.gallery.outputs.cache-hit != 'true'
+        run: npm run mirror
+
+      - name: Build and verify the gallery (only if it was not cached)
+        if: steps.gallery.outputs.cache-hit != 'true'
+        run: npm run build:gallery
+
+      - run: npm run build
+
+      - name: Assemble the site
+        run: |
+          cp dist/vislab.html dist/index.html
+          touch dist/.nojekyll
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

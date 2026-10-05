@@ -123,3 +123,15 @@ test('the embed rule is identical in verify.mjs, AUTHORING.md, README.md and the
   const m = read('kit/verify.mjs').match(/const EMBED_CSS = '([^']+)'/); assert.ok(m, 'EMBED_CSS in verify.mjs');
   for (const f of ['AUTHORING.md', 'README.md', 'docs/SKILL.lesson-visual-bakeoff.md']) assert.ok(read(f).includes(m[1]), `${f} does not carry the embed rule ${m[1]}`);
 });
+
+test('CI workflows: no ${{ }} inside a one-line { } mapping (the file would not parse and no job would start); jobs have room to finish', () => {
+  const dir = path.join(root, '.github/workflows');
+  for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.yml'))) {
+    const src = fs.readFileSync(path.join(dir, f), 'utf8');
+    for (const [i, line] of src.split('\n').entries()) assert.ok(!/:\s*\{[^}]*\$\{\{/.test(line), `${f}:${i + 1} puts an expression inside a one-line mapping; use block style`);
+  }
+  const t = fs.readFileSync(path.join(dir, 'test.yml'), 'utf8');
+  assert.match(t, /key: gallery-\$\{\{ hashFiles\(/, 'the verified gallery is cached');
+  for (const m of t.matchAll(/timeout-minutes: (\d+)/g)) assert.ok(Number(m[1]) >= 60, 'a job timeout under an hour cannot fit a gallery build');
+  assert.match(fs.readFileSync(path.join(dir, 'pages.yml'), 'utf8'), /actions\/deploy-pages@/);
+});
