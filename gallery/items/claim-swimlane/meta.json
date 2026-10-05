@@ -1,0 +1,35 @@
+{
+  "slug": "claim-swimlane",
+  "category": "Enterprise process",
+  "title": "One claim, four desks",
+  "goal": "Follow one health claim across the desks that touch it: the member, intake, adjudication, payment and, if it is denied and appealed, the appeals desk. Put each step in the lane of whoever does it, show the hand-offs and the waiting between desks, and make it obvious that most of the elapsed time is waiting, not work. Let me switch between automatic adjudication and manual review, change how many reviewers are on duty, and choose whether the claim is approved, denied, or denied and then appealed.",
+  "a": {
+    "lib": "reactflow",
+    "form": "swimlane",
+    "explanation": "React Flow swimlanes: one lane per desk, one node per piece of work in the lane of whoever does it, and the waits between desks as dashed, labelled edges ('waits 3 d · nightly batch, pending queue'). The host clock lights the current step in blue, animates the edge the claim is waiting on in orange and turns finished steps green; a desk the route never uses stays a dashed, empty lane. Clicking a step shows its detail, and the header keeps the day, the work and the waiting so far. On a phone the lanes turn into columns and time runs downward. It is the picture a process owner recognises: who, in what order, with the hand-offs as the lesson. It does not show how long anything takes except as a label, which is what the Gantt version adds.",
+    "caveats": [
+      "Node positions follow the order of the work, not elapsed time, so a two-day step and a half-day step are the same width",
+      "Edge labels sit at the midpoint of the edge and can cross a lane border",
+      "Changing a control that changes the route remounts the diagram so that it refits"
+    ]
+  },
+  "b": {
+    "lib": "chartjs",
+    "form": "Gantt timeline",
+    "explanation": "A Chart.js Gantt by lane: the five desks as rows and a floating bar per event placed at its business days, solid green for work (blue while it is happening, red for a denial), pale dashed grey for waiting, revealed up to a dashed 'today' line that follows the playback clock. Bars wide enough carry their label and duration, and the header keeps the running totals. It shows what the swimlane cannot: that the waits are longer than the work, and which wait (the pending queue, the payment cycle, the mail) is the one to attack. It cannot show the hand-offs as arrows; the row changes are the hand-offs.",
+    "caveats": [
+      "Bars for short steps are too narrow for a label; hover gives the detail",
+      "Two bars in the same lane that touch (a letter and the appeal) share one row, so their labels can crowd",
+      "The day axis rescales when the route or outcome changes the elapsed time"
+    ]
+  },
+  "c": {
+    "lib": "story",
+    "form": "step-by-step story",
+    "explanation": "A story: five desks across the top (a column on a phone), one claim card that moves to whichever desk is working on it and shows an hourglass while it waits, and a day strip underneath that fills green while someone works and grey while the claim waits, segment by segment, with the step's label once it has filled. The caption narrates each step, the corner keeps the day and the running work and waiting totals, and the desks remember how many days of work they did. It is the version for an audience that has never seen a swimlane; the day strip is a one-row Gantt in disguise.",
+    "caveats": [
+      "Desks that are not on the route are drawn dashed and stay empty",
+      "On a short root the caption may be clipped to two lines; the status line carries the full summary"
+    ]
+  }
+}

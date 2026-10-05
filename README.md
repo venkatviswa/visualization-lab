@@ -74,13 +74,13 @@ Start from: *Agentic delivery pipeline* for the method overview, *Watch an agent
 
 ## Get inspired
 
-Switch to **Get inspired** (top right) to browse 24 finished lessons:
+Switch to **Get inspired** (top right) to browse 26 finished lessons:
 
 | Subject | Lessons | Chart forms |
 | --- | --- | --- |
 | Vocabulary | Key terms of agentic AI · Data governance terms and how they connect · Data privacy terms in plain English | word cloud, ranked bar chart, 3D word helix, network diagram, card grid, flashcards |
-| Enterprise process | Health claim lifecycle · Agentic delivery pipeline · Lead to cash · Branches: a safe place to try ideas (Git) · One push, one workflow, one deploy (GitHub Actions) | flow chart, swimlane, step-by-step story, 3D story, commit graph, Gantt timeline |
-| Enterprise architecture | One address change, eight systems · From spaghetti to hub: why an integration layer · Who is Maria? Identity resolution · One member, five sources, one profile (data moving through a customer data platform) · Where does PHI travel? | step-by-step story, 3D story, architecture diagram, ring network, line chart, node-link graph, highlight table |
+| Enterprise process | Health claim lifecycle · One claim, four desks (a claim across the desks, swimlane and Gantt) · Agentic delivery pipeline · Lead to cash · Branches: a safe place to try ideas (Git) · One push, one workflow, one deploy (GitHub Actions) | flow chart, swimlane, Gantt timeline, step-by-step story, 3D story, commit graph |
+| Enterprise architecture | One address change, eight systems · From spaghetti to hub: why an integration layer · Who is Maria? Identity resolution · One member, five sources, one profile (data moving through a customer data platform) · Where the records go (a month of records as a Sankey) · Where does PHI travel? | step-by-step story, 3D story, architecture diagram, ring network, line chart, node-link graph, Sankey, highlight table |
 | Data stories | Which region is hiring fastest? · Simpson’s paradox in win rates · Why a support backlog explodes | line chart, annotated bar chart, grouped bar chart, queue simulation |
 | ML and LLM | How a model learns: nudging two dials · Attention: what does "it" refer to? · The context window is the model's desk · Watch an agent resolve a billing dispute · Choosing a fraud threshold · How an LLM picks the next word · How RAG finds the right policy passages | scatter with fit line, line chart, arc diagram, heatmap, stacked blocks, stacked bar chart, loop diagram, strip plot, probability bars, 3D scatter, scatter map |
 | Math | How one outlier pulls a least-squares line | scatter with fit line |
@@ -255,6 +255,7 @@ All libraries load from jsDelivr at fixed versions.
 | Chart.js 4.4.1 | 2D | Standard charts from configuration |
 | D3 7.9.0 | 2D | Custom data graphics with full control over scales and marks |
 | Word cloud (D3 + d3-cloud 1.2.7) | 2D | Vocabulary and key terms, sized by importance and coloured by theme |
+| Sankey (D3 + d3-sankey 0.12.3) | 2D | Flows between stages with width as volume: records through a platform, tokens through a context window |
 | Plotly.js 2.35.2 | 2D / 3D | Scientific plots and 3D surfaces |
 | React Flow 12 (React 18.3) | 2D | Interactive process, workflow and architecture diagrams |
 | Story (SVG + GSAP 3.15 + Lucide icons) | 2D | Animated explainers with people, agents, code windows and documents |
@@ -287,7 +288,7 @@ All libraries load from jsDelivr at fixed versions.
 - **The editor loads the first time you open Edit code.** If it can't load, you get a plain text box that still supports Run, Undo and line jumps.
 
 **Previews and delivery**
-- **The gallery loads separately.** The lab page is small; the 24 lessons and their thumbnails load the first time you open Get inspired, so that tab takes a moment on first use.
+- **The gallery loads separately.** The lab page is small; the 26 lessons and their thumbnails load the first time you open Get inspired, so that tab takes a moment on first use.
 - **Libraries come from jsDelivr.** On a restricted network, in a strict LMS iframe or offline, previews and downloaded pages may fail with *"Failed to load …"*. For those environments, host the libraries yourself.
 - **3D needs WebGL.** On machines without a capable graphics card (some virtual desktops), 3D versions can be slow or blank. Keep a 2D version as a fallback.
 - **"Reduce motion" changes playback.** With the operating system's reduce-motion setting on, animations open at their final state instead of playing. Press Play to watch them.

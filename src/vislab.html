@@ -405,7 +405,7 @@ function slug(s) { return String(s || "lab").toLowerCase().replace(/[^a-z0-9]+/g
 function libName(id) { return LIBS[id] ? LIBS[id].name : id; }
 /*@PAIRS@*/
 const TRAITS = { p5: "a hand-drawn 2D sketch", three: "a free-camera 3D scene", chartjs: "a standard chart set up by configuration", plotly: "declarative scientific plots",
-  reactflow: "ready-made interactive diagram components", wordcloud: "a word cloud with size for importance", svg: "hand-built SVG with full flexibility", d3: "custom data graphics with full control",
+  reactflow: "ready-made interactive diagram components", wordcloud: "a word cloud with size for importance", d3sankey: "a flow diagram with width for volume", svg: "hand-built SVG with full flexibility", d3: "custom data graphics with full control",
   story: "an authored animated 2D story", story3d: "a guided 3D story" };
 function lessonFor(a, b) {
   const p = PAIRS.find(x => (x.a === a && x.b === b) || (x.a === b && x.b === a));

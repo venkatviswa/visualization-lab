@@ -1,0 +1,71 @@
+{
+  "title": "One claim, four desks",
+  "objective": "Learners follow one health claim across the desks that touch it (member, intake, adjudication, payment and, if it comes to that, appeals) and see that most of the elapsed time is waiting between desks, not work at them, and how the route, the reviewers on duty and the outcome change the picture.",
+  "view": "2D",
+  "recommended": {
+    "library": "reactflow",
+    "why": "A swimlane diagram puts each step in the lane of whoever does it, so the hand-offs and the waits between desks are the picture, which is what process owners argue about."
+  },
+  "alternative": {
+    "library": "chartjs",
+    "why": "The swimlane shows who and in what order; a Gantt timeline per lane shows how long, with the waits as the empty stretches. Which one convinces a process owner that the queue, not the review, is the problem?"
+  },
+  "assumptions": [
+    "Durations are illustrative business days for a fictional health plan; no benchmark, contract or real system is implied",
+    "The claim always passes intake validation; the lesson is about time, not edits",
+    "Auto-adjudication prices the claim in minutes; manual review pends in a queue that the reviewers on duty share, so the wait is 5 days divided by the number of reviewers, then one day of review",
+    "Approved and overturned claims wait for a weekly payment run (3 days) and letters take 2 days in the mail",
+    "An appeal takes the member 2 days to file, waits 5 days for a clinical reviewer, takes 6 days to review and is overturned; a denial without an appeal ends with the letter",
+    "Events happen one after another; nothing runs in parallel"
+  ],
+  "units": [
+    "time: business days from the visit",
+    "playback: 24 s for the whole claim, so a day is shorter on screen when the claim takes longer"
+  ],
+  "params": [
+    {
+      "id": "route",
+      "label": "Adjudication",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 1,
+      "unit": "",
+      "labels": [
+        "Automatic",
+        "Manual review"
+      ]
+    },
+    {
+      "id": "reviewers",
+      "label": "Reviewers on duty",
+      "min": 1,
+      "max": 5,
+      "step": 1,
+      "value": 2,
+      "unit": ""
+    },
+    {
+      "id": "outcome",
+      "label": "Outcome",
+      "min": 0,
+      "max": 2,
+      "step": 1,
+      "value": 0,
+      "unit": "",
+      "labels": [
+        "Approved",
+        "Denied",
+        "Denied, appealed"
+      ]
+    }
+  ],
+  "checkDescription": "Events run back to back and work plus waiting equals the elapsed time; the appeals lane is used only when the claim is appealed and the payment lane only when it is paid; manual review adds a pending wait of 5 days divided by the reviewers, automatic adjudication adds none; playback markers are ordered.",
+  "expectAtDefaults": "m.manual && m.paid && m.totals.waiting > m.totals.touch && m.lanesUsed.length === 4",
+  "learnerPrompts": {
+    "predict": "Set the reviewers on duty to 5 before you play. By how many days does the claim get paid sooner, and which single bar changes?",
+    "explain": "With the claim denied and appealed, the member waits weeks and the desks work for only a few days in total. Where would you put one more person, and why is the answer not \"adjudication\"?"
+  },
+  "modelCode": "function model(p) {\n  // One health claim moves across five desks (lanes): the member, intake, adjudication, payment and appeals.\n  // Every event is either work at a desk or a wait between desks; the elapsed time is the sum of both.\n  // Durations are illustrative business days for a fictional plan, not a benchmark.\n  const manual = Math.round(p.route) === 1;\n  const reviewers = Math.max(1, Math.min(5, Math.round(p.reviewers)));\n  const outcome = Math.max(0, Math.min(2, Math.round(p.outcome))); // 0 approved, 1 denied, 2 denied then appealed\n  const lanes = [\n    { id: 'member', label: 'Member', icon: 'user' },\n    { id: 'intake', label: 'Intake', icon: 'inbox' },\n    { id: 'adjud', label: 'Adjudication', icon: 'scale' },\n    { id: 'payment', label: 'Payment', icon: 'banknote' },\n    { id: 'appeals', label: 'Appeals', icon: 'gavel' }\n  ];\n  const events = [];\n  let t = 0;\n  const work = (lane, label, dur, note, extra) => { events.push(Object.assign({ i: events.length, lane, kind: 'work', label, start: +t.toFixed(2), dur, note }, extra || {})); t += dur; };\n  const wait = (lane, label, dur, note) => { if (dur <= 0) return; events.push({ i: events.length, lane, kind: 'wait', label, start: +t.toFixed(2), dur, note }); t += dur; };\n  const queueWait = +(5 / reviewers).toFixed(1); // a backlog of pending claims shared by the reviewers on duty\n  work('member', 'Visit and claim', 1, 'The member sees a provider; the provider submits the claim by the next day.');\n  work('intake', 'Receive and validate', 1, 'Intake loads the claim, checks member and provider identifiers and the codes; the edits pass.');\n  wait('intake', 'Nightly batch', 0.5, 'The claim waits for the nightly batch that hands validated claims to adjudication.');\n  if (!manual) work('adjud', 'Auto-adjudicated', 0.2, 'The rules engine prices the claim against the benefit and the contract in minutes.', { auto: true });\n  else {\n    wait('adjud', 'Pending queue', queueWait, 'The claim pends for a reviewer: ' + reviewers + (reviewers === 1 ? ' reviewer clears' : ' reviewers clear') + ' the shared backlog, so the wait is about ' + queueWait + ' days.');\n    work('adjud', 'Manual review', 1, 'A reviewer checks medical necessity and the documentation and decides.');\n  }\n  const denied = outcome > 0;\n  if (!denied) {\n    wait('payment', 'Payment cycle', 3, 'Approved claims wait for the weekly payment run.');\n    work('payment', 'Pay and remit', 1, 'The payment run pays the provider and issues the explanation of benefits.');\n    wait('member', 'Mail', 2, 'The explanation of benefits is printed and mailed.');\n    work('member', 'EOB received', 0.5, 'The member reads what was paid and what they owe.');\n  } else {\n    wait('member', 'Mail', 2, 'The denial letter is printed and mailed.');\n    work('member', 'Denial letter', 0.5, 'The member reads the denial and the reason code.', { bad: true });\n    if (outcome === 2) {\n      work('member', 'File appeal', 2, 'The member gathers records from the provider and files an appeal.');\n      wait('appeals', 'Appeals queue', 5, 'The appeal waits its turn with a clinical reviewer.');\n      work('appeals', 'Appeal review', 6, 'A clinical reviewer re-examines the claim with the new records and overturns the denial.');\n      wait('payment', 'Payment cycle', 3, 'The overturned claim waits for the next weekly payment run.');\n      work('payment', 'Pay and remit', 1, 'The payment run pays the provider and issues a corrected explanation of benefits.');\n      wait('member', 'Mail', 2, 'The corrected explanation of benefits is mailed.');\n      work('member', 'EOB received', 0.5, 'The member finally sees the claim paid.');\n    }\n  }\n  const elapsed = +t.toFixed(2);\n  const touch = +events.filter(e => e.kind === 'work').reduce((a, e) => a + e.dur, 0).toFixed(2);\n  const waiting = +events.filter(e => e.kind === 'wait').reduce((a, e) => a + e.dur, 0).toFixed(2);\n  const handoffs = events.filter((e, i) => i > 0 && e.lane !== events[i - 1].lane).length;\n  const paid = !denied || outcome === 2;\n  const lanesUsed = lanes.filter(l => events.some(e => e.lane === l.id)).map(l => l.id);\n  // Playback: the clock runs over the whole elapsed time; each event is a scene\n  const duration = 24, scale = duration / elapsed;\n  events.forEach(e => { e.at = +(e.start * scale).toFixed(3); e.len = +(e.dur * scale).toFixed(3); e.end = +(e.start + e.dur).toFixed(2); });\n  const fmtD = d => (Math.round(d * 10) / 10) + (d === 1 ? ' day' : ' days');\n  const summary = (paid ? 'Paid after ' : 'Denied after ') + fmtD(elapsed) + ': ' + fmtD(touch) + ' of work at the desks, ' + fmtD(waiting) + ' of waiting, ' + handoffs + ' hand-offs' + (outcome === 2 ? ', one appeal.' : '.');\n  return {\n    lanes, lanesUsed, events, manual, reviewers, outcome, paid, denied,\n    totals: { elapsed, touch, waiting, handoffs, touchShare: Math.round(100 * touch / elapsed) },\n    duration, markers: events.map(e => e.at), summary\n  };\n}",
+  "checkCode": "function check(p) {\n  const m = model(p), T = m.totals, round = v => Math.round(v * 100) / 100;\n  // Events are back to back: each starts when the previous ends, and the elapsed time is work plus waiting\n  const sequential = m.events.every((e, i) => i === 0 || round(e.start) === round(m.events[i - 1].start + m.events[i - 1].dur));\n  const sums = round(T.touch + T.waiting) === round(T.elapsed);\n  // The lanes used follow the route and the outcome\n  const appealsUsed = m.lanesUsed.includes('appeals'), paymentUsed = m.lanesUsed.includes('payment');\n  const lanesOk = appealsUsed === (m.outcome === 2) && paymentUsed === m.paid;\n  // Manual review adds a pending wait that shrinks with reviewers; auto-adjudication has none\n  const pend = m.events.find(e => e.label === 'Pending queue');\n  const routeOk = m.manual ? (!!pend && Math.abs(pend.dur - 5 / m.reviewers) < 0.11) : !pend;\n  // Playback markers are in order and inside the duration\n  const markersOk = m.markers.every((v, i) => i === 0 || v > m.markers[i - 1]) && m.markers[m.markers.length - 1] < m.duration;\n  const pass = sequential && sums && lanesOk && routeOk && markersOk;\n  return {\n    pass,\n    detail: T.elapsed + ' days elapsed = ' + T.touch + ' days of work + ' + T.waiting + ' days of waiting' + (sums ? '' : ' (does not add up)') + '; ' + m.events.length + ' events back to back' + (sequential ? '' : ' (gap or overlap)') +\n      '; lanes used: ' + m.lanesUsed.join(', ') + (lanesOk ? '' : ' (wrong for this outcome)') + '; ' + (m.manual ? 'pending ' + (pend ? pend.dur : '?') + ' days for ' + m.reviewers + ' reviewer(s)' : 'auto-adjudicated, no pending queue') + (routeOk ? '.' : ' (wrong).')\n  };\n}"
+}

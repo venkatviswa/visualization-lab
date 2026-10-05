@@ -35,8 +35,8 @@ test('build + verify: one page per library family passes', async () => {
     assert.equal(r.status, 0, r.stderr);
     pages.push(out);
   }
-  // d3 via the gallery's regional-hires B, plain svg via regression-outlier A
-  for (const [slug, v, lib] of [['regional-hires', 'b', 'd3'], ['regression-outlier', 'a', 'svg']]) {
+  // d3 via the gallery's regional-hires B, plain svg via regression-outlier A, plotly and d3sankey via the record-flow Sankeys
+  for (const [slug, v, lib] of [['regional-hires', 'b', 'd3'], ['regression-outlier', 'a', 'svg'], ['ea-record-flow', 'a', 'plotly'], ['ea-record-flow', 'b', 'd3sankey']]) {
     const out = path.join(work, `${slug}_${lib}.html`);
     const r = run('build.mjs', [path.join(root, 'gallery/items', slug, 'spec.json'), path.join(root, 'gallery/items', slug, v + '.js'), lib, 'studio', out, '--cdn', server.cdn]);
     assert.equal(r.status, 0, r.stderr); pages.push(out);

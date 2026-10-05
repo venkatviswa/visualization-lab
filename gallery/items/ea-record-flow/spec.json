@@ -1,0 +1,82 @@
+{
+  "title": "Where the records go",
+  "objective": "Learners see how many member records from up to five source systems survive each stage of a customer data platform in a month (quality check, identity resolution, consent) and why the width of a flow, not the presence of an arrow, is what a capacity, licence or consent conversation should start from.",
+  "view": "2D",
+  "recommended": {
+    "library": "plotly",
+    "why": "A Sankey makes volume the picture: the width of each band is the count, so the rejected, merged and consented shares are visible before anyone reads a number."
+  },
+  "alternative": {
+    "library": "d3sankey",
+    "why": "Plotly draws a Sankey from configuration; D3 with d3-sankey gives full control of labels, reveal order and what a narrow screen keeps. Which one would you put in a deck, and which in a course?"
+  },
+  "assumptions": [
+    "Volumes, rejection rates and names are illustrative monthly figures for a fictional health plan; no real system or member is implied",
+    "Sources connect in the order member portal, claims system, contact centre, marketing platform, pharmacy; the control takes the first n",
+    "The quality check rejects a fixed share per source (invalid member numbers, missing dates of birth, test records); with the filter off every record passes",
+    "Identity resolution merges a record into an existing profile at the duplicate rate; merged records still update a member and are not lost",
+    "Every profile update reaches the service agent; only updates for members with marketing consent can also start a marketing journey",
+    "Flows are counts of records, rounded to whole records at each split, so every stage passes on exactly what it receives"
+  ],
+  "units": [
+    "records: count per month",
+    "rates: percent of the records entering a stage",
+    "playback: about 21 s, one scene per stage"
+  ],
+  "params": [
+    {
+      "id": "sources",
+      "label": "Sources connected",
+      "min": 2,
+      "max": 5,
+      "step": 1,
+      "value": 5,
+      "unit": "",
+      "labels": [
+        "Portal + claims",
+        "+ Contact centre",
+        "+ Marketing",
+        "+ Pharmacy"
+      ]
+    },
+    {
+      "id": "duplicateRate",
+      "label": "Duplicate rate",
+      "min": 0,
+      "max": 60,
+      "step": 5,
+      "value": 30,
+      "unit": "%"
+    },
+    {
+      "id": "consentRate",
+      "label": "Marketing consent",
+      "min": 20,
+      "max": 100,
+      "step": 10,
+      "value": 60,
+      "unit": "%"
+    },
+    {
+      "id": "qualityFilter",
+      "label": "Quality filter",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 1,
+      "unit": "",
+      "labels": [
+        "Off",
+        "On"
+      ]
+    }
+  ],
+  "checkDescription": "Every stage passes on exactly what it receives, every record ends as rejected, marketing + service or service only, the filter switch removes every rejection when off, and the merged and consented shares match the sliders within rounding.",
+  "expectAtDefaults": "m.totals.rejected > 0 && m.totals.rejected + m.totals.marketing + m.totals.service === m.totals.ingested && m.totals.merged > m.totals.rejected",
+  "learnerPrompts": {
+    "predict": "Set the duplicate rate to 60 % before you play. Does the number of records that can be marketed to go up, down or stay the same, and why?",
+    "explain": "Turn the quality filter off. The marketing band gets wider. Explain to a product owner why that wider band is a problem, not a win."
+  },
+  "modelCode": "function model(p) {\n  // Member records from up to five source systems flow through a customer data platform in one month:\n  // a quality check rejects bad records, identity resolution merges duplicates into existing profiles,\n  // and consent decides whether a profile update can be activated for marketing as well as service.\n  // Volumes and rates are illustrative, not measured.\n  const n = Math.max(2, Math.min(5, Math.round(p.sources)));\n  const dup = Math.max(0, Math.min(0.6, Math.round(p.duplicateRate) / 100));\n  const consent = Math.max(0.2, Math.min(1, Math.round(p.consentRate) / 100));\n  const filter = Math.round(p.qualityFilter) === 1;\n  const SOURCES = [\n    { id: 'portal', label: 'Member portal', vol: 4200, reject: 0.06, icon: 'globe' },\n    { id: 'claims', label: 'Claims system', vol: 6500, reject: 0.03, icon: 'file-text' },\n    { id: 'contact', label: 'Contact centre', vol: 3100, reject: 0.12, icon: 'headset' },\n    { id: 'marketing', label: 'Marketing platform', vol: 2800, reject: 0.18, icon: 'mail' },\n    { id: 'pharmacy', label: 'Pharmacy', vol: 1900, reject: 0.08, icon: 'pill' }\n  ].slice(0, n);\n  // Stage 1: quality check per source (invalid member number, missing date of birth, test records)\n  const links = [], nodes = [];\n  const node = (id, label, col, kind) => { nodes.push({ id, label, col, kind, value: 0 }); };\n  SOURCES.forEach(s => node(s.id, s.label, 0, 'source'));\n  node('passed', 'Passed quality check', 1, 'stage');\n  node('rejected', 'Rejected', 1, 'sink');\n  node('new', 'New profiles', 2, 'stage');\n  node('merged', 'Merged into existing profiles', 2, 'stage');\n  node('mkt', 'Marketing + service', 3, 'sink');\n  node('svc', 'Service only', 3, 'sink');\n  const link = (source, target, value, kind) => { if (value > 0) links.push({ source, target, value, kind }); };\n  let passed = 0, rejected = 0;\n  SOURCES.forEach(s => {\n    const rej = filter ? Math.round(s.vol * s.reject) : 0, ok = s.vol - rej;\n    s.rejected = rej; s.passed = ok;\n    link(s.id, 'passed', ok, 'ok');\n    link(s.id, 'rejected', rej, 'bad');\n    passed += ok; rejected += rej;\n  });\n  // Stage 2: identity resolution. A share of the passed records matches an existing profile and merges into it.\n  const merged = Math.round(passed * dup), fresh = passed - merged;\n  link('passed', 'new', fresh, 'ok');\n  link('passed', 'merged', merged, 'merge');\n  // Stage 3: consent. Every profile update reaches service; only consented ones may also activate marketing.\n  const newMkt = Math.round(fresh * consent), newSvc = fresh - newMkt;\n  const mergedMkt = Math.round(merged * consent), mergedSvc = merged - mergedMkt;\n  link('new', 'mkt', newMkt, 'consent');\n  link('new', 'svc', newSvc, 'ok');\n  link('merged', 'mkt', mergedMkt, 'consent');\n  link('merged', 'svc', mergedSvc, 'ok');\n  const ingested = SOURCES.reduce((a, s) => a + s.vol, 0);\n  const marketing = newMkt + mergedMkt, service = newSvc + mergedSvc;\n  // Node values: sources carry their volume; the others the flow into them\n  nodes.forEach(nd => { nd.value = nd.kind === 'source' ? SOURCES.find(s => s.id === nd.id).vol : links.filter(l => l.target === nd.id).reduce((a, l) => a + l.value, 0); });\n  // A node with no flow (Rejected with the filter off, Merged at 0 % duplicates) is marked rather than drawn\n  const used = new Set(links.flatMap(l => [l.source, l.target]));\n  nodes.forEach(nd => { nd.active = used.has(nd.id); });\n  const inactive = nodes.filter(nd => !nd.active).map(nd => nd.label).join(', ') || 'none';\n  const pct = (a, b) => (b ? Math.round(100 * a / b) : 0);\n  const fmt = v => v.toLocaleString('en-US');\n  const steps = [\n    { id: 'arrive', t: 0, title: 'Records arrive', note: fmt(ingested) + ' records a month from ' + n + ' source' + (n > 1 ? 's' : '') + '. A box-and-arrow diagram shows the same five arrows for all of them; the widths show who really feeds the platform.', col: 0 },\n    { id: 'quality', t: 4.5, title: 'Quality check', note: filter\n      ? fmt(rejected) + ' records (' + pct(rejected, ingested) + ' %) fail the quality check: invalid member numbers, missing dates of birth, test records. They never reach a profile.'\n      : 'The quality filter is off. Every record passes, including the ones with invalid member numbers, and they will all land in profiles.', col: 1 },\n    { id: 'identity', t: 9, title: 'Identity resolution', note: fmt(merged) + ' records (' + pct(merged, passed) + ' %) match a profile the platform already has and merge into it; ' + fmt(fresh) + ' create new profiles. Merging is not losing: those records still update a member.', col: 2 },\n    { id: 'consent', t: 13.5, title: 'Consent decides activation', note: 'Every profile update reaches the service agent. ' + fmt(marketing) + ' (' + pct(marketing, passed) + ' %) carry marketing consent and can also start a journey; ' + fmt(service) + ' are service only.', col: 3 },\n    { id: 'sowhat', t: 18, title: 'So what for architects', note: 'Of ' + fmt(ingested) + ' records, ' + fmt(marketing) + ' can be marketed to. The width of a flow, not the presence of an arrow, is what a capacity, licence or consent conversation should start from.', col: 3 }\n  ];\n  const summary = fmt(ingested) + ' records in: ' + fmt(rejected) + ' rejected, ' + fmt(merged) + ' merged, ' + fmt(fresh) + ' new profiles; ' + fmt(marketing) + ' can be marketed to, ' + fmt(service) + ' service only.';\n  return {\n    sources: SOURCES, nodes, links, inactive, filter, dup, consent,\n    totals: { ingested, rejected, passed, merged, fresh, marketing, service },\n    steps, duration: 21, markers: steps.map(s => s.t), summary\n  };\n}",
+  "checkCode": "function check(p) {\n  const m = model(p), T = m.totals;\n  // Conservation: what flows into every middle node flows out of it, and every record ends in exactly one outcome\n  const inflow = id => m.links.filter(l => l.target === id).reduce((a, l) => a + l.value, 0);\n  const outflow = id => m.links.filter(l => l.source === id).reduce((a, l) => a + l.value, 0);\n  const middle = m.nodes.filter(n => n.kind === 'stage');\n  const conserved = middle.every(n => inflow(n.id) === outflow(n.id));\n  const sourcesOut = m.sources.every(s => outflow(s.id) === s.vol);\n  const ends = T.rejected + T.marketing + T.service === T.ingested;\n  // The controls do what they say: no rejections with the filter off, merge and consent shares within rounding of the sliders\n  const filterOk = m.filter ? T.rejected > 0 : T.rejected === 0;\n  const mergeOk = Math.abs(T.merged - T.passed * m.dup) <= 1;\n  const consentOk = Math.abs(T.marketing - T.passed * m.consent) <= 2;\n  const positive = m.links.every(l => l.value > 0);\n  const pass = conserved && sourcesOut && ends && filterOk && mergeOk && consentOk && positive;\n  return {\n    pass,\n    detail: T.ingested.toLocaleString('en-US') + ' records: ' + T.rejected.toLocaleString('en-US') + ' rejected + ' + T.marketing.toLocaleString('en-US') + ' marketing + ' + T.service.toLocaleString('en-US') + ' service only' +\n      (ends ? ' add up' : ' do not add up') + '; every stage passes on what it receives' + (conserved ? '' : ' (violated)') + '; merged share ' + Math.round(100 * T.merged / T.passed) + ' %, consented share ' + Math.round(100 * T.marketing / T.passed) + ' %.'\n  };\n}"
+}

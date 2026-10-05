@@ -1,0 +1,35 @@
+{
+  "slug": "ea-record-flow",
+  "category": "Enterprise architecture",
+  "title": "Where the records go",
+  "goal": "Show where a month of member records goes once it enters a customer data platform: records arrive from up to five source systems, a quality check rejects some, identity resolution merges duplicates into existing profiles, and consent decides whether a profile update can be used for marketing as well as service. Make the width of each flow the count, so the audience sees who really feeds the platform and how much reaches each outcome. Let me change how many sources are connected, the duplicate rate, the share of members with marketing consent, and switch the quality filter off.",
+  "a": {
+    "lib": "plotly",
+    "form": "Sankey",
+    "explanation": "A Plotly Sankey trace: the connected sources on the left, the quality check, identity resolution and the two outcomes to the right, every band as wide as its record count, with a 'snap' arrangement that Plotly lays out itself. The host clock reveals the picture stage by stage by fading the later links to near-transparent and back, so the audience reads the rejected, merged and consented shares in the order the story tells them; hovering a band gives its exact count. It is the fastest route to a readable flow: one trace definition, labels and tooltips included. Its limits are the things Plotly decides for you: node order follows size, the rejected sink lands in the last column, and labels sit where Plotly puts them.",
+    "caveats": [
+      "Plotly orders nodes within a column by size and places the Rejected sink in the last column; the order cannot be pinned without fixing every coordinate",
+      "Faded links stay faintly visible before their stage, which previews the shape but can read as 'already there'",
+      "On a phone the node labels shorten and the counts move to the header"
+    ]
+  },
+  "b": {
+    "lib": "d3sankey",
+    "form": "Sankey",
+    "explanation": "D3 with d3-sankey: the same nodes and links laid out once per update with the sources in connection order, then drawn as a stroke-dash sweep link by link as the clock passes each stage, so a band literally arrives. Stage nodes wait as faint placeholders, labels sit beside sources and outcomes and above the middle stages clear of the wide bands, and the counts are in the labels on a wide screen and in the header on a phone. It shows what full control buys over the Plotly version: reveal order, label placement and the narrow layout are all decisions, not defaults. The cost is about three times the code.",
+    "caveats": [
+      "The dash sweep follows the path length, so a long thin band takes as long to arrive as a wide one",
+      "Labels above the stage nodes can touch a label beside a source when the source column is tall and narrow",
+      "Thin nodes with no label room keep their label but it may overlap the band below"
+    ]
+  },
+  "c": {
+    "lib": "story",
+    "form": "step-by-step story",
+    "explanation": "A counter story: the source cards appear one by one, then three stations (quality check, identity resolution, consent) each split a bar into two outcomes while the counts count up to their totals, scene by scene with a narrator caption, and a closing line states the one number the audience should take away. Nothing is a flow; the volumes are read as bars and numbers, which is honest about proportions and easy to narrate, and the phone layout is a vertical list of the same stations with horizontal bars. It cannot show which source the rejected or merged records came from, which both Sankey versions do with a glance.",
+    "caveats": [
+      "Bars in different stations use the same scale per station, so a bar in station 2 is a share of what passed station 1, not of all records",
+      "The source cards do not change as the story progresses; the Sankey versions show where each source's records end up"
+    ]
+  }
+}
