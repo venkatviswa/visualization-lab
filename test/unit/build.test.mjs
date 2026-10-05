@@ -35,7 +35,7 @@ test('built page: the gallery count the header and empty state show is the numbe
 const dataSection = () => {
   const src = page(), a = src.indexOf('const STARTERS = ['), b = src.indexOf('const HARNESS');
   const ctx = {}; vm.createContext(ctx);
-  vm.runInContext(src.slice(a, b) + ';this.OUT = { STARTERS, EXAMPLE, ROCKET, PIPELINE, TERMS };', ctx);
+  vm.runInContext(src.slice(a, b) + ';this.OUT = { STARTERS, EXAMPLE, ROCKET, PIPELINE, TERMS, OPENER, OPENER_SLUG };', ctx);
   return ctx.OUT;
 };
 
@@ -48,6 +48,20 @@ test('built page: built-in lessons match the files in examples/', () => {
     assert.deepEqual([...out[name].versions.map(v => v.lib)], ex.versions.map(v => v.lib));
     for (const v of out[name].versions) assert.equal(v.code.trim(), read(`examples/${dir}/${v.id.toLowerCase()}.js`).trim());
   }
+});
+
+test('built page: the opener is the gallery lesson gallery.json names, inlined with its spec, forms and renderers', () => {
+  const g = json('gallery/gallery.json'), out = dataSection();
+  assert.ok(g.order.includes(g.opener) && !g.refs[g.opener], 'opener is a gallery lesson, not a built-in example');
+  assert.equal(out.OPENER_SLUG, g.opener);
+  const d = `gallery/items/${g.opener}/`, meta = json(d + 'meta.json'), spec = json(d + 'spec.json');
+  assert.equal(out.OPENER.goal, meta.goal);
+  assert.equal(out.OPENER.spec.title, spec.title);
+  assert.equal(out.OPENER.spec.modelCode, spec.modelCode);
+  assert.ok(!('expectAtDefaults' in out.OPENER.spec), 'toolkit-only fields stay out of the page');
+  const keys = ['a', 'b', 'c'].filter(k => meta[k]);
+  assert.equal(JSON.stringify(out.OPENER.versions.map(v => [v.id, v.lib, v.form])), JSON.stringify(keys.map(k => [k.toUpperCase(), meta[k].lib, meta[k].form])));   // stringified: vm arrays are from another realm
+  for (const v of out.OPENER.versions) assert.equal(v.code, read(d + v.id.toLowerCase() + '.js'));
 });
 
 test('built page: library list, runtime notes and pairs come from libraries.json', () => {

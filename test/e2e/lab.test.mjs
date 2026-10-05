@@ -27,8 +27,14 @@ const allPass = st => st.length > 0 && st.every(([, s]) => s === 'Check passed')
 const EX = { '#btnExample': 'projectile', '#btnRocket': 'rocket', '#btnPipeline': 'pipeline', '#btnTerms': 'terms' };
 const loadExample = (page, key) => page.selectOption('#examplePick', EX[key] || key);
 
-test('built-in examples load, every version passes its check, and the comparison line is shown', async () => {
+test('a first visit opens on the gallery opener; built-in examples load, every version passes its check, and the comparison line is shown', async () => {
   const { ctx, page, errors } = await fresh();
+  await sleep(6000);                                   // the opener (From spaghetti to hub) is inlined, so it renders with no gallery download
+  assert.match(await page.$eval('#nowTitle', n => n.textContent), /spaghetti/i);
+  assert.match(await page.$eval('#nowSub', n => n.textContent), /3 versions · from the gallery/);
+  const opener = await statuses(page);
+  assert.equal(opener.length, 3, 'opener versions');
+  assert.ok(allPass(opener), 'opener: ' + JSON.stringify(opener));
   for (const [btn, versions] of [['projectile', 2], ['rocket', 2], ['pipeline', 3], ['terms', 3]]) {
     await loadExample(page, btn); await sleep(6000);
     const st = await statuses(page);
@@ -216,8 +222,8 @@ test('gallery: loads on demand, filters, surprise me, open in lab, use this prom
 
 test('empty state offers the examples; the header shows the current lesson; typing in search opens Get inspired', async () => {
   const { ctx, page, errors } = await fresh();
-  // the lab opens on the projectile example, so the chip names it; New lab clears to the empty state with its example chips
-  assert.match(await page.$eval('#nowTitle', n => n.textContent), /projectile/i);
+  // the lab opens on the gallery opener, so the chip names it; New lab clears to the empty state with its example chips
+  assert.match(await page.$eval('#nowTitle', n => n.textContent), /spaghetti/i);
   await page.click('#btnNew'); await sleep(400);
   assert.ok(await page.$eval('#nowLesson', n => n.hidden), 'no lesson chip in an empty lab');
   assert.equal(await page.$$eval('#versions .empty [data-example]', ns => ns.length), 4, 'four example chips in the empty state');

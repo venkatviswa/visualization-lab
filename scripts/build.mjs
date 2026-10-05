@@ -58,6 +58,18 @@ const EXAMPLES = ['projectile', 'rocket', 'pipeline', 'terms'].map(dir => {
   return `const ${name} = ${js(ex)};`;
 }).join('\n') + '\n';
 
+// The opener: the gallery lesson the lab shows on a first visit (gallery.json "opener"), inlined so the first paint needs no gallery download.
+// Same shape as the lab objects scripts/build_gallery.mjs puts in gallery/data.js.
+const gallery = JSON.parse(read('gallery/gallery.json'));
+const openerSlug = gallery.opener;
+if (!gallery.order.includes(openerSlug) || gallery.refs[openerSlug]) throw new Error('gallery.json "opener" must name a gallery lesson in "order" that is not a built-in example');
+const OPENER = (() => {
+  const d = 'gallery/items/' + openerSlug + '/';
+  const meta = JSON.parse(read(d + 'meta.json')), { expectAtDefaults, ...spec } = JSON.parse(read(d + 'spec.json'));
+  const versions = ['a', 'b', 'c'].filter(k => meta[k]).map(k => ({ id: k.toUpperCase(), lib: meta[k].lib, code: read(d + k + '.js'), form: meta[k].form || '', explanation: meta[k].explanation, caveats: meta[k].caveats || [] }));
+  return `const OPENER_SLUG = ${js(openerSlug)};\nconst OPENER = ${js({ goal: meta.goal, view: 'Auto', libChoice: 'recommend', spec, versions, chat: [] })};\n`;
+})();
+
 const specRules = 'Rules that matter most (from the lesson authoring guide):\n' + block('spec-rules') + '\n\nModel rules:\n' + block('model-rules') + '\n\nCheck rules:\n' + block('check-rules')
   + '\n\nLibrary ids: ' + libs.map(l => `${l.id} (${l.purpose})`).join('; ') + '.\n'
   + 'Default comparisons, used for "alternative" unless the request clearly calls for something else: '
@@ -80,7 +92,8 @@ fill('/*@LOOK2D@*/\n', '// kit/look2d.js (inlined by scripts/build.mjs)\n' + rea
 fill('/*@LIBS_STORY3D_AND_RUNTIME@*/\n', STORY3D);
 fill('/*@STARTERS@*/\n', STARTERS);
 fill('/*@EXAMPLES@*/\n', EXAMPLES);
-fill('/*@GALLERY_COUNT@*/\n', `const GALLERY_COUNT = ${JSON.parse(read('gallery/gallery.json')).order.length}; // from gallery/gallery.json at build time\n`);
+fill('/*@OPENER@*/\n', OPENER);
+fill('/*@GALLERY_COUNT@*/\n', `const GALLERY_COUNT = ${gallery.order.length}; // from gallery/gallery.json at build time\n`);
 fill('/*@PAIRS@*/\n', PAIRS);
 fill('@@SPEC_RULES@@', inLiteral(specRules + '\n\n' + formsLine));
 fill('@@RENDER_CONTRACT@@', inLiteral(renderContract));

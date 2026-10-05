@@ -391,11 +391,13 @@ const RF_CSS = document.getElementById("rfcss").textContent;
 
 /* ---------- Built-in example: projectile, p5.js (2D) vs three.js (3D) ---------- */
 /*@EXAMPLES@*/
+/* ---------- Opener: the gallery lesson a first visit shows (gallery.json "opener") ---------- */
+/*@OPENER@*/
 /*@GALLERY_COUNT@*/
 
 /* ---------- State ---------- */
 const STORE = "vislab:v1";
-let state = load() || Object.assign(clone(EXAMPLE), { source: "example" });
+let state = load() || Object.assign(clone(OPENER), { source: OPENER_SLUG });   // a first visit opens on a gallery lesson; after that the last lesson is restored
 let params = {};
 const VIDS = ["A", "B", "C", "D", "E", "F"];        // version ids; A, B and C always have a row under step 4, D to F are added on request
 const panes = {};            // id -> {iframe, errors[], check, booted, hasContent, busy, ctl, tab}

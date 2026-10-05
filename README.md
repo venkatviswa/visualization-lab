@@ -21,7 +21,7 @@ On narrow screens the panels stack.
 
 ## Quick start
 
-1. Pick one of the four built-in examples from **Load an example…** at the top (projectile, rocket, agentic pipeline, key terms), or click one of the example chips in the empty lab. These work even when Claude isn't available; the other lessons are under **Get inspired**, and the **Search lessons** box at the top finds one by topic, library or chart form from anywhere.
+1. The lab opens on a gallery lesson, *From spaghetti to hub: why an integration layer* (a D3 ring network, a Chart.js line chart and a D3 chord diagram of the same model), so there is something to drag and compare at once; after that it reopens on whatever you worked on last. Pick one of the four built-in examples from **Load an example…** at the top (projectile, rocket, agentic pipeline, key terms), or click one of the example chips in the empty lab. These work even when Claude isn't available; the other lessons are under **Get inspired**, and the **Search lessons** box at the top finds one by topic, library or chart form from anywhere.
 2. Drag the sliders under **Explore** and watch every version update.
 3. Press **Space** to play or pause, or **← / →** to step.
 4. Open **Edit code** on a version, change something, and press **Ctrl+Enter** (⌘+Enter on Mac).

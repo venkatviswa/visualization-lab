@@ -8,7 +8,7 @@ src/starters.json      the starter chips in step 1
 kit/                   the toolkit: template.html, build.mjs, verify.mjs, check_spec.mjs, story3d_kit.js, look2d.js, reactflow.css, libraries.json
 examples/<name>/       the four built-in lessons: lesson.json + model.js + check.js + a.js, b.js, c.js
 gallery/items/<slug>/  the Get inspired lessons: spec.json + meta.json + a.js, b.js, c.js
-gallery/gallery.json   gallery order and the two cards that point at built-in lessons
+gallery/gallery.json   gallery order, the cards that point at built-in lessons, and the opener (the lesson a first visit shows, inlined into the page)
 vendor/                CodeMirror bundle for the Edit code tab
 scripts/               build.mjs, build_gallery.mjs, serve.mjs, mirror.mjs
 test/                  unit (sources, specs, build, toolkit), e2e (the lab in Chromium), gallery (every lesson at defaults/min/max)
@@ -47,7 +47,7 @@ npm test                    # build, then unit + toolkit + e2e (about 4 minutes;
 npm run test:gallery        # every gallery lesson at defaults, min and max (about 15 minutes)
 ```
 
-Tests run against the local mirror in `.cdn/`, never against jsDelivr. Plotly is not in the mirror (its CDN file is blocked in some environments), so no test loads Plotly.
+Tests run against the local mirror in `.cdn/`, never against jsDelivr. Every library in `kit/libraries.json` is in the mirror, Plotly included; if jsDelivr is blocked where you are, `npm pack` the package and unpack it under `.cdn/<name>@<version>/`.
 
 ## Adding a gallery lesson
 
