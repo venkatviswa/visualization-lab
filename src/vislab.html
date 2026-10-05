@@ -33,6 +33,15 @@ h1,h2,h3{margin:0;text-wrap:balance}
 .brand h1{font-size:19px;font-weight:600;letter-spacing:-.01em}
 .brand p{margin:0;color:var(--muted);font-size:13px}
 .top-actions{display:flex;gap:8px;flex-wrap:wrap}
+.top-actions select.btn{width:auto;background:var(--surface);padding:6px 10px}
+.now{display:flex;flex-direction:column;min-width:0;max-width:250px;padding:4px 10px;border:1px solid var(--line);border-radius:8px;background:var(--sunk)}
+.now[hidden]{display:none}
+.now-title{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.now-sub{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gsearch{flex:1 1 180px;max-width:230px;min-width:140px;background:var(--sunk);border:1px solid var(--line);border-radius:7px;padding:6px 10px;font-size:13px}
+.gsearch:focus{border-color:var(--accent)}
+@media (max-width:1480px){.brand p{display:none}}
+@media (max-width:860px){.now{display:none}.gsearch{order:5;flex:1 1 100%;max-width:none}}
 .grid{display:grid;gap:16px;max-width:1680px;margin:0 auto;grid-template-columns:330px minmax(0,1fr) 340px;align-items:start}
 @media (max-width:1280px){.grid{grid-template-columns:320px minmax(0,1fr)}.chat{grid-column:1 / -1}}
 @media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
@@ -246,12 +255,17 @@ details summary{cursor:pointer;color:var(--muted);font-size:12.5px}
     <button type="button" data-page="lab" aria-pressed="true">Lab</button>
     <button type="button" data-page="inspire" aria-pressed="false">Get inspired</button>
   </div>
+  <div class="now" id="nowLesson" hidden title="The lesson in the lab right now"><span class="now-title" id="nowTitle"></span><span class="now-sub" id="nowSub"></span></div>
+  <input type="search" class="gsearch" id="galSearch" placeholder="Search lessons…" aria-label="Search the gallery by title, topic, library or chart form" autocomplete="off">
   <button class="btn" id="btnGuide" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="guide" title="How to use the lab and how to write lessons (?)">Guide</button>
   <div class="top-actions" id="topActions">
-    <button class="btn" id="btnExample" type="button">Projectile example</button>
-    <button class="btn" id="btnRocket" type="button">Rocket example</button>
-    <button class="btn" id="btnPipeline" type="button">Pipeline example</button>
-    <button class="btn" id="btnTerms" type="button">Key terms example</button>
+    <select class="btn" id="examplePick" aria-label="Load a built-in example" title="Load a finished lesson that works without Claude">
+      <option value="">Load an example…</option>
+      <option value="projectile">Projectile: launch angle and range</option>
+      <option value="rocket">Rocket liftoff and escape</option>
+      <option value="pipeline">Agentic delivery pipeline</option>
+      <option value="terms">Key terms of agentic AI</option>
+    </select>
     <button class="btn" id="btnExport" type="button" title="Save this lesson (spec, versions and chat) as a JSON file">Export lesson</button>
     <button class="btn" id="btnImport" type="button" title="Open a lesson exported from the lab">Import lesson</button>
     <input type="file" id="importFile" accept="application/json,.json" hidden>
@@ -377,6 +391,7 @@ const RF_CSS = document.getElementById("rfcss").textContent;
 
 /* ---------- Built-in example: projectile, p5.js (2D) vs three.js (3D) ---------- */
 /*@EXAMPLES@*/
+/*@GALLERY_COUNT@*/
 
 /* ---------- State ---------- */
 const STORE = "vislab:v1";
@@ -834,7 +849,10 @@ function renderVersions() {
     box.innerHTML = "";
     box.append(el("div", { class: "empty" },
       el("b", { text: state.spec ? "Spec ready" : "No versions yet" }),
-      el("span", { text: state.spec ? "Choose a library under step 4 and generate version A." : "Describe a goal and draft a spec, or load one of the examples." })));
+      el("span", { text: state.spec ? "Choose a library under step 4 and generate version A." : "Describe a goal and draft a spec, try a built-in example, or browse the gallery." }),
+      state.spec ? null : el("div", { class: "chips", style: "justify-content:center" },
+        ...Object.entries({ projectile: "Projectile", rocket: "Rocket", pipeline: "Agentic pipeline", terms: "Key terms" }).map(([k, label]) => el("button", { class: "chip", type: "button", "data-example": k, text: label, onclick: e => loadExample(k, e.currentTarget) })),
+        el("button", { class: "chip", type: "button", text: "Get inspired: " + GALLERY_COUNT + " lessons →", onclick: () => showPage("inspire") }))));
     return;
   }
   box.querySelector(".empty")?.remove();
@@ -1453,17 +1471,37 @@ async function askChat(text) {
 }
 
 /* ---------- Top actions ---------- */
-$("btnExample").addEventListener("click", () => { resetLab(Object.assign(clone(EXAMPLE), { source: "example" })); });
-$("btnRocket").addEventListener("click", () => { resetLab(Object.assign(clone(ROCKET), { source: "example" })); });
-$("btnPipeline").addEventListener("click", () => { resetLab(Object.assign(clone(PIPELINE), { source: "example" })); });
-$("btnTerms").addEventListener("click", () => { resetLab(Object.assign(clone(TERMS), { source: "example" })); });
+const EXAMPLES = { projectile: () => EXAMPLE, rocket: () => ROCKET, pipeline: () => PIPELINE, terms: () => TERMS };
+function loadExample(key, btn) {
+  const get = EXAMPLES[key]; if (!get) return;
+  const run = () => resetLab(Object.assign(clone(get()), { source: "example" }));
+  if (btn && hasOwnWork()) confirmReplace(btn, "example:" + key, run); else run();
+}
+$("examplePick").addEventListener("change", e => {
+  const sel = e.target, key = sel.value; sel.value = "";
+  if (!EXAMPLES[key]) return;
+  // the replace guard, for a select: the placeholder option asks for a second pick
+  if (hasOwnWork() && gal.armed !== "example:" + key) {
+    gal.armed = "example:" + key; clearTimeout(gal.armTimer); sel.options[0].textContent = "Replace your current lesson? Pick it again";
+    gal.armTimer = setTimeout(() => { gal.armed = null; sel.options[0].textContent = "Load an example\u2026"; }, 4000); return;
+  }
+  gal.armed = null; sel.options[0].textContent = "Load an example\u2026"; loadExample(key);
+});
 $("btnNew").addEventListener("click", e => confirmReplace(e.currentTarget, "new", () => { resetLab({ goal: "", view: "Auto", libChoice: "recommend", spec: null, versions: [], chat: [] }); $("goal").focus(); }));
 function resetLab(next) {
   for (const id in panes) { panes[id].ctl?.abort(); panes[id].node?.remove(); delete panes[id]; }
   state = next; state.specCheck = null; resetParams(); save(); renderAll(); if (state.spec) runSpecCheck();
 }
 
-function renderAll() { renderSetup(); renderSpec(); renderControls(); renderVersions(); renderChat(); syncGenButtons(); }
+function renderNow() {
+  const chip = $("nowLesson"), s = state.spec;
+  chip.hidden = !s;
+  if (!s) return;
+  const n = state.versions.length, src = state.source === "example" ? "built-in example" : state.source ? "from the gallery" : state.versions.some(v => v.handEdited) ? "your lesson, edited" : "your lesson";
+  $("nowTitle").textContent = s.title || "Untitled lesson";
+  $("nowSub").textContent = (n ? n + (n === 1 ? " version" : " versions") + " · " : "no versions yet · ") + src;
+}
+function renderAll() { renderSetup(); renderSpec(); renderControls(); renderVersions(); renderChat(); syncGenButtons(); renderNow(); }
 
 
 // The gallery (lesson data and thumbnails) lives in gallery/data.js and loads the first time Get inspired opens
@@ -1477,16 +1515,19 @@ function loadGallery() {
   }).then(d => { GALLERY = d; galFailed = !d; return d; });
   return galLoad;
 }
-const GAL_CATS = ["All", "Vocabulary", "Enterprise process", "Enterprise architecture", "Data stories", "ML and LLM", "Math"];
-const gal = { cat: "All", lib: "all", form: "all", armed: null, armTimer: 0 };
-function galLab(it) { return it.ref === "TERMS" ? TERMS : it.ref === "PIPELINE" ? PIPELINE : it.lab; }
+const GAL_CATS = ["All", "Vocabulary", "Enterprise process", "Enterprise architecture", "Data stories", "ML and LLM", "Physics", "Math"];
+const gal = { cat: "All", lib: "all", form: "all", q: "", armed: null, armTimer: 0 };
+function galText(it) { const lab = galLab(it); return [it.title, it.category, lab.goal, lab.spec && lab.spec.title, ...lab.versions.flatMap(v => [libName(v.lib), v.form])].filter(Boolean).join(" ").toLowerCase(); }
+function galLab(it) { return it.ref === "TERMS" ? TERMS : it.ref === "PIPELINE" ? PIPELINE : it.ref === "EXAMPLE" ? EXAMPLE : it.ref === "ROCKET" ? ROCKET : it.lab; }
 function galTeaches(lab) {
   const v = lab.versions, a = v[0] && v[0].lib, b = v[1] && v[1].lib;
   const p = PAIRS.find(x => (x.a === a && x.b === b) || (x.a === b && x.b === a));
   return p ? p.learn : (lab.spec.alternative && lab.spec.alternative.why) || "";
 }
 function galFiltered() {
-  return (GALLERY || []).filter(it => (gal.cat === "All" || it.category === gal.cat) && (gal.lib === "all" || galLab(it).versions.some(v => v.lib === gal.lib)) && (gal.form === "all" || galLab(it).versions.some(v => v.form === gal.form)));
+  const words = gal.q.toLowerCase().split(/\s+/).filter(Boolean);
+  return (GALLERY || []).filter(it => (gal.cat === "All" || it.category === gal.cat) && (gal.lib === "all" || galLab(it).versions.some(v => v.lib === gal.lib)) && (gal.form === "all" || galLab(it).versions.some(v => v.form === gal.form))
+    && (!words.length || words.every(w => galText(it).includes(w))));
 }
 function hasOwnWork() { return !!(state.spec && state.versions.length && !state.source); }
 // Confirm-by-second-click guard for anything that replaces the designer's own lesson (gallery, Draft spec, New lab)
@@ -1542,7 +1583,7 @@ function renderGallery() {
   fsel.value = gal.form;
   const list = galFiltered(), grid = $("galGrid"); grid.innerHTML = "";
   $("galCount").textContent = list.length === GALLERY.length ? GALLERY.length + " lessons" : list.length + " of " + GALLERY.length + " lessons";
-  if (!list.length) grid.append(el("p", { class: "note", text: "No lessons match these filters yet." }));
+  if (!list.length) grid.append(el("p", { class: "note", text: gal.q ? "No lessons match \u201c" + gal.q + "\u201d. Try a topic, a library or a chart form such as heatmap or swimlane." : "No lessons match these filters yet." }));
   for (const it of list) {
     const lab = galLab(it);
     const img = el("img", { class: "gthumb", src: it.thumb, alt: "Preview of " + it.title + " drawn with " + libName(lab.versions[0].lib), loading: "lazy", decoding: "async" });
@@ -1562,9 +1603,11 @@ function renderGallery() {
 }
 $("galLib").addEventListener("change", e => { gal.lib = e.target.value; renderGallery(); });
 $("galForm").addEventListener("change", e => { gal.form = e.target.value; renderGallery(); });
+$("galSearch").addEventListener("input", e => { gal.q = e.target.value; if (page !== "inspire") showPage("inspire"); renderGallery(); });
+$("galSearch").addEventListener("keydown", e => { if (e.key === "Escape") { e.target.value = ""; gal.q = ""; renderGallery(); } });
 $("btnSurprise").addEventListener("click", () => {
   if (!GALLERY) return;
-  let list = galFiltered(); if (!list.length) { gal.cat = "All"; gal.lib = "all"; gal.form = "all"; renderGallery(); list = GALLERY; }
+  let list = galFiltered(); if (!list.length) { gal.cat = "All"; gal.lib = "all"; gal.form = "all"; gal.q = ""; $("galSearch").value = ""; renderGallery(); list = GALLERY; }
   const prev = document.querySelector(".gcard.pulse"), pool = list.filter(it => !prev || it.slug !== prev.dataset.slug);
   const it = pool[Math.floor(Math.random() * pool.length)] || list[0];
   document.querySelectorAll(".gcard.pulse").forEach(n => n.classList.remove("pulse"));
@@ -1738,6 +1781,7 @@ renderAll();
 if (state.spec && !state.specCheck) runSpecCheck();
 syncGenButtons();
 try { if (localStorage.getItem("vislab:page") === "inspire") showPage("inspire"); } catch (e) {}
+$("galSearch").placeholder = "Search " + GALLERY_COUNT + " lessons\u2026";
 (async () => {
   try {
     if (window.claude && claude.use) {

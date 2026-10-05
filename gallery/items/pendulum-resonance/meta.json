@@ -1,0 +1,24 @@
+{
+  "slug": "pendulum-resonance",
+  "category": "Physics",
+  "title": "Pendulum and resonance: pushing in time",
+  "goal": "Show a pendulum whose pivot is shaken by a small, steady push, and make resonance visible: the swing grows enormously when the push arrives at the pendulum's natural frequency and barely at all when it does not. Let me change the drive frequency as a ratio of the natural frequency, the damping, and the pendulum length, and show the amplitude-against-frequency curve with my setting marked on it.",
+  "a": {
+    "lib": "p5",
+    "form": "2D simulation",
+    "explanation": "A p5 sketch: the pivot slides sideways on a short track with the drive, the bob hangs from it and swings along the model's integrated series, a fading trail shows where it has been over the last period, and dashed orange lines mark the steady-state angle it is heading for. A meter beside the stage fills with the largest swing so far against the steady amplitude and the peak of the response curve, with the phase lag and Q beneath. Nothing is simulated in the renderer; seek(t) picks the sample at t. It is the version that makes resonance felt: at the natural frequency the trail widens push by push, away from it the bob just follows the pivot.",
+    "caveats": [
+      "The pivot's travel is exaggerated on screen so that it can be seen; the model's drive is small",
+      "Small-angle model: the swing is kept under about 25°, so very light damping is not offered"
+    ]
+  },
+  "b": {
+    "lib": "chartjs",
+    "form": "line chart",
+    "explanation": "Chart.js, two charts: the steady amplitude for every drive frequency from 0.3 to 2 times the natural frequency, with the chosen drive as an orange dot and dashed line and the peak dotted green, and below it the swing against time revealed by the clock with the pivot push faintly behind it and the steady amplitude as dashed lines. The top chart is the whole lesson in one picture: the peak's height and sharpness are the damping. The bottom chart shows the one point on it being reached, ringing up over the damping time constant. Standard line charts drawn from configuration; the marker lines are a ten-line plugin.",
+    "caveats": [
+      "The lower chart plots every other sample so that 24 s at 60 Hz stays light",
+      "Legends are hidden on a phone; the colours are explained in the footer"
+    ]
+  }
+}

@@ -23,11 +23,14 @@ async function fresh(opts = {}) {
   return { ctx, page, errors };
 }
 const allPass = st => st.length > 0 && st.every(([, s]) => s === 'Check passed');
+// The built-in examples load from the header's example picker (the four buttons became one select)
+const EX = { '#btnExample': 'projectile', '#btnRocket': 'rocket', '#btnPipeline': 'pipeline', '#btnTerms': 'terms' };
+const loadExample = (page, key) => page.selectOption('#examplePick', EX[key] || key);
 
 test('built-in examples load, every version passes its check, and the comparison line is shown', async () => {
   const { ctx, page, errors } = await fresh();
-  for (const [btn, versions] of [['#btnExample', 2], ['#btnRocket', 2], ['#btnPipeline', 3], ['#btnTerms', 3]]) {
-    await page.click(btn); await sleep(6000);
+  for (const [btn, versions] of [['projectile', 2], ['rocket', 2], ['pipeline', 3], ['terms', 3]]) {
+    await loadExample(page, btn); await sleep(6000);
     const st = await statuses(page);
     assert.equal(st.length, versions, btn);
     assert.ok(allPass(st), btn + ': ' + JSON.stringify(st));
@@ -40,7 +43,7 @@ test('built-in examples load, every version passes its check, and the comparison
 
 test('shared sliders update every version without regenerating; reset restores defaults', async () => {
   const { ctx, page } = await fresh();
-  await page.click('#btnRocket'); await sleep(4000);
+  await loadExample(page, '#btnRocket'); await sleep(4000);
   const before = await page.$eval('.pane[data-vid="A"] [data-r=check]', n => n.textContent);
   const sl = await page.$('#sliders input[type=range]');
   await sl.evaluate(i => { i.value = i.min; i.dispatchEvent(new Event('input', { bubbles: true })); }); await sleep(1500);
@@ -54,7 +57,7 @@ test('shared sliders update every version without regenerating; reset restores d
 
 test('host-owned playback: pause, step, scrub and keyboard drive the versions in sync', async () => {
   const { ctx, page } = await fresh();
-  await page.click('#btnRocket'); await sleep(4000);
+  await loadExample(page, '#btnRocket'); await sleep(4000);
   assert.equal(await page.$eval('#timeline', n => n.hidden), false);
   await page.click('#tlPlay'); await sleep(300);                           // pause
   const t1 = await page.$eval('#tlTime', n => n.textContent);
@@ -82,7 +85,7 @@ test('view/library mismatch is flagged in step 2 and for version A, with one-cli
   assert.equal(await page.$eval('#viewWarn', n => n.hidden), true);
   await page.selectOption('#libChoice', 'plotly'); await sleep(200);
   assert.equal(await page.$eval('#viewWarn', n => n.hidden), true, 'Plotly draws both, never flagged');
-  await page.click('#btnRocket'); await sleep(1500); await page.click('#viewSeg [data-v="2D"]'); await sleep(300);
+  await loadExample(page, '#btnRocket'); await sleep(1500); await page.click('#viewSeg [data-v="2D"]'); await sleep(300);
   await page.selectOption('#libA', 'story3d'); await sleep(200);
   assert.equal(await page.$eval('#flagA', n => n.hidden), false, 'version A flagged');
   await page.selectOption('#libB', 'three'); await sleep(200);
@@ -92,7 +95,7 @@ test('view/library mismatch is flagged in step 2 and for version A, with one-cli
 
 test('comparison lines follow the libraries actually chosen, and the default pairs table is present', async () => {
   const { ctx, page } = await fresh();
-  await page.click('#btnTerms'); await sleep(1500);
+  await loadExample(page, '#btnTerms'); await sleep(1500);
   assert.equal(await page.$$eval('table.pairs tr', r => r.length - 1), 4);
   await page.selectOption('#libA', 'p5'); await page.selectOption('#libB', 'three'); await sleep(200);
   assert.match(await page.$eval('#lessonLines', n => n.innerText), /A vs B: Whether depth adds useful information/);
@@ -103,7 +106,7 @@ test('comparison lines follow the libraries actually chosen, and the default pai
 
 test('code editor: edit, run, error with line jump, undo, discard', async () => {
   const { ctx, page } = await fresh();
-  await page.click('#btnRocket'); await sleep(4000);
+  await loadExample(page, '#btnRocket'); await sleep(4000);
   const A = '.pane[data-vid="A"]';
   await page.click(`${A} [data-tab="source"]`); await sleep(1500);
   assert.equal(await page.$$eval(`${A} .cm-editor`, n => n.length), 1, 'CodeMirror loaded');
@@ -136,7 +139,7 @@ test('code editor: edit, run, error with line jump, undo, discard', async () => 
 
 test('full screen: the button toggles, Escape closes the overlay; download is available in the lab', async () => {
   const { ctx, page } = await fresh();
-  await page.click('#btnExample'); await sleep(3000);
+  await loadExample(page, '#btnExample'); await sleep(3000);
   await page.click('.pane[data-vid="A"] [data-r=fs]'); await sleep(400);
   const maxed = await page.evaluate(() => !!document.fullscreenElement || document.querySelector('.pane[data-vid="A"]').classList.contains('max'));
   assert.ok(maxed, 'pane is full screen or maximised');
@@ -154,7 +157,7 @@ test('full screen: the button toggles, Escape closes the overlay; download is av
 test('gallery: loads on demand, filters, surprise me, open in lab, use this prompt, replace guard', async () => {
   const { ctx, page, errors } = await fresh();
   const galleryRequests = []; page.on('request', r => { if (/gallery\/(data|thumbs)/.test(r.url())) galleryRequests.push(r.url()); });
-  await page.click('#btnExample'); await sleep(1000);
+  await loadExample(page, '#btnExample'); await sleep(1000);
   assert.equal(galleryRequests.length, 0, 'the gallery is not fetched until the tab opens');
   await page.click('#pageSeg [data-page="inspire"]'); await sleep(2500);
   assert.ok(galleryRequests.some(u => u.includes('data.js')));
@@ -176,6 +179,13 @@ test('gallery: loads on demand, filters, surprise me, open in lab, use this prom
   assert.ok(await page.$$eval('.gcard', ns => ns.length >= 1 && ns.length < 5 && ns.every(n => n.textContent.includes('Gantt timeline'))), 'the form filter narrows to the Gantt lessons');
   assert.match(await page.$eval('#galCount', n => n.textContent), /^\d+ of \d+ lessons$/);
   await page.selectOption('#galForm', 'all'); await sleep(200);
+  // search: free text over title, topic, library and form; Escape clears it
+  await page.fill('#galSearch', 'swimlane'); await sleep(300);
+  assert.ok(await page.$$eval('.gcard', ns => ns.length >= 1 && ns.length < 5 && ns.every(n => /swimlane/i.test(n.textContent))), 'search narrows to the swimlane lessons');
+  await page.fill('#galSearch', 'no such lesson xyz'); await sleep(300);
+  assert.match(await page.$eval('#galGrid', n => n.textContent), /No lessons match/);
+  await page.press('#galSearch', 'Escape'); await sleep(300);
+  assert.match(await page.$eval('#galCount', n => n.textContent), new RegExp(`^${count} lessons$`));
   // surprise me
   await page.click('#btnSurprise'); await sleep(600);
   assert.equal(await page.$$eval('.gcard.pulse', n => n.length), 1);
@@ -204,6 +214,25 @@ test('gallery: loads on demand, filters, surprise me, open in lab, use this prom
   await ctx.close();
 });
 
+test('empty state offers the examples; the header shows the current lesson; typing in search opens Get inspired', async () => {
+  const { ctx, page, errors } = await fresh();
+  // the lab opens on the projectile example, so the chip names it; New lab clears to the empty state with its example chips
+  assert.match(await page.$eval('#nowTitle', n => n.textContent), /projectile/i);
+  await page.click('#btnNew'); await sleep(400);
+  assert.ok(await page.$eval('#nowLesson', n => n.hidden), 'no lesson chip in an empty lab');
+  assert.equal(await page.$$eval('#versions .empty [data-example]', ns => ns.length), 4, 'four example chips in the empty state');
+  await page.click('#versions .empty [data-example="rocket"]'); await sleep(3000);
+  assert.ok(await page.$eval('#nowLesson', n => !n.hidden));
+  assert.match(await page.$eval('#nowTitle', n => n.textContent), /Rocket/);
+  assert.match(await page.$eval('#nowSub', n => n.textContent), /2 versions · built-in example/);
+  assert.equal(await page.$$eval('#examplePick option', ns => ns.length), 5);
+  await page.fill('#galSearch', 'heatmap'); await sleep(1500);
+  assert.ok(await page.$eval('#inspire', n => !n.hidden), 'search switches to Get inspired');
+  assert.ok(await page.$$eval('.gcard', ns => ns.length >= 1 && ns.every(n => /heatmap/i.test(n.textContent))));
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
 test('gallery failure path shows a message instead of a blank tab', async () => {
   const ctx = await browser.newContext({ viewport: { width: 1500, height: 1000 } });
   const page = await ctx.newPage(); await page.route('**/gallery/data.js', r => r.abort());
@@ -215,7 +244,7 @@ test('gallery failure path shows a message instead of a blank tab', async () => 
 
 test('phone width and dark mode: no horizontal overflow, examples still pass', async () => {
   const { ctx, page, errors } = await fresh({ viewport: { width: 420, height: 900 }, colorScheme: 'dark' });
-  await page.click('#btnTerms'); await sleep(6000);
+  await loadExample(page, '#btnTerms'); await sleep(6000);
   assert.ok(allPass(await statuses(page)));
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false, 'page overflows at 420px');
   await page.click('#pageSeg [data-page="inspire"]'); await sleep(2500);
@@ -226,7 +255,7 @@ test('phone width and dark mode: no horizontal overflow, examples still pass', a
 
 test('state survives a reload, including the page you were on', async () => {
   const { ctx, page } = await fresh();
-  await page.click('#btnPipeline'); await sleep(2000);
+  await loadExample(page, '#btnPipeline'); await sleep(2000);
   await page.click('#pageSeg [data-page="inspire"]'); await sleep(1500);
   await page.reload(); await sleep(2500);
   assert.equal(await page.$eval('#inspire', n => n.hidden), false, 'reopens on Get inspired');
@@ -268,12 +297,12 @@ test('guide: opens from the header and the "?" key, renders both docs, the spec 
 
 test('replace guard: New lab and Draft spec ask for a second click when the lesson is the designer\'s own work', async () => {
   const { ctx, page } = await fresh();
-  await page.click('#btnRocket'); await sleep(3000);
+  await loadExample(page, '#btnRocket'); await sleep(3000);
   // an example is not own work: New lab acts at once
   await page.click('#btnNew'); await sleep(300);
   assert.equal(await page.$$eval('.pane', n => n.length), 0);
   // open the example again and make it own work by running an edit
-  await page.click('#btnRocket'); await sleep(3000);
+  await loadExample(page, '#btnRocket'); await sleep(3000);
   await page.click('.pane[data-vid="A"] [data-tab="source"]'); await sleep(1200);
   await page.evaluate(() => { const ed = CM.EditorView.findFromDOM(document.querySelector('.pane[data-vid="A"] .cm-editor')); ed.dispatch({ changes: { from: 0, insert: '// mine\n' } }); });
   await page.click('.pane[data-vid="A"] [data-r=run]'); await sleep(1500);
@@ -292,7 +321,7 @@ test('replace guard: New lab and Draft spec ask for a second click when the less
 test('export and import: a lesson round-trips through a JSON file; bad files are refused', async () => {
   const fs = await import('fs'); const os = await import('os'); const path = await import('path');
   const { ctx, page } = await fresh({ acceptDownloads: true });
-  await page.click('#btnPipeline'); await sleep(3000);
+  await loadExample(page, '#btnPipeline'); await sleep(3000);
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#btnExport')]);
   assert.match(dl.suggestedFilename(), /agentic-delivery-pipeline\.lesson\.json$/);
   const file = path.join(os.tmpdir(), 'vl-export.json'); await dl.saveAs(file);
@@ -325,7 +354,7 @@ test('export and import: a lesson round-trips through a JSON file; bad files are
 test('scoring rubric: score versions 1-5, weighted totals and the winner, stale scores drop on a code change, scores export and import', async () => {
   const fs = await import('fs'); const os = await import('os'); const path = await import('path');
   const { ctx, page } = await fresh({ acceptDownloads: true });
-  await page.click('#btnRocket'); await sleep(4000);
+  await loadExample(page, '#btnRocket'); await sleep(4000);
   assert.equal(await page.$('#rubric'), null, 'rubric is closed by default');
   await page.click('#btnRubric'); await sleep(200);
   assert.equal(await page.$$eval('table.rubric select', n => n.length), 12, '6 criteria x 2 versions');
@@ -368,7 +397,7 @@ test('scoring rubric: score versions 1-5, weighted totals and the winner, stale 
 test('more than three versions: rows D to F are added on request, a six-version lesson imports, runs, compares and scores; removing a version frees its row', async () => {
   const fs = await import('fs'); const os = await import('os'); const path = await import('path');
   const { ctx, page } = await fresh({ acceptDownloads: true });
-  await page.click('#btnRocket'); await sleep(4000);
+  await loadExample(page, '#btnRocket'); await sleep(4000);
   // step 4 shows A, B, C and an "Add another version" button; each click adds the next row up to F
   assert.deepEqual(await page.$$eval('.gen-row select', ns => ns.map(n => n.id)), ['libA', 'libB', 'libC']);
   assert.match(await page.$eval('#btnAddSlot', b => b.textContent), /Add another version \(D\)/);
@@ -417,7 +446,7 @@ test('more than three versions: rows D to F are added on request, a six-version 
 
 test('look: switching Night sky / Studio / Blueprint re-colours 2D story versions', async () => {
   const { ctx, page } = await fresh();
-  await page.click('#btnPipeline'); await sleep(4000);
+  await loadExample(page, '#btnPipeline'); await sleep(4000);
   const inkFill = async () => {
     const h = await page.$('.pane[data-vid="A"] iframe'); const f = await h.contentFrame();
     return f.evaluate(() => { const el = document.querySelector('#root svg [fill="#1d2433"], #root svg [fill="rgb(29, 36, 51)"]'); return el ? getComputedStyle(el).fill : 'none'; });
@@ -441,7 +470,7 @@ test('look: switching Night sky / Studio / Blueprint re-colours 2D story version
 test('Export for course and Download HTML produce standalone pages that run on their own', async () => {
   const fs = await import('fs'); const os = await import('os'); const path = await import('path');
   const { ctx, page } = await fresh({ acceptDownloads: true });
-  await page.click('#btnRocket'); await sleep(3500);
+  await loadExample(page, '#btnRocket'); await sleep(3500);
   await page.selectOption('#themeSel', 'paper'); await sleep(500);
   const sl = await page.$('#sliders input[type=range]'); await sl.evaluate(i => { i.value = 20; i.dispatchEvent(new Event('input', { bubbles: true })); }); await sleep(600);
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('.pane[data-vid="A"] [data-r=course]')]);

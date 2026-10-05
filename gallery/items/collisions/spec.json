@@ -1,0 +1,64 @@
+{
+  "title": "Collisions: momentum balances, energy leaks",
+  "objective": "Learners watch one cart hit another on a frictionless track and see that total momentum is exactly the same before and after in every case, that kinetic energy is the same only when the collision is elastic, and that the mass ratio decides who bounces back, who keeps going and who stops dead.",
+  "view": "2D",
+  "recommended": {
+    "library": "p5",
+    "why": "The carts, their velocity arrows and the momentum and energy bars moving in real time make the two conservation laws visible as a picture, not a pair of equations."
+  },
+  "alternative": {
+    "library": "chartjs",
+    "why": "The animation shows the event; the velocity-time chart shows the before and after as flat lines with one step, with momentum and energy totals underneath. Which one convinces a sceptic that momentum did not change?"
+  },
+  "assumptions": [
+    "One-dimensional collision on a frictionless track; cart 1 has a mass of 1 kg and cart 2 the chosen multiple of it; cart 2 starts at rest",
+    "The coefficient of restitution (elasticity) sets the velocities after the hit: 1 is perfectly elastic, 0 means the carts stick",
+    "Momentum is conserved exactly; the kinetic energy lost is ½ μ (1 − e²) (v₁ − v₂)² with μ the reduced mass",
+    "Cart lengths grow with mass so the picture reads; the collision happens when the gap between them closes",
+    "Playback runs in real time for 8 s"
+  ],
+  "units": [
+    "mass: kg (cart 1 = 1 kg)",
+    "speed: m/s",
+    "momentum: kg·m/s",
+    "energy: J",
+    "time: s"
+  ],
+  "params": [
+    {
+      "id": "massRatio",
+      "label": "Cart 2 ÷ cart 1 mass",
+      "min": 0.25,
+      "max": 4,
+      "step": 0.25,
+      "value": 1,
+      "unit": "×"
+    },
+    {
+      "id": "elasticity",
+      "label": "Elasticity",
+      "min": 0,
+      "max": 1,
+      "step": 0.1,
+      "value": 1,
+      "unit": ""
+    },
+    {
+      "id": "speed",
+      "label": "Cart 1 speed",
+      "min": 1,
+      "max": 5,
+      "step": 0.5,
+      "value": 3,
+      "unit": "m/s"
+    }
+  ],
+  "checkDescription": "Momentum after equals momentum before exactly; kinetic energy is unchanged when elastic and lower otherwise, with the loss matching the closed form; sticking gives one shared velocity; equal masses and elastic swap velocities; the carts never pass through each other and the series keeps the momentum total at every sample.",
+  "expectAtDefaults": "m.e === 1 && m.ratio === 1 && Math.abs(m.u1) < 1e-9 && Math.abs(m.u2 - m.v1) < 1e-9",
+  "learnerPrompts": {
+    "predict": "Set the mass ratio to 4 before you play. Does cart 1 keep going, stop, or bounce back, and how fast does cart 2 move off?",
+    "explain": "With elasticity 0 the carts stick and energy is lost, yet momentum is unchanged. Where did the energy go, and why can momentum not go there too?"
+  },
+  "modelCode": "function model(p) {\n  // Two carts on a frictionless track. Cart 1 moves toward cart 2, which is at rest; they collide once with a chosen\n  // elasticity (1 = perfectly elastic, 0 = they stick). Momentum is conserved in every case; kinetic energy only when\n  // elastic. Positions over time come from the velocities before and after the one collision.\n  const ratio = Math.max(0.25, Math.min(4, Math.round(p.massRatio * 4) / 4));\n  const e = Math.max(0, Math.min(1, Math.round(p.elasticity * 10) / 10));\n  const v1 = Math.max(1, Math.min(5, Math.round(p.speed * 2) / 2));\n  const m1 = 1, m2 = ratio, v2 = 0, x1 = 1, x2 = 6, L1 = 1, L2 = 0.8 + 0.4 * Math.sqrt(ratio); // cart lengths, m\n  const tc = (x2 - L2 / 2 - (x1 + L1 / 2)) / v1; // the gap closes at speed v1\n  const u1 = ((m1 - e * m2) * v1 + (1 + e) * m2 * v2) / (m1 + m2), u2 = ((m2 - e * m1) * v2 + (1 + e) * m1 * v1) / (m1 + m2);\n  const pBefore = m1 * v1 + m2 * v2, pAfter = m1 * u1 + m2 * u2;\n  const kBefore = 0.5 * m1 * v1 * v1 + 0.5 * m2 * v2 * v2, kAfter = 0.5 * m1 * u1 * u1 + 0.5 * m2 * u2 * u2;\n  const mu = m1 * m2 / (m1 + m2), lossFormula = 0.5 * mu * (1 - e * e) * (v1 - v2) ** 2;\n  const duration = 8, fps = 60, series = [];\n  for (let i = 0; i <= duration * fps; i++) {\n    const t = i / fps, after = t >= tc;\n    series.push({ t: +t.toFixed(3), x1: +(after ? x1 + v1 * tc + u1 * (t - tc) : x1 + v1 * t).toFixed(4), x2: +(after ? x2 + u2 * (t - tc) : x2).toFixed(4), v1: after ? +u1.toFixed(4) : v1, v2: after ? +u2.toFixed(4) : v2,\n      p: +(after ? pAfter : pBefore).toFixed(4), k: +(after ? kAfter : kBefore).toFixed(4) });\n  }\n  const kind = e === 1 ? 'elastic' : e === 0 ? 'perfectly inelastic (they stick)' : 'partly elastic';\n  const fmt = v => (Math.round(v * 100) / 100).toFixed(2);\n  const sign = v => (v >= 0 ? '+' : '−') + fmt(Math.abs(v));\n  const whatHappens = u1 < -1e-9 ? 'Cart 1 bounces back at ' + fmt(-u1) + ' m/s' : u1 > 1e-9 ? 'Cart 1 keeps going at ' + fmt(u1) + ' m/s' : 'Cart 1 stops dead';\n  const steps = [\n    { id: 'approach', t: 0, title: 'Cart 1 (' + m1 + ' kg) at ' + fmt(v1) + ' m/s, cart 2 (' + ratio + ' kg) at rest', note: 'Momentum ' + fmt(pBefore) + ' kg·m/s, kinetic energy ' + fmt(kBefore) + ' J. Watch which of the two survives the collision.' },\n    { id: 'hit', t: tc, title: 'Collision, ' + kind, note: whatHappens + '; cart 2 moves off at ' + fmt(u2) + ' m/s. Momentum after: ' + fmt(pAfter) + ' kg·m/s, the same. Energy after: ' + fmt(kAfter) + ' J' + (e === 1 ? ', the same.' : ', ' + fmt(kBefore - kAfter) + ' J went into heat, sound and dents.') },\n    { id: 'after', t: Math.min(duration - 2.5, tc + 2.5), title: 'After', note: ratio > 1 && e === 1 ? 'A light cart hitting a heavy one bounces back; the heavy one barely moves.' : ratio < 1 && e === 1 ? 'A heavy cart hitting a light one keeps going; the light one flies off faster than the heavy one came in.' : e === 0 ? 'Stuck together they share the momentum, so they move at ' + fmt(u2) + ' m/s, and the lost energy is the most any collision can lose.' : 'Equal masses and elastic: they swap velocities exactly.' },\n    { id: 'sowhat', t: duration - 1.5, title: 'So what', note: 'Momentum is the bookkeeping that always balances; energy is the one that leaks. The elasticity is the leak.' }\n  ];\n  const summary = 'Mass ratio ' + ratio + ', elasticity ' + e + ', ' + fmt(v1) + ' m/s: after the hit cart 1 ' + sign(u1) + ' m/s, cart 2 ' + sign(u2) + ' m/s; momentum ' + fmt(pBefore) + ' → ' + fmt(pAfter) + ', energy ' + fmt(kBefore) + ' → ' + fmt(kAfter) + ' J.';\n  return { m1, m2, v1, v2, e, ratio, x1, x2, L1, L2, tc: +tc.toFixed(4), u1: +u1.toFixed(4), u2: +u2.toFixed(4), pBefore: +pBefore.toFixed(4), pAfter: +pAfter.toFixed(4), kBefore: +kBefore.toFixed(4), kAfter: +kAfter.toFixed(4), loss: +(kBefore - kAfter).toFixed(4), lossFormula: +lossFormula.toFixed(4), kind, series, steps, duration, markers: steps.map(s => s.t), summary };\n}",
+  "checkCode": "function check(p) {\n  const m = model(p);\n  // Momentum is conserved exactly; kinetic energy is conserved only when elastic, and the loss matches the closed form\n  const momentumOk = Math.abs(m.pAfter - m.pBefore) < 1e-6;\n  const energyOk = m.e === 1 ? Math.abs(m.kAfter - m.kBefore) < 1e-6 : m.kAfter < m.kBefore - 1e-9;\n  const lossOk = Math.abs(m.loss - m.lossFormula) < 1e-3;\n  // Sticking means a shared velocity; equal masses and elastic means a swap; the positions never pass through each other\n  const stickOk = m.e !== 0 || Math.abs(m.u1 - m.u2) < 1e-6;\n  const swapOk = !(m.e === 1 && m.ratio === 1) || (Math.abs(m.u1 - m.v2) < 1e-6 && Math.abs(m.u2 - m.v1) < 1e-6);\n  const noPass = m.series.every(s => s.x1 + m.L1 / 2 <= s.x2 - m.L2 / 2 + 1e-3);\n  const seriesOk = m.series.every(s => Math.abs(s.p - m.pBefore) < 1e-6) && m.series[0].t === 0 && m.series.length === m.duration * 60 + 1;\n  const pass = momentumOk && energyOk && lossOk && stickOk && swapOk && noPass && seriesOk;\n  return {\n    pass,\n    detail: 'Momentum ' + m.pBefore.toFixed(2) + ' → ' + m.pAfter.toFixed(2) + ' kg·m/s' + (momentumOk ? '' : ' (not conserved)') + '; energy ' + m.kBefore.toFixed(2) + ' → ' + m.kAfter.toFixed(2) + ' J, loss ' + m.loss.toFixed(2) + ' J vs formula ' + m.lossFormula.toFixed(2) + (lossOk ? '' : ' (mismatch)') +\n      '; ' + (m.e === 0 ? 'stuck together' + (stickOk ? '' : ' (but velocities differ)') : m.e === 1 && m.ratio === 1 ? 'velocities swapped' + (swapOk ? '' : ' (they did not)') : 'carts never overlap' + (noPass ? '' : ' (they do)')) + '.'\n  };\n}"
+}

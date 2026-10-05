@@ -24,6 +24,13 @@ test('built page: every inline script parses', () => {
   assert.ok(!/\/\*@[A-Z0-9_]+@\*\/|@@[A-Z_]+@@/.test(page()), 'placeholder left in the page');
 });
 
+test('built page: the gallery count the header and empty state show is the number of lessons in gallery.json, and the four examples are in the picker', () => {
+  const n = json('gallery/gallery.json').order.length;
+  assert.ok(page().includes('const GALLERY_COUNT = ' + n + ';'), 'GALLERY_COUNT');
+  for (const k of ['projectile', 'rocket', 'pipeline', 'terms']) assert.ok(page().includes('<option value="' + k + '">'), k + ' in the example picker');
+  assert.ok(!page().includes('id="btnExample"'), 'the old example buttons are gone');
+});
+
 // Evaluate the data section of the page (STARTERS through the built-in examples) without a DOM
 const dataSection = () => {
   const src = page(), a = src.indexOf('const STARTERS = ['), b = src.indexOf('const HARNESS');

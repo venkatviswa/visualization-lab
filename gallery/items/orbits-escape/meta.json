@@ -1,0 +1,24 @@
+{
+  "slug": "orbits-escape",
+  "category": "Physics",
+  "title": "Orbits and escape: Newton's cannon",
+  "goal": "Show Newton's cannon: a body launched from 300 km above an Earth-like planet at a chosen speed and angle, with gravity the only force, so the audience sees that speed decides its fate: below circular speed it falls back, at circular speed it circles, between circular and escape speed it traces an ellipse, and at escape speed it never returns. Let me change the launch speed, the launch angle and the planet's mass, and compare the integrated path with the closed-form orbit.",
+  "a": {
+    "lib": "p5",
+    "form": "2D simulation",
+    "explanation": "A p5 top view: the planet with its 300 km launch ring, the integrated path drawn up to the clock, the body on it and, for a closed orbit, the closed-form ellipse as a faint dashed guide underneath so the audience can see the integrated path follow it exactly. The scale fits the whole path, so an escape shows the planet shrinking into a corner and a crash shows the arc ending at the surface with an impact mark. Readouts give the time, altitude and speed now, and the circular and escape speeds for this planet. It is Newton's cannon as he drew it, with the one thing the drawing lacks: time.",
+    "caveats": [
+      "Playback compresses hours into 24 s, so the body moves fastest on screen where the orbit is longest",
+      "For an escape the scale is set by four hours of flight; the planet becomes small"
+    ]
+  },
+  "b": {
+    "lib": "plotly",
+    "form": "3D simulation",
+    "explanation": "Plotly 3D: the planet as a shaded sphere, the launch altitude as a dotted ring, the integrated path as a line growing with the clock and the body as a marker, in a scene that can be dragged and turned. The orbit lies in one plane whichever way the scene is turned, which is the honest answer to the comparison: for a two-body orbit the third dimension is for turning, not for information. Plotly draws the sphere from a surface trace and handles the camera; the renderer only feeds it the path.",
+    "caveats": [
+      "The sphere is a coarse surface mesh so that the scene stays light; it is not a globe texture",
+      "Turning the scene is a Plotly interaction and does not survive a parameter change, which rebuilds the plot"
+    ]
+  }
+}

@@ -29,6 +29,11 @@
     "agent-observability",
     "classification-threshold",
     "rag-retrieval",
+    "projectile-range",
+    "rocket-escape",
+    "pendulum-resonance",
+    "orbits-escape",
+    "collisions",
     "regression-outlier"
   ],
   "refs": {
@@ -43,6 +48,18 @@
       "title": "Agentic delivery pipeline",
       "constant": "PIPELINE",
       "example": "pipeline"
+    },
+    "projectile-range": {
+      "category": "Physics",
+      "title": "Launch angle and projectile range",
+      "constant": "EXAMPLE",
+      "example": "projectile"
+    },
+    "rocket-escape": {
+      "category": "Physics",
+      "title": "Rocket liftoff and escape",
+      "constant": "ROCKET",
+      "example": "rocket"
     }
   }
 }

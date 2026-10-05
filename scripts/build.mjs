@@ -80,6 +80,7 @@ fill('/*@LOOK2D@*/\n', '// kit/look2d.js (inlined by scripts/build.mjs)\n' + rea
 fill('/*@LIBS_STORY3D_AND_RUNTIME@*/\n', STORY3D);
 fill('/*@STARTERS@*/\n', STARTERS);
 fill('/*@EXAMPLES@*/\n', EXAMPLES);
+fill('/*@GALLERY_COUNT@*/\n', `const GALLERY_COUNT = ${JSON.parse(read('gallery/gallery.json')).order.length}; // from gallery/gallery.json at build time\n`);
 fill('/*@PAIRS@*/\n', PAIRS);
 fill('@@SPEC_RULES@@', inLiteral(specRules + '\n\n' + formsLine));
 fill('@@RENDER_CONTRACT@@', inLiteral(renderContract));

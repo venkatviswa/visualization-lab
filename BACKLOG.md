@@ -30,6 +30,18 @@ Open items, roughly in the order we plan to take them. Tick items here in the sa
 - [ ] **GitHub Pages**: a workflow that builds `dist/` (`npm run build` and `build:gallery`) and publishes it with `actions/deploy-pages`, so the gallery and player are public without a claude.ai login. Everything static works there; Draft spec, Generate, Ask Claude and the rubric's first pass need Claude in the viewer and stay disabled (the page already says so).
 - [ ] **Generation on your own host**: a `sample` adapter in the page that, when `window.claude` is absent, calls a small serverless function (Vercel, Netlify or Cloudflare Workers) holding the API key and a per-session limit; never put a key in the page. README note on the two deployments.
 
+## Physics
+
+Lessons for the physics audience the four built-in examples started. Each has a textbook check, a control that changes the outcome qualitatively, and a picture-versus-plot comparison.
+
+- [x] **Pendulum and resonance**: a pivot shaken at a chosen frequency; p5 swing, Chart.js response curve; check against the closed-form amplitude and the peak at √(1 − 2ζ²).
+- [x] **Orbits and escape (Newton's cannon)**: launch speed, angle and planet mass; p5 top view with the closed-form ellipse as a guide, Plotly 3D globe; check energy conservation, periapsis and apoapsis against the closed form, Kepler's period.
+- [x] **Collisions**: mass ratio, elasticity and speed; p5 carts with momentum and energy bars, Chart.js velocity-time and totals; check momentum exact, energy loss ½ μ (1 − e²) Δv².
+- [ ] **Waves and interference**: two sources, slit spacing and wavelength; a heatmap of the field and a cross-section; check the fringe spacing λL/d. Reuses the heatmap form; the picture of signals adding in a noisy channel.
+- [ ] **Heat diffusion**: a bar with a hot end cooling; ridge plot or heatmap over time; check energy conservation and the diffusion length √(αt). The metaphor for cache warm-up and load spreading.
+- [ ] **Buoyancy and density**: a block in a fluid with both densities as controls; floats, sinks or hovers; check Archimedes exactly. A one-minute class opener.
+- [ ] **Random walk and diffusion**: many particles stepping at random, the spread growing as √n; connects to gradient descent and Monte Carlo in the ML lessons; check the variance growth.
+
 ## Chart forms to cover
 
 A pass over the common chart families against the lab's audiences (enterprise process, architecture, data flow, LLM and agents). Each item is one gallery lesson of two or three versions; the form each version takes goes in its `form` field so it shows on the card and in the filter. Forms already in the gallery: timeline, Gantt timeline, flow story, force-directed graph, heatmap, scatter with regression, matrix grid, word cloud, bar and column, probability bars, step-by-step story.

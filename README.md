@@ -21,7 +21,7 @@ On narrow screens the panels stack.
 
 ## Quick start
 
-1. Click **Projectile example**, **Rocket example**, **Pipeline example** or **Key terms example** at the top right to load a finished lesson. These work even when Claude isn't available.
+1. Pick one of the four built-in examples from **Load an example…** at the top (projectile, rocket, agentic pipeline, key terms), or click one of the example chips in the empty lab. These work even when Claude isn't available; the other lessons are under **Get inspired**, and the **Search lessons** box at the top finds one by topic, library or chart form from anywhere.
 2. Drag the sliders under **Explore** and watch every version update.
 3. Press **Space** to play or pause, or **← / →** to step.
 4. Open **Edit code** on a version, change something, and press **Ctrl+Enter** (⌘+Enter on Mac).
@@ -74,7 +74,7 @@ Start from: *Agentic delivery pipeline* for the method overview, *Watch an agent
 
 ## Get inspired
 
-Switch to **Get inspired** (top right) to browse 30 finished lessons:
+Switch to **Get inspired** (top right) to browse 35 finished lessons:
 
 | Subject | Lessons | Chart forms |
 | --- | --- | --- |
@@ -83,6 +83,7 @@ Switch to **Get inspired** (top right) to browse 30 finished lessons:
 | Enterprise architecture | One address change, eight systems · From spaghetti to hub: why an integration layer · Who is Maria? Identity resolution · One member, five sources, one profile (data moving through a customer data platform) · Where the records go (a month of records as a Sankey) · Where does PHI travel? · The data model comes alive (an entity diagram a process walks through) · Which option? Scoring architecture choices (radar, parallel coordinates, bullet graphs) | step-by-step story, 3D story, architecture diagram, ring network, chord diagram, line chart, node-link graph, Sankey, highlight table, ER diagram, org chart, radar, parallel coordinates, bullet graph |
 | Data stories | Which region is hiring fastest? · Simpson’s paradox in win rates · Before and after: did the new way of working work? (slope, dot plot with ranges, cohorts) · Why a support backlog explodes | line chart, annotated bar chart, grouped bar chart, slope chart, dot plot with ranges, cohort chart, queue simulation |
 | ML and LLM | How a model learns: nudging two dials · Attention: what does "it" refer to? · The context window is the model's desk · Watch an agent resolve a billing dispute · Is the agent healthy? (latency drift on a control chart, violins and ridges) · Choosing a fraud threshold · How an LLM picks the next word · How RAG finds the right policy passages | scatter with fit line, line chart, arc diagram, heatmap, stacked blocks, stacked bar chart, waterfall, loop diagram, control chart, distribution plot, strip plot, probability bars, 3D scatter, scatter map |
+| Physics | Launch angle and projectile range · Rocket liftoff and escape · Pendulum and resonance · Orbits and escape (Newton's cannon) · Collisions: momentum balances, energy leaks | 2D simulation, 3D simulation, line chart |
 | Math | How one outlier pulls a least-squares line | scatter with fit line |
 
 Each card shows the prompt, the library and **chart form** of each version (a Gantt timeline, a swimlane, a heatmap), and what comparing them teaches. The **Chart form** filter finds every lesson that uses a form, so "show me a heatmap" or "what does a swimlane look like here" is one click. The vocabulary of forms, what each fits, which libraries draw it and which forms are still planned, is the *Chart forms* table in the authoring guide; the code generator uses the same names, so a version you generate in the lab names its form too (in the Explain tab and the pane header).
@@ -288,7 +289,7 @@ All libraries load from jsDelivr at fixed versions.
 - **The editor loads the first time you open Edit code.** If it can't load, you get a plain text box that still supports Run, Undo and line jumps.
 
 **Previews and delivery**
-- **The gallery loads separately.** The lab page is small; the 30 lessons and their thumbnails load the first time you open Get inspired, so that tab takes a moment on first use.
+- **The gallery loads separately.** The lab page is small; the 35 lessons and their thumbnails load the first time you open Get inspired, so that tab takes a moment on first use.
 - **Libraries come from jsDelivr.** On a restricted network, in a strict LMS iframe or offline, previews and downloaded pages may fail with *"Failed to load …"*. For those environments, host the libraries yourself.
 - **3D needs WebGL.** On machines without a capable graphics card (some virtual desktops), 3D versions can be slow or blank. Keep a 2D version as a fallback.
 - **"Reduce motion" changes playback.** With the operating system's reduce-motion setting on, animations open at their final state instead of playing. Press Play to watch them.

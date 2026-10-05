@@ -1,0 +1,24 @@
+{
+  "slug": "collisions",
+  "category": "Physics",
+  "title": "Collisions: momentum balances, energy leaks",
+  "goal": "Show one cart hitting another on a frictionless track so the audience sees that total momentum is exactly the same before and after in every case, that kinetic energy is the same only when the collision is elastic, and that the mass ratio decides who bounces back, who keeps going and who stops dead. Let me change the mass ratio, the elasticity and the speed of the moving cart.",
+  "a": {
+    "lib": "p5",
+    "form": "2D simulation",
+    "explanation": "A p5 sketch: a track with distance marks, two carts whose size grows with mass, velocity arrows that flip or vanish at the hit, a flash at the moment of contact, and underneath the two bars that are the lesson: total momentum, which never moves, and total kinetic energy, which drops at the hit by exactly ½ μ (1 − e²) Δv² unless the collision is elastic. The clock plays the model's series in real time; nothing is simulated in the renderer. It is the demonstration a physics teacher does with carts, with the bookkeeping drawn next to it.",
+    "caveats": [
+      "The track rescales to fit where the carts end up, so a fast run makes the carts smaller",
+      "Cart sizes suggest mass; they are not to scale with a real cart"
+    ]
+  },
+  "b": {
+    "lib": "chartjs",
+    "form": "line chart",
+    "explanation": "Chart.js, two charts: each cart's velocity against time as a stepped line (flat, one step at the hit, negative when a cart moves back), and underneath the two totals, momentum and kinetic energy, where conservation shows as a line that stays flat and a line that steps down, with the hit marked by a dashed line. It is the version for the sceptic: the momentum line is flat in every case, and the energy step is exactly the loss the formula gives. Standard line charts with stepped interpolation; no plugin beyond the hit marker.",
+    "caveats": [
+      "Both charts share the 8 s window even when the hit happens early, so the interesting part can sit at the left",
+      "Legends are hidden on a phone; colours match the carts in the animation"
+    ]
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "title": "Orbits and escape: Newton's cannon",
+  "objective": "Learners launch a body from 300 km above an Earth-like planet and see that speed, not height, decides its fate: below circular speed it falls back, at circular speed it circles, between circular and escape speed it traces an ellipse whose far side rises with every extra metre per second, and at escape speed it never returns. The closed-form orbit predicts the shape; the integrated path confirms it.",
+  "view": "2D",
+  "recommended": {
+    "library": "p5",
+    "why": "A top-down view with the planet, the growing trajectory and the moving body is the picture everyone remembers from Newton's cannon; p5 draws it in real time from the model's path."
+  },
+  "alternative": {
+    "library": "plotly",
+    "why": "The flat view shows the shape; the 3D view shows the orbit as a path around a globe you can turn. Does depth add anything for an orbit that lies in a plane?"
+  },
+  "assumptions": [
+    "Two-body motion around a point mass; no atmosphere, no rotation, no other bodies; an Earth-like planet (radius 6,371 km, μ = 398,600 km³/s² scaled by the mass control)",
+    "Launch from 300 km altitude at the chosen speed and angle above horizontal; gravity is the only force afterwards",
+    "The closed-form orbit (specific energy, angular momentum, semi-major axis, eccentricity, periapsis and apoapsis, period) is computed at launch; the path is integrated with RK4 at 720 samples over up to two periods (or four hours for an escape) and stops at impact",
+    "Playback compresses the simulated span into 24 s, so one second on screen is minutes of flight",
+    "Distances in km, speeds in km/s, time in minutes and hours"
+  ],
+  "units": [
+    "speed: km/s",
+    "angle: degrees above horizontal",
+    "planet mass: multiples of Earth",
+    "distance: km; time: minutes and hours"
+  ],
+  "params": [
+    {
+      "id": "speed",
+      "label": "Launch speed",
+      "min": 5,
+      "max": 12,
+      "step": 0.25,
+      "value": 8.5,
+      "unit": "km/s"
+    },
+    {
+      "id": "angle",
+      "label": "Launch angle",
+      "min": 0,
+      "max": 45,
+      "step": 5,
+      "value": 0,
+      "unit": "°"
+    },
+    {
+      "id": "planetMass",
+      "label": "Planet mass",
+      "min": 0.5,
+      "max": 2,
+      "step": 0.25,
+      "value": 1,
+      "unit": "× Earth"
+    }
+  ],
+  "checkDescription": "Energy is conserved along the integrated path within 0.5 %; its lowest and highest points match the closed-form periapsis and apoapsis within 1 %; the outcome follows the energy sign and the periapsis; the path ends on the surface exactly when it crashes; the time between periapsis passes matches Kepler's period within 2 % when two passes fit the window; escape speed is √2 × circular speed.",
+  "expectAtDefaults": "m.outcome === \"ellipse\" && m.ra > m.rp && m.measuredPeriod !== null",
+  "learnerPrompts": {
+    "predict": "Set the speed to 7.5 km/s (just under circular) before you play. Where will the body be lowest: above the launch point, or on the far side of the planet?",
+    "explain": "At 11 km/s the body escapes Earth but not a planet of twice the mass. Explain why the same speed gives different fates, using the energy number the lesson shows."
+  },
+  "modelCode": "function model(p) {\n  // Newton's cannon: a body launched from 300 km above an Earth-like planet at a chosen speed and angle. Gravity is\n  // the only force. The closed-form orbit (energy, semi-major axis, eccentricity, period) says whether it circles,\n  // loops, crashes or escapes; the trajectory itself is integrated with RK4 so the picture and the formula can be compared.\n  const speed = Math.max(5, Math.min(12, Math.round(p.speed * 4) / 4));\n  const angle = Math.max(0, Math.min(45, Math.round(p.angle)));\n  const massFactor = Math.max(0.5, Math.min(2, Math.round(p.planetMass * 4) / 4));\n  const R = 6371, h0 = 300, mu = 398600 * massFactor; // km, km, km^3/s^2\n  const r0 = R + h0, a0 = angle * Math.PI / 180;\n  const vCirc = Math.sqrt(mu / r0), vEsc = Math.sqrt(2 * mu / r0);\n  const energy = speed * speed / 2 - mu / r0; // specific orbital energy, km^2/s^2\n  const hAng = r0 * speed * Math.cos(a0); // specific angular momentum\n  const escapes = energy >= 0;\n  const a = escapes ? null : -mu / (2 * energy);\n  const e = Math.sqrt(Math.max(0, 1 + 2 * energy * hAng * hAng / (mu * mu)));\n  const rp = hAng * hAng / mu / (1 + e), ra = escapes ? null : hAng * hAng / mu / (1 - e);\n  // Direction of periapsis from the eccentricity vector at launch (r = (r0, 0), v = (v sin a, v cos a))\n  const vx0 = speed * Math.sin(a0), vy0 = speed * Math.cos(a0), rv = r0 * vx0, v2 = speed * speed;\n  const ex = ((v2 - mu / r0) * r0 - rv * vx0) / mu, ey = (0 - rv * vy0) / mu, periapsisAngle = e > 1e-6 ? Math.atan2(ey, ex) : 0;\n  const period = escapes ? null : 2 * Math.PI * Math.sqrt(a * a * a / mu);\n  const crashes = rp < R - 1e-6; // the low point of the path is below the surface, whatever the energy\n  const outcome = crashes ? 'crash' : escapes ? 'escape' : e < 0.02 ? 'circular' : 'ellipse';\n  // Integrate: position (x, y) km, velocity km/s; launch at (r0, 0) heading +y, tilted outward by the angle\n  let x = r0, y = 0, vx = speed * Math.sin(a0), vy = speed * Math.cos(a0), t = 0;\n  const acc = (px, py) => { const d = Math.hypot(px, py), f = -mu / (d * d * d); return [f * px, f * py]; };\n  const span = escapes ? 4 * 3600 : Math.min(2 * period, 8 * 3600), N = 720, dtSample = span / N, sub = 20, dt = dtSample / sub;\n  const path = [{ t: 0, x, y, r: r0, v: speed }];\n  let impact = null, energyDrift = 0, minR = r0, maxR = r0;\n  for (let i = 1; i <= N && !impact; i++) {\n    for (let k = 0; k < sub; k++) {\n      const [ax1, ay1] = acc(x, y);\n      const x2 = x + vx * dt / 2, y2 = y + vy * dt / 2, vx2 = vx + ax1 * dt / 2, vy2 = vy + ay1 * dt / 2, [ax2, ay2] = acc(x2, y2);\n      const x3 = x + vx2 * dt / 2, y3 = y + vy2 * dt / 2, vx3 = vx + ax2 * dt / 2, vy3 = vy + ay2 * dt / 2, [ax3, ay3] = acc(x3, y3);\n      const x4 = x + vx3 * dt, y4 = y + vy3 * dt, vx4 = vx + ax3 * dt, vy4 = vy + ay3 * dt, [ax4, ay4] = acc(x4, y4);\n      x += dt / 6 * (vx + 2 * vx2 + 2 * vx3 + vx4); y += dt / 6 * (vy + 2 * vy2 + 2 * vy3 + vy4);\n      vx += dt / 6 * (ax1 + 2 * ax2 + 2 * ax3 + ax4); vy += dt / 6 * (ay1 + 2 * ay2 + 2 * ay3 + ay4); t += dt;\n      const r = Math.hypot(x, y);\n      if (r <= R) { impact = { t, x: x / r * R, y: y / r * R }; break; }\n    }\n    const r = Math.hypot(x, y), v = Math.hypot(vx, vy);\n    minR = Math.min(minR, r); maxR = Math.max(maxR, r);\n    energyDrift = Math.max(energyDrift, Math.abs((v * v / 2 - mu / r) - energy) / Math.abs(energy || 1));\n    path.push(impact ? { t: impact.t, x: impact.x, y: impact.y, r: R, v } : { t, x, y, r, v });\n  }\n  const simSpan = path[path.length - 1].t, duration = 24;\n  path.forEach(s => { s.at = +(s.t / simSpan * duration).toFixed(3); Object.keys(s).forEach(k => { s[k] = +(+s[k]).toFixed(k === 'at' ? 3 : 2); }); });\n  // Periapsis passes in the integrated path (local minima of r) give a measured period to compare with Kepler\n  const passes = path[1] && path[1].r >= path[0].r ? [0] : []; // a horizontal launch above circular speed starts at periapsis\n  for (let i = 1; i < path.length - 1; i++) if (path[i].r < path[i - 1].r && path[i].r <= path[i + 1].r && path[i].r < r0 + 1) passes.push(path[i].t);\n  const measuredPeriod = passes.length >= 2 ? passes[1] - passes[0] : null;\n  const fmtKm = v => Math.round(v).toLocaleString('en-US') + ' km';\n  const fmtH = s => s >= 3600 ? (s / 3600).toFixed(2) + ' h' : Math.round(s / 60) + ' min';\n  const verdict = outcome === 'escape' ? 'Escapes: faster than ' + vEsc.toFixed(2) + ' km/s, it never comes back.' : outcome === 'crash' ? 'Crashes after ' + fmtH(impact ? impact.t : 0) + ': the low point of the orbit is below the surface.' : outcome === 'circular' ? 'A circle at ' + fmtKm(h0) + ' altitude, once every ' + fmtH(period) + '.' : 'An ellipse: altitude from ' + fmtKm(rp - R) + ' to ' + fmtKm(ra - R) + ', once every ' + fmtH(period) + '.';\n  const steps = [\n    { id: 'launch', t: 0, title: 'Launch at ' + speed.toFixed(2) + ' km/s', note: 'From 300 km up, ' + (angle ? angle + '° above horizontal' : 'horizontally') + '. Circular speed here is ' + vCirc.toFixed(2) + ' km/s, escape speed ' + vEsc.toFixed(2) + ' km/s' + (massFactor !== 1 ? ' for a planet of ' + massFactor + ' × Earth\\'s mass' : '') + '.' },\n    { id: 'shape', t: 6, title: outcome === 'escape' ? 'Energy ≥ 0: an open path' : 'Energy < 0: a closed orbit', note: 'Specific energy ' + energy.toFixed(1) + ' km²/s². ' + (escapes ? 'Gravity slows it but never stops it.' : 'Semi-major axis ' + fmtKm(a) + ', eccentricity ' + e.toFixed(2) + ': the shape is fixed at launch.') },\n    { id: 'verdict', t: 14, title: verdict.split(':')[0], note: verdict },\n    { id: 'sowhat', t: 20, title: 'So what', note: 'Speed, not height, decides. Below circular speed the orbit dips into the planet; between circular and escape speed it is an ellipse whose far side rises with every extra m/s.' }\n  ];\n  const summary = speed.toFixed(2) + ' km/s at ' + angle + '°' + (massFactor !== 1 ? ', ' + massFactor + ' × Earth' : '') + ': ' + verdict + (measuredPeriod && period ? ' Measured period ' + fmtH(measuredPeriod) + ' vs Kepler ' + fmtH(period) + '.' : '');\n  return { R, h0, mu, massFactor, speed, angle, vCirc: +vCirc.toFixed(3), vEsc: +vEsc.toFixed(3), energy: +energy.toFixed(3), a: a && +a.toFixed(1), e: +e.toFixed(4), rp: +rp.toFixed(1), ra: ra && +ra.toFixed(1), period: period && +period.toFixed(1), measuredPeriod: measuredPeriod && +measuredPeriod.toFixed(1),\n    escapes, crashes, outcome, impact, path, periapsisAngle: +periapsisAngle.toFixed(5), minR: +minR.toFixed(1), maxR: +maxR.toFixed(1), energyDrift: +energyDrift.toFixed(5), simSpan: +simSpan.toFixed(1), verdict, steps, duration, markers: steps.map(s => s.t), summary };\n}",
+  "checkCode": "function check(p) {\n  const m = model(p), last = m.path[m.path.length - 1];\n  // Energy is conserved along the integrated path, and the path's low and high points match the closed-form orbit\n  const energyOk = m.energyDrift < 0.005;\n  const lowOk = m.crashes ? m.minR <= m.R + 1 : Math.abs(m.minR - m.rp) / m.rp < 0.01;\n  const highOk = m.escapes || m.crashes ? true : Math.abs(m.maxR - m.ra) / m.ra < 0.01;\n  // Outcome follows the energy sign and the periapsis; the path ends on the surface exactly when it crashes\n  const signOk = m.escapes === (m.energy >= 0) && m.crashes === (m.rp < m.R - 1e-6);\n  const endOk = m.crashes ? (!!m.impact && Math.abs(last.r - m.R) < 1) : (!m.impact && last.r > m.R);\n  // Kepler's third law: the time between periapsis passes equals the closed-form period when two passes fit the window\n  const keplerOk = m.measuredPeriod === null || Math.abs(m.measuredPeriod - m.period) / m.period < 0.02;\n  const speedsOk = Math.abs(m.vEsc / m.vCirc - Math.SQRT2) < 1e-3 && m.escapes === (m.speed >= m.vEsc - 1e-3);\n  const pass = energyOk && lowOk && highOk && signOk && endOk && keplerOk && speedsOk;\n  return {\n    pass,\n    detail: 'Outcome ' + m.outcome + ' (energy ' + m.energy.toFixed(1) + ', periapsis ' + Math.round(m.rp) + ' km vs radius ' + m.R + ' km)' + (signOk ? '' : ' (inconsistent)') + '; energy drift ' + (100 * m.energyDrift).toFixed(3) + ' %' + (energyOk ? '' : ' (too much)') +\n      '; integrated low/high ' + Math.round(m.minR) + '/' + Math.round(m.maxR) + ' km against closed-form ' + Math.round(m.rp) + '/' + (m.ra ? Math.round(m.ra) : '∞') + ' km' + (lowOk && highOk ? '' : ' (mismatch)') +\n      (m.measuredPeriod ? '; measured period ' + (m.measuredPeriod / 60).toFixed(1) + ' min vs Kepler ' + (m.period / 60).toFixed(1) + ' min' + (keplerOk ? '.' : ' (mismatch).') : '.')\n  };\n}"
+}

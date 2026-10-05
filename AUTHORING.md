@@ -220,7 +220,7 @@ A library is how a version is drawn; its **form** is what the picture is: a Gant
 | arc diagram | links as arcs above a line of items, weight as thickness | d3 | attention |
 | heatmap | a matrix of values shown by colour | svg, plotly, d3 | attention |
 | highlight table | a grid of states by colour and word, for exposure, permission or coverage matrices | svg | PHI |
-| line chart | a quantity over time or over a parameter, one line per series | chartjs, d3, plotly | regional hires, spaghetti hub, ticket backlog, model learning, fraud threshold |
+| line chart | a quantity over time or over a parameter, one line per series | chartjs, d3, plotly | regional hires, spaghetti hub, ticket backlog, model learning, fraud threshold, pendulum, collisions |
 | ranked bar chart | items sorted by value, largest first | chartjs, d3 | key terms |
 | grouped bar chart | two or more series side by side per category | chartjs | Simpson's paradox |
 | annotated bar chart | bars that split, move and get captions as a story unfolds | d3 | Simpson's paradox |
@@ -236,8 +236,8 @@ A library is how a version is drawn; its **form** is what the picture is: a Gant
 | card grid | every card at once, grouped or ordered | svg | flashcards, vocabulary glossary |
 | queue simulation | arrivals, a waiting area and servers, animated | p5 | ticket backlog |
 | stacked blocks | a budget filling toward a limit, block by block | p5 | context window |
-| 2D simulation | motion drawn from the model's physics | p5 | projectile, rocket (examples) |
-| 3D simulation | the same motion with depth | three | projectile (example) |
+| 2D simulation | motion drawn from the model's physics | p5 | projectile, rocket, pendulum, orbits, collisions |
+| 3D simulation | the same motion with depth | three, plotly | projectile, orbits |
 | Sankey | flows between stages, width as volume, drop-offs labelled | plotly, d3sankey | where the records go |
 | control chart | a metric over time with control limits and breaches marked | chartjs, plotly | is the agent healthy |
 | distribution plot | a box, violin or ridge of a measure such as latency | plotly, d3 | is the agent healthy |
