@@ -14,6 +14,13 @@ before(async () => {
   if (!fs.existsSync(path.join(root, 'dist/gallery/data.js'))) throw new Error('dist/gallery is missing: run `npm run build:gallery` once before the e2e tests'); server = await startServer(); browser = await launch(); url = labUrlForTests(server); });
 after(async () => { await browser?.close(); server?.close(); });
 
+// Opens a version's Edit code tab and waits until CodeMirror is loaded (it loads lazily, and on a slow CI runner it takes
+// longer than any fixed pause).
+async function openEditor(page, vid = 'A') {
+  await page.click(`.pane[data-vid="${vid}"] [data-tab="source"]`);
+  await page.waitForFunction(v => window.CM && window.CM.EditorView && document.querySelector(`.pane[data-vid="${v}"] .cm-editor`), vid, { timeout: 30000 });
+}
+
 async function fresh(opts = {}) {
   // tall viewport: previews scrolled out of view pause their animation frames in headless Chromium
   const ctx = await browser.newContext({ viewport: { width: 1500, height: 2600 }, ...opts });
@@ -119,7 +126,7 @@ test('code editor: edit, run, error with line jump, undo, discard', async () => 
   const { ctx, page } = await fresh();
   await loadExample(page, '#btnRocket'); await sleep(4000);
   const A = '.pane[data-vid="A"]';
-  await page.click(`${A} [data-tab="source"]`); await sleep(1500);
+  await openEditor(page, 'A');
   assert.equal(await page.$$eval(`${A} .cm-editor`, n => n.length), 1, 'CodeMirror loaded');
   await page.evaluate(() => {
     const ed = CM.EditorView.findFromDOM(document.querySelector('.pane[data-vid="A"] .cm-editor'));
@@ -141,7 +148,7 @@ test('code editor: edit, run, error with line jump, undo, discard', async () => 
   await page.click(`${A} [data-r=undo]`); await sleep(3000);
   assert.equal((await statuses(page)).find(([id]) => id === 'A')[1], 'Check passed', 'undo restores a working version');
   // discard: an edit that is not run is thrown away
-  await page.click(`${A} [data-tab="source"]`); await sleep(1200);
+  await openEditor(page, 'A');
   await page.evaluate(() => { const ed = CM.EditorView.findFromDOM(document.querySelector('.pane[data-vid="A"] .cm-editor')); ed.dispatch({ changes: { from: 0, insert: '// scratch\n' } }); });
   await page.click(`${A} [data-r=discard]`); await sleep(800);
   assert.doesNotMatch(await page.$eval(`${A} [data-tab="source"]`, n => n.textContent), /•/);
@@ -206,7 +213,7 @@ test('gallery: loads on demand, filters, surprise me, open in lab, use this prom
   assert.equal(await page.$eval('#specBox h3', n => n.textContent), 'Where does PHI travel?');
   assert.ok(allPass(await statuses(page)), JSON.stringify(await statuses(page)));
   // make it "own work" by running an edit, then the guard appears
-  await page.click('.pane[data-vid="A"] [data-tab="source"]'); await sleep(1200);
+  await openEditor(page, 'A');
   await page.evaluate(() => { const ed = CM.EditorView.findFromDOM(document.querySelector('.pane[data-vid="A"] .cm-editor')); ed.dispatch({ changes: { from: 0, insert: '// mine\n' } }); });
   await page.click('.pane[data-vid="A"] [data-r=run]'); await sleep(1500);
   await page.click('#pageSeg [data-page="inspire"]'); await sleep(500);
@@ -314,7 +321,7 @@ test('replace guard: New lab and Draft spec ask for a second click when the less
   assert.equal(await page.$$eval('.pane', n => n.length), 0);
   // open the example again and make it own work by running an edit
   await loadExample(page, '#btnRocket'); await sleep(3000);
-  await page.click('.pane[data-vid="A"] [data-tab="source"]'); await sleep(1200);
+  await openEditor(page, 'A');
   await page.evaluate(() => { const ed = CM.EditorView.findFromDOM(document.querySelector('.pane[data-vid="A"] .cm-editor')); ed.dispatch({ changes: { from: 0, insert: '// mine\n' } }); });
   await page.click('.pane[data-vid="A"] [data-r=run]'); await sleep(1500);
   await page.click('#btnNew'); await sleep(200);
@@ -393,7 +400,7 @@ test('scoring rubric: score versions 1-5, weighted totals and the winner, stale 
   assert.equal(data.lesson.scores.A.robustness, 5); assert.equal(data.lesson.scores.B.teach, 5); assert.equal(data.lesson.scores.A.by, 'designer');
   // editing a version's code drops its scores (they were about the old code), the other column stays
   const A = '.pane[data-vid="A"]';
-  await page.click(`${A} [data-tab="source"]`); await sleep(1500);
+  await openEditor(page, 'A');
   await page.evaluate(() => { const ed = CM.EditorView.findFromDOM(document.querySelector('.pane[data-vid="A"] .cm-editor')); ed.dispatch({ changes: { from: 0, insert: '// reviewed\n' } }); });
   await page.click(`${A} .cm-content`); await page.keyboard.press('Control+Enter'); await sleep(3000);
   assert.deepEqual(await page.$$eval('[data-total]', n => n.map(x => x.textContent)), ['–', '90 ✓']);
