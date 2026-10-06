@@ -134,6 +134,11 @@ test('CI workflows: no ${{ }} inside a one-line { } mapping (the file would not 
   assert.match(t, /key: gallery-lessons-\$\{\{ hashFiles\(/, 'the checked lessons are cached'); assert.match(t, /actions\/cache\/save@/, 'saved before the tests');
   for (const m of t.matchAll(/timeout-minutes: (\d+)/g)) assert.ok(Number(m[1]) >= 60, 'a job timeout under an hour cannot fit a gallery build');
   assert.match(fs.readFileSync(path.join(dir, 'pages.yml'), 'utf8'), /actions\/deploy-pages@/);
+  // a lesson that runs out of time while four browsers share the runner gets a second, solo attempt (run 37521047038:
+  // five 3D lessons timed out taking a screenshot); the retry must be one browser at a time, or it is the same attempt again
+  for (const f of ['test.yml', 'pages.yml']) assert.match(fs.readFileSync(path.join(dir, f), 'utf8'), /if ! npm run build:gallery; then[\s\S]*?npm run build:gallery -- --jobs 1/, f + ': gallery build retries one at a time');
+  assert.match(t, /if ! npm run test:gallery[^\n]*; then[\s\S]*?GALLERY_JOBS=1 npm run test:gallery/, 'gallery sweep retries one at a time');
+  assert.match(t, /gallery-retry\.log/, 'the summary reads the second attempt');
 });
 
 test('no placeholder system names are left in the lessons (the pipeline example once said "Sourceprimary" and "deploytarget")', () => {

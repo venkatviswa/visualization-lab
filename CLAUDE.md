@@ -65,7 +65,7 @@ Do not add a feature without a test, and do not change a prompt rule without upd
 
 ## CI and hosting
 
-`.github/workflows/test.yml` (test job on every push; gallery job on main and PRs; both remember passed lessons by fingerprint, `scripts/lesson_hash.mjs`, and only check changed ones) and `pages.yml` (deploys `dist/` to GitHub Pages after a green run on main). Keep `with:` blocks in block style, never `{ ... }` with a `${{ }}` inside (unit test). Outside claude.ai the page runs in explore mode (`body.no-claude`): elements marked `data-claude` are hidden.
+`.github/workflows/test.yml` (test job on every push; gallery job on main and PRs; both remember passed lessons by fingerprint, `scripts/lesson_hash.mjs`, and only check changed ones; a lesson that fails while several browsers share the runner is checked again on its own) and `pages.yml` (deploys `dist/` to GitHub Pages after a green run on main). Keep `with:` blocks in block style, never `{ ... }` with a `${{ }}` inside (unit test). Outside claude.ai the page runs in explore mode (`body.no-claude`): elements marked `data-claude` are hidden.
 
 ## Publishing
 

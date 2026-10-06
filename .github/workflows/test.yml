@@ -3,6 +3,7 @@
 #            inputs, so it only builds and checks the lessons that changed, in parallel; a change to the kit checks them all.
 #   gallery  every gallery lesson at its defaults, minimums and maximums, on main and pull requests; lessons that already
 #            passed with the same inputs are skipped, the rest run in parallel.
+# A lesson that fails while several browsers share the runner is checked again on its own before the job fails.
 # A failed run writes the failing tests and their errors to the run page (scripts/ci_summary.mjs) and keeps the log and
 # screenshots as an artifact. .work/ is a hidden folder, so the upload needs include-hidden-files.
 # Keep the `with:` blocks in block style: a one-line { ... } mapping cannot hold a ${{ }} expression (the braces end the
@@ -54,8 +55,14 @@ jobs:
             gallery-lessons-${{ hashFiles('gallery/**', 'examples/**', 'kit/**', 'scripts/build_gallery.mjs', 'scripts/lesson_hash.mjs') }}-
             gallery-lessons-
 
+      # A heavy 3D lesson can run out of time while several browsers share the runner's CPUs. Lessons that pass are kept,
+      # so the second attempt checks only the ones that failed, one at a time; a real failure fails both attempts.
       - name: Build the gallery (only changed lessons are built and checked, in parallel)
-        run: npm run build:gallery
+        run: |
+          if ! npm run build:gallery; then
+            echo "::warning title=Gallery build::Some lessons failed with several browsers at once; checking them again one at a time"
+            npm run build:gallery -- --jobs 1
+          fi
 
       # Saved straight away, pass or fail, so a failing test later does not throw away the gallery work
       - name: Save the lessons checked so far
@@ -127,17 +134,25 @@ jobs:
       - name: Mirror the pinned packages
         run: npm run mirror
 
+      # Same second chance as the gallery build: lessons that passed are recorded, so the retry checks only the lessons that
+      # failed, one browser at a time (a screenshot of a 3D lesson can time out when four software-rendering browsers share
+      # the CPUs). A lesson that fails alone too fails the job, and the annotations come from that second attempt.
       - name: Test every lesson (lessons that passed with the same inputs are skipped; the rest run in parallel)
         run: |
           mkdir -p .work
           set -o pipefail
-          npm run test:gallery 2>&1 | tee .work/gallery-test.log
+          if ! npm run test:gallery 2>&1 | tee .work/gallery-test.log; then
+            echo "::warning title=Gallery sweep::Some lessons failed with several browsers at once; checking them again one at a time"
+            GALLERY_JOBS=1 npm run test:gallery 2>&1 | tee .work/gallery-retry.log
+          fi
 
       - name: Say which lessons failed, on the run page
         if: failure()
         run: |
-          node scripts/ci_summary.mjs .work/gallery-test.log >> "$GITHUB_STEP_SUMMARY"
-          node scripts/ci_summary.mjs .work/gallery-test.log --annotate
+          log=.work/gallery-test.log
+          if [ -f .work/gallery-retry.log ]; then log=.work/gallery-retry.log; fi
+          node scripts/ci_summary.mjs "$log" >> "$GITHUB_STEP_SUMMARY"
+          node scripts/ci_summary.mjs "$log" --annotate
 
       - name: Save the lessons that passed
         if: always()
@@ -153,6 +168,7 @@ jobs:
           name: gallery-log-and-screenshots
           path: |
             .work/gallery-test.log
+            .work/gallery-retry.log
             .work/gallery-test/**/*.png
           include-hidden-files: true
           if-no-files-found: ignore

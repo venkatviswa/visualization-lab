@@ -1,6 +1,6 @@
 {
   "name": "visualization-lab",
-  "version": "0.12.2",
+  "version": "0.12.3",
   "description": "A browser workbench for building interactive teaching visuals with JavaScript and comparing how different libraries explain the same idea.",
   "type": "module",
   "private": true,

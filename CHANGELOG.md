@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.12.3 — a second attempt for lessons that time out on CI
+
+- A lesson that fails while several browsers share the CI runner is checked again on its own before the job fails (gallery build and gallery sweep). On the first full run five 3D lessons timed out taking a screenshot with four software-rendering browsers on four CPUs; the 31 that passed were kept, so the retry only checks the failures. A lesson that fails alone too still fails the run.
+
 ## 0.12.2 — faster CI
 
 - The gallery build and the gallery sweep remember every lesson that passed, by a fingerprint of its inputs (its files, the kit and the checking script; `scripts/lesson_hash.mjs`), and only build and check lessons that changed. A change to one lesson checks one lesson; a change to the kit checks them all. What has to be checked runs in parallel browsers (`--jobs`, `GALLERY_JOBS`; default the number of CPUs, at most 4).

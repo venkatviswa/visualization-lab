@@ -61,7 +61,11 @@ jobs:
             gallery-lessons-
 
       - name: Build the gallery (from the checked lessons; anything not checked yet is built and checked here)
-        run: npm run build:gallery
+        run: |
+          if ! npm run build:gallery; then
+            echo "::warning title=Gallery build::Some lessons failed with several browsers at once; checking them again one at a time"
+            npm run build:gallery -- --jobs 1
+          fi
 
       - run: npm run build
 
