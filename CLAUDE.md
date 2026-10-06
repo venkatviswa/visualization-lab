@@ -20,6 +20,7 @@ The one idea everything rests on: **one spec, many renderers**. The model owns e
 | `gallery/items/<slug>/` + `gallery/gallery.json` | gallery lessons, their order, and the `opener` a first visit shows (inlined by the build) | yes |
 | `scripts/` | `build.mjs`, `build_gallery.mjs`, `serve.mjs`, `mirror.mjs`, `libfiles.mjs`, `add_lesson.mjs` (an exported lesson into the gallery) | yes |
 | `test/` | `unit/`, `e2e/`, `gallery/` | yes |
+| `docs/ARCHITECTURE.md` | how the pieces fit, with diagrams; names every preview-frame message (a unit test keeps it in step with the harness) | yes |
 | `docs/SKILL.lesson-visual-bakeoff.md` | the bake-off skill (agent version of the lab); its kit is a copy of `kit/` | yes |
 | `dist/` | build output, published as the artifact | **never**: regenerate with `npm run build` |
 | `.cdn/`, `.work/` | package mirror and scratch | ignored |

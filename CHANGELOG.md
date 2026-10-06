@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.12.1 — wording and the architecture note
+
+- The agentic pipeline example says what it means: the planner reads Salesforce metadata, and the deploy goes to a dev sandbox (`dev-sandbox`), never the production org. The placeholder names "Sourceprimary" and "deploytarget" are gone from the goal, the model, the check and both renderers, and a unit test keeps such placeholders out of the lessons.
+- `docs/ARCHITECTURE.md`: how the lab is built and run, with four diagrams (sources to the published lab, the page at run time, the preview frame protocol, a lesson's life from export to the gallery) and a table of every message between the page and a preview. A unit test fails when the harness gains a message the note does not describe.
+
 ## 0.12.0 — publishing a lesson to the gallery
 
 - `npm run add-lesson -- <file>.lesson.json --category "<subject>"` turns a lesson exported from the lab into a gallery lesson: it checks the spec, the libraries, the chart forms and the subject, writes `gallery/items/<slug>/`, places it in `gallery/gallery.json` (after the last lesson of its subject, or where `--after` says), verifies every version in Chromium, and prints the commit and push that publish it. Options pick versions, correct forms, set the title and slug, and replace an existing lesson.

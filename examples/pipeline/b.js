@@ -7,8 +7,8 @@ let rroot = null, flowEl = null, infoEl = null, M = null, simT = 0, selected = n
 
 function shortLine(id) {
   return {
-    jira: 'Read-only Atlassian MCP', plan: 'Confluence + Sourceprimary metadata', build: 'Apex/LWC: RED, GREEN, REFACTOR',
-    review: 'Quality, security, governor limits', deploy: 'deploytarget sandbox only', document: 'Requirement-to-code trace',
+    jira: 'Read-only Atlassian MCP', plan: 'Confluence + Salesforce metadata', build: 'Apex/LWC: RED, GREEN, REFACTOR',
+    review: 'Quality, security, governor limits', deploy: 'dev-sandbox only', document: 'Requirement-to-code trace',
     govern: M.governanceMode === 'shadow' ? 'Shadow mode: observe and log' : 'Enforce mode: gate must approve',
     score: 'ScoreCardV2 + BoardPacket v2', improve: M.improvement === 'applied' ? 'Human approved: fix applied' : 'Held at the human gate'
   }[id];

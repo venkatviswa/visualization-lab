@@ -13,7 +13,7 @@ Open items, roughly in the order we plan to take them. Tick items here in the sa
 
 ## Then
 
-- [ ] **User test of the generation flow**: three people run Draft spec and Generate on new goals; collect where the spec or code came back wrong; tighten the prompts (edit the `AUTHORING.md` blocks). Everything in the gallery was built through the toolkit, so the in-lab prompts have only been exercised on the examples.
+- [ ] **User test of the generation flow** (facilitator script, task list, findings log and targets: the doc *Visualization Lab: user test of the generation flow*): three people run Draft spec and Generate on new goals; collect where the spec or code came back wrong; tighten the prompts (edit the `AUTHORING.md` blocks). Everything in the gallery was built through the toolkit, so the in-lab prompts have only been exercised on the examples.
 - [x] **Publish a lab lesson to the gallery**: Export lesson, then `npm run add-lesson` and a push; CI and the pages workflow do the rest. The lesson chip says when a lesson is only imported.
 - [ ] **Save to gallery from the page** (a shared team store, no git), so a team gallery grows without a repository step.
 - [x] **Toolkit review fixes**: examples pass `check_spec`; verify gates for phone overflow, embed clipping and slider extremes, exit code, status text; one embed rule everywhere; lock file for CI.
@@ -22,7 +22,7 @@ Open items, roughly in the order we plan to take them. Tick items here in the sa
 - [x] **Laptop layout pass**: every version screenshotted full width and in the 700×560 preview pane; identity-resolution labels, PHI grid headers, data platform band label and flashcard stepper fixed; preview panes 540 px on tall screens. Accepted: wide stories scale to about 0.7 in the pane (full screen exists); React Flow diagrams are small there.
 - [x] **Phone layout pass**: every version screenshotted inside the phone embed; compact layouts for the squeezed stories, a narrow mode for the pipeline scene, overlaps and clipping fixed; the kit's bars tighter on narrow screens and the embed minimum raised to 680 px. Still rough: label overlaps in the two three.js versions (git branches, RAG) at phone width.
 - [ ] **Verify lab-built lessons** in headless Chromium the way gallery lessons are (from Ask Claude, or documented as a step before publishing).
-- [ ] **Architecture note** with one diagram: sandbox + harness protocol, host-owned timeline, spec probe, gallery assembly, toolkit and skill.
+- [x] **Architecture note**: `docs/ARCHITECTURE.md`, with diagrams of the build, the page at run time, the preview frame protocol and a lesson's life; a unit test keeps its message list in step with the harness.
 - [ ] **Hover previews** on gallery cards (short animation instead of a still).
 - [ ] **Writeup split into four parts** (foundations; 2D toolbox; 3D toolbox; decision matrix and shipping), reusing the same three examples throughout.
 
@@ -33,7 +33,7 @@ Open items, roughly in the order we plan to take them. Tick items here in the sa
 - [x] **Offline download**: **Works offline** on Download HTML and Export for course inlines the libraries (`kit/offline.js`, also `kit/build.mjs --offline`); a hosted copy ships the library files in `lib/` and its previews load them first.
 - [x] **Accessibility pass**: a Text tab per version and a text version in every downloaded page, built from the model (`kit/textview.js`); the current step announced while playing or stepping; labelled previews and figures; arrow-key tabs; a skip link; axe-core in the e2e tests over every state of the lab and over downloaded pages.
 - [ ] **Accessibility, next**: a screen-reader walkthrough with a real user (NVDA or VoiceOver), and per-lesson text that reads better than generic field names where a model's names are terse (projectile's "Vx", "T Flight").
-- [ ] **Pipeline example wording**: its notes say "Sourceprimary" and "deploytarget" where a system name was evidently replaced; decide the intended names.
+- [x] **Pipeline example wording**: "Salesforce metadata", the "production org" and a "dev-sandbox" org replace the placeholder names; a unit test keeps placeholders out of the lessons.
 - [x] **Plain-language library failures**: jsDelivr then unpkg, "Couldn't load …" with Retry, no Fix errors for a missing library.
 - [ ] **Generation on your own host**: a `sample` adapter in the page that, when `window.claude` is absent, calls a small serverless function (Vercel, Netlify or Cloudflare Workers) holding the API key and a per-session limit; never put a key in the page. README note on the two deployments.
 

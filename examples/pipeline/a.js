@@ -73,7 +73,7 @@ const SCENES = {
     txt(a, 136, 378, 'planner agent', { anchor: 'middle', weight: 600 });
     appear(a, s + 0.1);
     const c1 = chip(g, 300, 260, 230, 'Confluence pages', 'book-open', C.accent);
-    const c2 = chip(g, 300, 320, 230, 'Sourceprimary metadata', 'database', C.accent);
+    const c2 = chip(g, 300, 320, 230, 'Salesforce metadata', 'database', C.accent);
     appear(c1, s + 0.4); appear(c2, s + 0.7);
     const ar = el('g', {}, g); arrow(ar, 296, 300, 190, 310, C.muted); appear(ar, s + 0.9, 0);
     const card = el('g', {}, g);
@@ -166,7 +166,7 @@ const SCENES = {
     const sb = el('g', {}, g);
     el('rect', { x: 380, y: 250, width: 260, height: 170, rx: 12, fill: C.goodTint, stroke: C.good, 'stroke-width': 2 }, sb);
     icon(sb, 'server', 400, 268, 34, C.good);
-    txt(sb, 444, 290, 'deploytarget', { weight: 700, size: 15 });
+    txt(sb, 444, 290, 'dev-sandbox', { weight: 700, size: 15 });
     txt(sb, 400, 330, 'Dedicated dev sandbox', { size: 12.5, fill: C.muted });
     const ok = el('g', {}, sb); icon(ok, 'circle-check', 400, 350, 22, C.good); txt(ok, 430, 366, 'Deployed', { weight: 600, fill: C.good });
     gsap.set(ok, { opacity: 0 }); tl.to(ok, { opacity: 1, duration: 0.25 }, s + 1.5);
@@ -174,7 +174,7 @@ const SCENES = {
     el('rect', { x: 690, y: 250, width: 260, height: 170, rx: 12, fill: '#fff', stroke: C.line, 'stroke-dasharray': '5 4' }, live);
     icon(live, 'server', 710, 268, 34, '#9aa3b2');
     icon(live, 'lock', 910, 264, 26, C.bad);
-    txt(live, 754, 290, 'Sourceprimary', { weight: 700, size: 15, fill: C.muted });
+    txt(live, 754, 290, 'Production org', { weight: 700, size: 15, fill: C.muted });
     txt(live, 710, 330, 'Live org', { size: 12.5, fill: C.muted });
     txt(live, 710, 366, 'Never a deploy target', { weight: 600, fill: C.bad });
     const pkg = el('g', {}, g); icon(pkg, 'package', 96, 248, 36, C.accent);

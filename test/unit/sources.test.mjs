@@ -135,3 +135,20 @@ test('CI workflows: no ${{ }} inside a one-line { } mapping (the file would not 
   for (const m of t.matchAll(/timeout-minutes: (\d+)/g)) assert.ok(Number(m[1]) >= 60, 'a job timeout under an hour cannot fit a gallery build');
   assert.match(fs.readFileSync(path.join(dir, 'pages.yml'), 'utf8'), /actions\/deploy-pages@/);
 });
+
+test('no placeholder system names are left in the lessons (the pipeline example once said "Sourceprimary" and "deploytarget")', () => {
+  const dirs = ['examples', 'gallery/items'].map(d => path.join(root, d));
+  const files = dirs.flatMap(d => fs.readdirSync(d, { recursive: true }).map(f => path.join(d, String(f)))).filter(f => /\.(js|json)$/.test(f));
+  for (const f of files) assert.doesNotMatch(fs.readFileSync(f, 'utf8'), /Sourceprimary|\bdeploytarget\b/, path.relative(root, f));
+});
+
+test('docs/ARCHITECTURE.md names every message of the preview frame protocol, and its Mermaid diagrams avoid the statement separator', () => {
+  const doc = read('docs/ARCHITECTURE.md'), src = read('src/vislab.html');
+  const h = src.slice(src.indexOf('const HARNESS'), src.indexOf('})();`;', src.indexOf('const HARNESS')));
+  const types = new Set([...h.matchAll(/type:'(\w+)'/g), ...h.matchAll(/d\.type==='(\w+)'/g)].map(m => m[1]));
+  assert.ok(types.size >= 15, 'found the protocol in the harness');
+  for (const t of types) assert.ok(doc.includes('`' + t + '`'), `ARCHITECTURE.md does not describe the "${t}" message`);
+  const diagrams = [...doc.matchAll(/```mermaid\n([\s\S]*?)```/g)].map(m => m[1]);
+  assert.ok(diagrams.length >= 3, 'diagrams');
+  for (const d of diagrams) assert.ok(!d.includes(';'), 'a ; inside a Mermaid diagram ends the statement (GitHub shows a parse error)');
+});

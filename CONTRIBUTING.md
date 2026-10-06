@@ -15,6 +15,7 @@ scripts/               build.mjs, build_gallery.mjs, serve.mjs, mirror.mjs
 test/                  unit (sources, specs, build, toolkit), e2e (the lab in Chromium), gallery (every lesson at defaults/min/max)
 README.md              user guide (published beside the lab)
 AUTHORING.md           lesson authoring guide; its marked blocks are the generator's prompts
+docs/ARCHITECTURE.md   how the pieces fit: build, run time, the preview frame protocol, gallery, CI (with diagrams)
 dist/                  build output (ignored by git); publish from here
 ```
 

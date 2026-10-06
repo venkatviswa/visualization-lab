@@ -330,6 +330,7 @@ The build copies the library files into `dist/lib/` (from the mirror, `npm run m
 
 ## Taking it further
 
+- **How it is built:** `docs/ARCHITECTURE.md` explains what is built from what, what runs where and how the page talks to its preview frames, with diagrams.
 - **Toolkit:** the scripts the lab uses are published alongside it under `kit/`:
   - `template.html` and `build.mjs` turn a spec and a renderer into a standalone page.
   - `check_spec.mjs` validates a spec.
