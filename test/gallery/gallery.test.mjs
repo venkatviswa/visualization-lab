@@ -27,7 +27,7 @@ for (const slug of slugs) {
     const pages = [];
     for (const [tag, sp] of Object.entries(variants)) {
       const specPath = path.join(work, `${slug}.${tag}.json`); fs.writeFileSync(specPath, JSON.stringify(sp));
-      for (const k of ['a', 'b', 'c']) if (meta[k]) {
+      for (const k of ['a', 'b', 'c', 'd', 'e', 'f']) if (meta[k]) {
         const lib = meta[k].lib, out = path.join(work, `${slug}__${k}.${tag}.html`);
         const extra = lib === 'story3d' ? ['--kit', kit('story3d_kit.js')] : lib === 'reactflow' ? ['--rfcss', kit('reactflow.css')] : [];
         const r = run('build.mjs', [specPath, path.join(d, k + '.js'), lib, 'studio', out, '--cdn', server.cdn, ...extra]);

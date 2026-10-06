@@ -1,12 +1,13 @@
 {
   "name": "visualization-lab",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "A browser workbench for building interactive teaching visuals with JavaScript and comparing how different libraries explain the same idea.",
   "type": "module",
   "private": true,
   "scripts": {
     "build": "node scripts/build.mjs",
     "build:gallery": "node scripts/build_gallery.mjs",
+    "add-lesson": "node scripts/add_lesson.mjs",
     "mirror": "node scripts/mirror.mjs",
     "serve": "node scripts/serve.mjs",
     "test": "npm run build && node --test 'test/unit/*.test.mjs' 'test/e2e/*.test.mjs'",

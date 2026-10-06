@@ -208,11 +208,11 @@ A library is how a version is drawn; its **form** is what the picture is: a Gant
 | --- | --- | --- | --- |
 | step-by-step story | a process or journey told one scene at a time with a narrator caption | story | agent pipeline, address change, identity resolution, data platform, where the records go, PHI, the data model comes alive, GitHub workflow, one claim four desks, agent loop, next token |
 | 3D story | the same story as a camera journey between stations, when the spatial path helps | story3d | agent pipeline, lead to cash, address change, data platform |
-| flow chart | every possible route through a process, with the route taken lit up | reactflow, svg | claims lifecycle, agent pipeline, lead to cash |
-| swimlane | process steps in the lane of whoever acts, with hand-offs and waiting visible | svg, reactflow | claims lifecycle, one claim four desks |
+| flow chart | every possible route through a process, with the route taken lit up | reactflow, svg | claims lifecycle, agent pipeline, lead to cash, from the lab to the gallery |
+| swimlane | process steps in the lane of whoever acts, with hand-offs and waiting visible | svg, reactflow | claims lifecycle, one claim four desks, from the lab to the gallery |
 | architecture diagram | layered systems and their integrations, as a design review draws them | reactflow | address change, data platform |
 | loop diagram | a cycle with its gates and exits | reactflow | agent loop |
-| Gantt timeline | steps as bars on a time axis: where the minutes go, what waits on what | chartjs, plotly, d3 | GitHub workflow, one claim four desks |
+| Gantt timeline | steps as bars on a time axis: where the minutes go, what waits on what | chartjs, plotly, d3 | GitHub workflow, one claim four desks, from the lab to the gallery |
 | commit graph | branches as lanes and commits as dots, in time order | d3 | git branches |
 | 3D commit graph | the same graph with branches at different depths | three | git branches |
 | node-link graph | records or systems as nodes and relations as edges, forming clusters | d3 | identity resolution |

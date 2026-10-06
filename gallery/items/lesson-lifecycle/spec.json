@@ -1,0 +1,74 @@
+{
+  "title": "From the lab to the gallery: import or publish?",
+  "objective": "Designers see that a lesson made in the lab reaches people one of two ways: Import lesson puts it on screen in minutes but only in one browser and only until that browser is cleared, while publishing it to the gallery (add-lesson, push, tests, deploy) takes most of an hour and then lasts for everyone, unless a test fails.",
+  "view": "2D",
+  "recommended": {
+    "library": "svg",
+    "why": "A swimlane puts every step in the place where it happens (the lab, your computer, one browser, the repository, GitHub Actions, the site), so the two ways split visibly after Export lesson: one stays inside a browser, the other travels through the repository to the site."
+  },
+  "alternative": {
+    "library": "chartjs",
+    "why": "The swimlane shows where the lesson goes; a Gantt timeline shows how long each way takes. Does seeing the 40-minute test run make the trade (quick and private, or slow and for everyone) clearer than the picture of where it lives?"
+  },
+  "assumptions": [
+    "Minutes are illustrative: describing, drafting and generating take a few minutes; the test run takes about 40 minutes when a lesson changes, because the whole gallery is rebuilt and verified",
+    "Import lesson stores the lesson in the browser's own storage (localStorage) on that device; nothing is uploaded, and clearing the browser's site data erases it",
+    "Publishing means running npm run add-lesson on the exported file, committing and pushing; the test workflow runs, and the pages workflow deploys only after a green run",
+    "A failing test publishes nothing: the site keeps its last good version until a fix is pushed",
+    "A colleague can import the same file in their own browser; that copy is theirs and is just as temporary"
+  ],
+  "units": [
+    "time: real minutes from the start of the lesson",
+    "playback: every step gets the same 1.7 s on screen, so the short steps can be read; the Gantt timeline shows the real minutes"
+  ],
+  "params": [
+    {
+      "id": "route",
+      "label": "After Export lesson",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 1,
+      "unit": "",
+      "labels": [
+        "Import it (temporary)",
+        "Publish to the gallery"
+      ]
+    },
+    {
+      "id": "ci",
+      "label": "Test run",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 0,
+      "unit": "",
+      "labels": [
+        "Passes",
+        "A test fails"
+      ]
+    },
+    {
+      "id": "viewer",
+      "label": "Who opens the site",
+      "min": 0,
+      "max": 2,
+      "step": 1,
+      "value": 2,
+      "unit": "",
+      "labels": [
+        "You, same browser",
+        "You, after clearing",
+        "A colleague"
+      ]
+    }
+  ],
+  "checkDescription": "An import is visible only to the browser that imported it and never touches the repository, CI or the site; a publish is visible to everyone exactly when the tests pass, and only then is it permanent; minutes run back to back, an import is quicker than a green publish, and playback markers are ordered.",
+  "expectAtDefaults": "m.route === 'publish' && m.visible && m.persistent && m.lanesUsed.includes('ci') && m.viewer === 2",
+  "learnerPrompts": {
+    "predict": "Switch to Import it and pick A colleague before you play. Will your colleague see the lesson, and what would they need to do to see it?",
+    "explain": "Publishing took about 50 minutes and an import under 10. When is the slow way worth it, and what does a failing test protect the people using the site from?"
+  },
+  "modelCode": "function model(p) {\n  // How a lesson made in the lab reaches people: everyone starts the same way (describe, spec, generate, export), then\n  // the exported file either goes into one browser (Import lesson: instant, temporary, that browser only) or into the\n  // repository's gallery (add-lesson, push, CI, Pages: slower, permanent, everyone). Minutes are illustrative.\n  const route = Math.round(p.route) === 1 ? 'publish' : 'import';\n  const ciPass = Math.round(p.ci) === 0;\n  const viewer = Math.max(0, Math.min(2, Math.round(p.viewer)));\n  const viewers = [\n    { id: 'same', label: 'You, same browser', saw: 'you see it', missed: 'you do not see it' },\n    { id: 'cleared', label: 'You, after clearing the browser', saw: 'it is still there after clearing', missed: 'clearing the browser erased it' },\n    { id: 'colleague', label: 'A colleague, on their computer', saw: 'a colleague sees it', missed: 'a colleague does not see it' }\n  ];\n  const lanes = [\n    { id: 'claude', label: 'Lab on claude.ai' },\n    { id: 'computer', label: 'Your computer' },\n    { id: 'browser', label: 'One browser' },\n    { id: 'repo', label: 'Repository' },\n    { id: 'ci', label: 'GitHub Actions' },\n    { id: 'site', label: 'Published site' }\n  ];\n  const common = [\n    { id: 'describe', lane: 'claude', title: 'Describe the goal', min: 2, note: 'You describe the concept in plain words in the lab, opened on claude.ai, where Claude is available.' },\n    { id: 'spec', lane: 'claude', title: 'Draft the spec', min: 1, note: 'Claude writes the objective, the model, the controls and the check. You read it before anything is drawn.' },\n    { id: 'generate', lane: 'claude', title: 'Generate versions', min: 4, note: 'Each library draws the same model; every version must pass the same check.' },\n    { id: 'export', lane: 'computer', title: 'Export lesson', min: 0.2, note: 'Export lesson saves the whole lesson (spec, versions and notes) as one .lesson.json file on your computer.' }\n  ];\n  const importSteps = [\n    { id: 'import', lane: 'browser', title: 'Import lesson', min: 0.2, note: 'Import lesson reads the file into this browser\\'s own storage. It shows at once, but only here: nothing is uploaded.' }\n  ];\n  const deploy = { id: 'deploy', lane: 'site', title: 'Deploy to Pages', min: 2, note: 'The tests are green, so the pages workflow publishes the new build.' };\n  const publishSteps = [\n    { id: 'add', lane: 'computer', title: 'npm run add-lesson', min: 2, note: 'The script checks the spec, the libraries and the chart forms, verifies every version in Chromium and writes it into gallery/items/.' },\n    { id: 'push', lane: 'repo', title: 'Commit and push', min: 1, note: 'git push sends the new gallery lesson to the repository on GitHub.' },\n    { id: 'ci', lane: 'ci', title: 'Tests and gallery build', min: 40, note: 'GitHub Actions runs the tests and rebuilds and verifies the whole gallery, because a lesson changed.' },\n    ciPass\n      ? deploy\n      : { id: 'fail', lane: 'ci', title: 'Run fails: nothing deploys', min: 0, bad: true, note: 'A test fails, so nothing is published; the site keeps its last good version until a fix is pushed.' }\n  ];\n  const visible = route === 'publish' ? ciPass : viewer === 0;\n  const persistent = route === 'publish' && ciPass;\n  const audience = route === 'publish' ? (ciPass ? 'everyone who opens the site' : 'nobody new yet') : 'whoever uses that one browser';\n  const outcome = route === 'import'\n    ? { id: 'outcome', lane: 'browser', title: visible ? 'Visible here only' : 'Not visible', min: 0, bad: !visible,\n        note: viewer === 0 ? 'You see it in this browser. It is gone if the browser\\'s site data is cleared, and nobody else has it.' : viewer === 1 ? 'Clearing the browser\\'s site data erased it: an import lives only in that browser\\'s storage.' : 'Your colleague does not see it. They would need the file and their own Import, and it would still live only in their browser.' }\n    : { id: 'outcome', lane: 'site', title: visible ? 'In the gallery for everyone' : 'Not published', min: 0, bad: !visible,\n        note: visible ? viewers[viewer].label + ' sees it under Get inspired, and so does anyone else, until it is removed from the repository.' : 'Nobody sees the new lesson on the site yet. Fix the failing test, push again, and the next green run publishes it.' };\n  const path = common.concat(route === 'import' ? importSteps : publishSteps, [outcome]);\n  const other = route === 'import' ? publishSteps.slice(0, 3).concat([deploy]) : importSteps;   // the other way, drawn faintly for comparison (a green publish)\n  // Real minutes run back to back; playback gives every step the same time so short steps can be read\n  let m0 = 0;\n  const per = 1.7;\n  const steps = path.map((s, i) => { const st = Object.assign({}, s, { t: +(i * per).toFixed(2), startMin: +m0.toFixed(1), endMin: +(m0 + s.min).toFixed(1) }); m0 += s.min; return st; });\n  const totalMin = +m0.toFixed(1);\n  // minutes until the lesson shows anywhere: in the importing browser, or on the site after a green run\n  const shownAtMin = route === 'import' ? steps.find(s => s.id === 'import').endMin : ciPass ? steps.find(s => s.id === 'deploy').endMin : null;\n  let o0 = steps[3].endMin;\n  const otherSteps = other.map(s => { const st = Object.assign({}, s, { startMin: +o0.toFixed(1), endMin: +(o0 + s.min).toFixed(1) }); o0 += s.min; return st; });\n  const sum = list => +list.reduce((a, s) => a + s.min, 0).toFixed(1);\n  const importMinutes = sum(common.concat(importSteps)), publishMinutes = sum(common.concat(publishSteps.slice(0, 3), [deploy]));\n  const lanesUsed = lanes.map(l => l.id).filter(id => steps.some(s => s.lane === id));\n  const duration = +(steps.length * per + 0.6).toFixed(2);\n  const markers = steps.map(s => s.t);\n  const summary = route === 'import'\n    ? ['Imported: on screen after ' + shownAtMin.toFixed(1) + ' min in this browser; nobody else sees it, and clearing the browser erases it.',\n       'Imported: it showed after ' + shownAtMin.toFixed(1) + ' min in one browser, and clearing that browser erased it.',\n       'Imported: it shows after ' + shownAtMin.toFixed(1) + ' min in your browser only; a colleague does not see it.'][viewer]\n    : ciPass ? 'Published: in the gallery for everyone after ' + shownAtMin.toFixed(0) + ' min (add-lesson, push, tests, deploy), and it stays.'\n      : 'Push made, but a test failed: nothing is published and the site keeps its last good version.';\n  return { route, ciPass, viewer, viewerLabel: viewers[viewer].label, viewerSees: viewers[viewer].saw, viewerMisses: viewers[viewer].missed, viewers, lanes, lanesUsed, steps, other: { route: route === 'import' ? 'publish' : 'import', steps: otherSteps }, visible, persistent, audience,\n    shownAtMin, importMinutes, publishMinutes, totalMinutes: totalMin, duration, markers, summary,\n    viewerResults: viewers.map((v, i) => ({ id: v.id, label: v.label, sees: route === 'publish' ? ciPass : i === 0 })) };\n}",
+  "checkCode": "function check(p) {\n  const m = model(p), lanes = new Set(m.steps.map(s => s.lane));\n  // Who sees the lesson follows from the route alone: an import lives in one browser, a green publish reaches everyone\n  const visibleOk = m.visible === (m.route === 'publish' ? m.ciPass : m.viewer === 0)\n    && m.viewerResults.every((v, i) => v.sees === (m.route === 'publish' ? m.ciPass : i === 0));\n  const persistentOk = m.persistent === (m.route === 'publish' && m.ciPass);\n  // A temporary import never leaves the browser; only the publish route touches the repository, CI and the site\n  const lanesOk = m.route === 'import' ? !lanes.has('repo') && !lanes.has('ci') && !lanes.has('site') : lanes.has('repo') && lanes.has('ci');\n  const deployOk = m.route === 'publish' ? m.steps.some(s => s.id === 'deploy') === m.ciPass : true;\n  // Minutes run back to back and add up; playback markers are ordered\n  const r = v => Math.round(v * 10) / 10;\n  const seqOk = m.steps.every((s, i) => i === 0 || r(s.startMin) === r(m.steps[i - 1].endMin)) && r(m.steps[m.steps.length - 1].endMin) === r(m.totalMinutes);\n  const markersOk = m.markers.every((t, i) => i === 0 || t > m.markers[i - 1]) && m.markers[m.markers.length - 1] < m.duration;\n  // The trade the lesson teaches: an import is quicker than a green publish, and only the publish lasts and reaches everyone\n  const tradeOk = m.importMinutes < m.publishMinutes && (m.shownAtMin == null ? m.route === 'publish' && !m.ciPass : m.shownAtMin === (m.route === 'import' ? m.importMinutes : m.publishMinutes));\n  const pass = visibleOk && persistentOk && lanesOk && deployOk && seqOk && markersOk && tradeOk;\n  return { pass,\n    detail: (m.route === 'import' ? 'Import: ' + (m.visible ? m.viewerSees : m.viewerMisses) + '; it lives in one browser only, never in the repository or on the site'\n      : m.ciPass ? 'Publish: everyone sees it on the site, permanently' : 'Publish with a failing test: nothing deploys, nobody sees it')\n      + (visibleOk && persistentOk && lanesOk && deployOk ? '' : ' (route rules broken)')\n      + '; an import shows after ' + m.importMinutes.toFixed(1) + ' min, a green publish after ' + m.publishMinutes.toFixed(0) + ' min' + (seqOk && tradeOk ? '' : ' (minutes do not add up)') + '.' };\n}"
+}

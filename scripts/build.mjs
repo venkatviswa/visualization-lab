@@ -67,7 +67,7 @@ if (!gallery.order.includes(openerSlug) || gallery.refs[openerSlug]) throw new E
 const OPENER = (() => {
   const d = 'gallery/items/' + openerSlug + '/';
   const meta = JSON.parse(read(d + 'meta.json')), { expectAtDefaults, ...spec } = JSON.parse(read(d + 'spec.json'));
-  const versions = ['a', 'b', 'c'].filter(k => meta[k]).map(k => ({ id: k.toUpperCase(), lib: meta[k].lib, code: read(d + k + '.js'), form: meta[k].form || '', explanation: meta[k].explanation, caveats: meta[k].caveats || [] }));
+  const versions = ['a', 'b', 'c', 'd', 'e', 'f'].filter(k => meta[k]).map(k => ({ id: k.toUpperCase(), lib: meta[k].lib, code: read(d + k + '.js'), form: meta[k].form || '', explanation: meta[k].explanation, caveats: meta[k].caveats || [] }));
   return `const OPENER_SLUG = ${js(openerSlug)};\nconst OPENER = ${js({ goal: meta.goal, view: 'Auto', libChoice: 'recommend', spec, versions, chat: [] })};\n`;
 })();
 

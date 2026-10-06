@@ -291,8 +291,8 @@ details summary{cursor:pointer;color:var(--muted);font-size:12.5px}
       <option value="pipeline">Agentic delivery pipeline</option>
       <option value="terms">Key terms of agentic AI</option>
     </select>
-    <button class="btn" id="btnExport" type="button" title="Save this lesson (spec, versions and chat) as a JSON file">Export lesson</button>
-    <button class="btn" id="btnImport" type="button" title="Open a lesson exported from the lab">Import lesson</button>
+    <button class="btn" id="btnExport" type="button" title="Save this lesson (spec, versions and chat) as a .lesson.json file. Import it in another browser (temporary, that browser only), or publish it to the gallery for everyone with npm run add-lesson and a push (permanent)">Export lesson</button>
+    <button class="btn" id="btnImport" type="button" title="Open a .lesson.json file in this browser. It stays in this browser only: it is not uploaded, shared or added to the gallery">Import lesson</button>
     <input type="file" id="importFile" accept="application/json,.json" hidden>
     <button class="btn" id="btnNew" type="button">New lab</button>
   </div>
@@ -1619,7 +1619,7 @@ function renderNow() {
   const chip = $("nowLesson"), s = state.spec;
   chip.hidden = !s;
   if (!s) return;
-  const n = state.versions.length, src = state.source === "example" ? "built-in example" : state.source ? "from the gallery" : state.versions.some(v => v.handEdited) ? "your lesson, edited" : "your lesson";
+  const n = state.versions.length, src = state.source === "example" ? "built-in example" : state.source ? "from the gallery" : state.imported ? "imported, in this browser only" : state.versions.some(v => v.handEdited) ? "your lesson, edited" : "your lesson";
   $("nowTitle").textContent = s.title || "Untitled lesson";
   $("nowSub").textContent = (n ? n + (n === 1 ? " version" : " versions") + " · " : "no versions yet · ") + src;
 }
@@ -1637,7 +1637,7 @@ function loadGallery() {
   }).then(d => { GALLERY = d; galFailed = !d; return d; });
   return galLoad;
 }
-const GAL_CATS = ["All", "Vocabulary", "Enterprise process", "Enterprise architecture", "Data stories", "ML and LLM", "Physics", "Math"];
+const GAL_CATS = ["All", "Using the lab", "Vocabulary", "Enterprise process", "Enterprise architecture", "Data stories", "ML and LLM", "Physics", "Math"];
 const gal = { cat: "All", lib: "all", form: "all", q: "", armed: null, armTimer: 0 };
 function galText(it) { const lab = galLab(it); return [it.title, it.category, lab.goal, lab.spec && lab.spec.title, ...lab.versions.flatMap(v => [libName(v.lib), v.form])].filter(Boolean).join(" ").toLowerCase(); }
 function galLab(it) { return it.ref === "TERMS" ? TERMS : it.ref === "PIPELINE" ? PIPELINE : it.ref === "EXAMPLE" ? EXAMPLE : it.ref === "ROCKET" ? ROCKET : it.lab; }
@@ -1798,7 +1798,7 @@ function importLessonFile(file) {
     try {
       const lesson = parseLesson(String(reader.result));
       showPage("lab");
-      resetLab(Object.assign(lesson, { source: null }));      // an imported lesson is someone's work: protect it with the replace guard
+      resetLab(Object.assign(lesson, { source: null, imported: true }));      // an imported lesson is someone's work: protect it with the replace guard; it lives in this browser only
       window.scrollTo(0, 0);
     } catch (e) { showPage("lab"); flashSpecError("Import failed: " + (e.message || e)); }
   };

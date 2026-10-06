@@ -61,7 +61,7 @@ test('gallery: gallery.json lists every item folder, and every item has the file
     assert.ok(fs.existsSync(d), `missing item folder ${slug}`);
     const meta = JSON.parse(fs.readFileSync(path.join(d, 'meta.json'), 'utf8'));
     assert.ok(meta.category && meta.title && meta.goal, `${slug}: meta needs category, title and goal`);
-    for (const k of ['a', 'b', 'c']) if (meta[k]) {
+    for (const k of ['a', 'b', 'c', 'd', 'e', 'f']) if (meta[k]) {
       assert.ok(ids.includes(meta[k].lib), `${slug} ${k}: unknown library ${meta[k].lib}`);
       assert.ok(meta[k].explanation && meta[k].explanation.length > 60, `${slug} ${k}: explanation too short`);
       assert.ok(fs.existsSync(path.join(d, k + '.js')), `${slug}/${k}.js`);
@@ -82,7 +82,7 @@ test('chart forms: every gallery and example version names a form that is in the
   for (const slug of gal.order) {
     if (gal.refs[slug]) continue;
     const meta = json(`gallery/items/${slug}/meta.json`);
-    for (const k of ['a', 'b', 'c']) if (meta[k]) { assert.ok(meta[k].form, `${slug} ${k}: missing form`); assert.ok(names.includes(meta[k].form), `${slug} ${k}: form "${meta[k].form}" is not in the guide's forms table`); used.add(meta[k].form); }
+    for (const k of ['a', 'b', 'c', 'd', 'e', 'f']) if (meta[k]) { assert.ok(meta[k].form, `${slug} ${k}: missing form`); assert.ok(names.includes(meta[k].form), `${slug} ${k}: form "${meta[k].form}" is not in the guide's forms table`); used.add(meta[k].form); }
   }
   for (const ex of fs.readdirSync(path.join(root, 'examples'))) {
     const lesson = json(`examples/${ex}/lesson.json`);

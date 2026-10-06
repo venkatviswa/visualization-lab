@@ -42,7 +42,7 @@ for (const slug of gal.order) {
     const d = path.join(root, 'gallery/items', slug);
     meta = JSON.parse(fs.readFileSync(path.join(d, 'meta.json'), 'utf8'));
     spec = JSON.parse(fs.readFileSync(path.join(d, 'spec.json'), 'utf8'));
-    versions = ['a', 'b', 'c'].filter(k => meta[k]).map(k => ({ id: k.toUpperCase(), lib: meta[k].lib, code: fs.readFileSync(path.join(d, k + '.js'), 'utf8'), form: meta[k].form || '', explanation: meta[k].explanation, caveats: meta[k].caveats || [] }));
+    versions = ['a', 'b', 'c', 'd', 'e', 'f'].filter(k => meta[k]).map(k => ({ id: k.toUpperCase(), lib: meta[k].lib, code: fs.readFileSync(path.join(d, k + '.js'), 'utf8'), form: meta[k].form || '', explanation: meta[k].explanation, caveats: meta[k].caveats || [] }));
     run('check_spec.mjs', [path.join(d, 'spec.json')]);
   }
   // build every version for verification; version A's end state becomes the thumbnail

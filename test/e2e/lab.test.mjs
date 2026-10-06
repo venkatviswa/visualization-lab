@@ -679,3 +679,26 @@ test('downloaded pages: a skip link opens the text version, steps are announced,
   }
   await c2.close();
 });
+
+test('a lesson exported from the lab imports as "in this browser only", and add-lesson turns the same file into a gallery lesson', async () => {
+  const { ctx, page, errors } = await fresh({ acceptDownloads: true });
+  await loadExample(page, 'rocket'); await sleep(2500);
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#btnExport')]);
+  const file = path.join(root, '.work', 'roundtrip-' + dl.suggestedFilename()); await dl.saveAs(file);
+  await page.click('#btnNew'); await sleep(300);
+  await page.click('#btnImport'); await page.setInputFiles('#importFile', file); await sleep(5000);
+  assert.match(await page.$eval('#nowSub', n => n.textContent), /2 versions · imported, in this browser only/);
+  assert.ok(allPass(await statuses(page)));
+  assert.deepEqual(errors, []);
+  await ctx.close();
+  // the permanent way: the same file through add-lesson, into a scratch copy of the sources
+  const repo = fs.mkdtempSync(path.join(root, '.work', 'repo-'));
+  for (const d of ['kit', 'gallery']) fs.cpSync(path.join(root, d), path.join(repo, d), { recursive: true });
+  fs.mkdirSync(path.join(repo, 'src')); fs.copyFileSync(path.join(root, 'src/vislab.html'), path.join(repo, 'src/vislab.html')); fs.copyFileSync(path.join(root, 'AUTHORING.md'), path.join(repo, 'AUTHORING.md'));
+  const { spawnSync } = await import('child_process');
+  const r = spawnSync(process.execPath, [path.join(root, 'scripts/add_lesson.mjs'), file, '--category', 'Physics', '--slug', 'rocket-roundtrip', '--repo', repo, '--no-verify'], { encoding: 'utf8' });
+  assert.equal(r.status, 0, r.stderr);
+  const meta = JSON.parse(fs.readFileSync(path.join(repo, 'gallery/items/rocket-roundtrip/meta.json'), 'utf8'));
+  assert.deepEqual([meta.a.lib, meta.b.lib], ['p5', 'chartjs']);
+  fs.rmSync(repo, { recursive: true, force: true });
+});

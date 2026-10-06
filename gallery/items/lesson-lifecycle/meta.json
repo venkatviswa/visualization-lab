@@ -1,0 +1,33 @@
+{
+  "slug": "lesson-lifecycle",
+  "category": "Using the lab",
+  "title": "From the lab to the gallery: import or publish?",
+  "goal": "Explain to designers what happens to a lesson after they build it in the lab: describe, draft the spec, generate the versions and export the lesson file, then either import it into a browser, which is quick but lives only in that one browser until it is cleared, or publish it to the gallery with add-lesson, a push, the test run and the deploy, which takes most of an hour but reaches everyone and lasts. Let me switch between the two ways, make the test run fail, and choose who opens the site afterwards (me in the same browser, me after clearing the browser, or a colleague).",
+  "a": {
+    "lib": "svg",
+    "form": "swimlane",
+    "explanation": "Hand-built SVG, no library: one lane per place the lesson can live (the lab on claude.ai, your computer, one browser, the repository, GitHub Actions and the published site), with both ways out of Export lesson drawn. The chosen way lights up step by step on the host clock; the other way stays faint and dashed, so the split is always in view. The browser lane is tinted and marked temporary, the three shared lanes permanent. Underneath, three cards say who sees the lesson at the end, with a tick or a cross in words as well as colour.",
+    "caveats": [
+      "Step boxes are narrow on a laptop pane, so long step names wrap to two lines",
+      "On a phone the lanes become a list with the lane named on each row; the faint other way becomes one line of text"
+    ]
+  },
+  "b": {
+    "lib": "chartjs",
+    "form": "Gantt timeline",
+    "explanation": "Chart.js floating bars, one row per place, placed at the real minutes each step takes, with the other way drawn as pale bars on the same axis. The 40-minute test run dominates the publish way and the import way is over before it starts, which is the trade in one picture: quick and private, or slow and for everyone. A line marks the minute the lesson first shows, and a failing test leaves the site row empty.",
+    "caveats": [
+      "Short steps (export, import) are slivers at this scale; their names sit beside the bar",
+      "Minutes are illustrative; a lesson that does not change the gallery tests in about 10 minutes"
+    ]
+  },
+  "c": {
+    "lib": "reactflow",
+    "form": "flow chart",
+    "explanation": "React Flow as a decision diagram: the four shared steps lead to Export lesson, which branches into Import and Publish, and each branch ends in the people who can see the result. The taken branch and the reached outcomes light up as the clock runs; the edges say temporary or permanent. Click a node for what happens there. It answers the designer's question directly (who will see this?) where the swimlane answers where it lives.",
+    "caveats": [
+      "Fits to the pane, so labels are small in the lab's preview; full screen helps",
+      "The three viewers are drawn for both branches, so the diagram is wider than the swimlane"
+    ]
+  }
+}

@@ -4,7 +4,7 @@ Project context for Claude Code and other agents working in this repository. Kee
 
 ## What this is
 
-Visualization Lab: a single-page browser workbench where educators and L&D designers describe a teaching concept, let Claude draft a **spec** (objective, a pure `model(p)`, learner controls, a `check(p)`), then generate the same lesson with two to six different JavaScript libraries (versions A to F) and compare them side by side. A **Get inspired** gallery holds 35 finished lessons. A **toolkit** (`kit/`) builds and verifies standalone lesson pages, and a bake-off skill uses it from agents.
+Visualization Lab: a single-page browser workbench where educators and L&D designers describe a teaching concept, let Claude draft a **spec** (objective, a pure `model(p)`, learner controls, a `check(p)`), then generate the same lesson with two to six different JavaScript libraries (versions A to F) and compare them side by side. A **Get inspired** gallery holds 36 finished lessons. A **toolkit** (`kit/`) builds and verifies standalone lesson pages, and a bake-off skill uses it from agents.
 
 The one idea everything rests on: **one spec, many renderers**. The model owns every number; renderers only draw; the host page owns the controls and the playback clock. Comparing two versions compares libraries, not two AI interpretations.
 
@@ -18,7 +18,7 @@ The one idea everything rests on: **one spec, many renderers**. The model owns e
 | `kit/` | `template.html`, `build.mjs`, `verify.mjs`, `check_spec.mjs`, `story3d_kit.js`, `look2d.js` (2D story looks), `reactflow.css`, `offline.js` (libraries inlined into a page), `textview.js` (a lesson's text version, from the model) | yes |
 | `examples/<name>/` | the 4 built-in lessons (`lesson.json`, `model.js`, `check.js`, `a.js`…) | yes |
 | `gallery/items/<slug>/` + `gallery/gallery.json` | gallery lessons, their order, and the `opener` a first visit shows (inlined by the build) | yes |
-| `scripts/` | `build.mjs`, `build_gallery.mjs`, `serve.mjs`, `mirror.mjs` | yes |
+| `scripts/` | `build.mjs`, `build_gallery.mjs`, `serve.mjs`, `mirror.mjs`, `libfiles.mjs`, `add_lesson.mjs` (an exported lesson into the gallery) | yes |
 | `test/` | `unit/`, `e2e/`, `gallery/` | yes |
 | `docs/SKILL.lesson-visual-bakeoff.md` | the bake-off skill (agent version of the lab); its kit is a copy of `kit/` | yes |
 | `dist/` | build output, published as the artifact | **never**: regenerate with `npm run build` |
@@ -30,11 +30,12 @@ Generated and never hand-edited: the prompt text inside the page, the `LIBS`/`RU
 
 ```
 npm run build           # dist/ from the sources (fast)
-npm run build:gallery   # dist/gallery (verifies all 83 versions, 25-30 min; needed once before e2e; run it in the background)
+npm run build:gallery   # dist/gallery (verifies all 86 versions, 25-30 min; needed once before e2e; run it in the background)
 npm test                # build + unit + toolkit + e2e (~10 min)
 npm run test:gallery    # every gallery lesson at defaults, min, max (longer still; CI runs it)
 npm run serve           # http://localhost:8766/dist/vislab.html
 npm run mirror          # pinned packages into .cdn/ (tests never use the network)
+npm run add-lesson -- f.lesson.json --category "…"   # publish a lesson exported from the lab to the gallery
 ```
 
 Chromium: `/opt/pw-browsers/chromium` or `$CHROMIUM_PATH`, else `npx playwright install chromium`.

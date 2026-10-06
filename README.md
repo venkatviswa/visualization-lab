@@ -74,10 +74,11 @@ Start from: *Agentic delivery pipeline* for the method overview, *Watch an agent
 
 ## Get inspired
 
-Switch to **Get inspired** (top right) to browse 35 finished lessons:
+Switch to **Get inspired** (top right) to browse 36 finished lessons:
 
 | Subject | Lessons | Chart forms |
 | --- | --- | --- |
+| Using the lab | From the lab to the gallery: import or publish? (where a lesson lives after you build it, and who can see it) | swimlane, Gantt timeline, flow chart |
 | Vocabulary | Key terms of agentic AI · Data governance terms and how they connect · Data privacy terms in plain English | word cloud, ranked bar chart, 3D word helix, network diagram, card grid, flashcards |
 | Enterprise process | Health claim lifecycle · One claim, four desks (a claim across the desks, swimlane and Gantt) · Agentic delivery pipeline · Lead to cash · Branches: a safe place to try ideas (Git) · One push, one workflow, one deploy (GitHub Actions) | flow chart, swimlane, Gantt timeline, waterfall, step-by-step story, 3D story, commit graph |
 | Enterprise architecture | One address change, eight systems · From spaghetti to hub: why an integration layer · Who is Maria? Identity resolution · One member, five sources, one profile (data moving through a customer data platform) · Where the records go (a month of records as a Sankey) · Where does PHI travel? · The data model comes alive (an entity diagram a process walks through) · Which option? Scoring architecture choices (radar, parallel coordinates, bullet graphs) | step-by-step story, 3D story, architecture diagram, ring network, chord diagram, line chart, node-link graph, Sankey, highlight table, ER diagram, org chart, radar, parallel coordinates, bullet graph |
@@ -201,6 +202,23 @@ When the suggested library starts one of these pairs, the comparison is set auto
 - Files from an older or newer lab load as long as the libraries they use exist here; a version that uses an unknown library is refused with its name.
 - This is the way to move a lesson between browsers or hand it to a colleague. It needs no account and no server.
 
+### Temporary or permanent: import a lesson, or publish it to the gallery
+
+A lesson you make lives in your browser until you decide where it goes next. **Export lesson** gives you the file; what you do with it decides who sees it and for how long. The gallery lesson *From the lab to the gallery: import or publish?* (subject *Using the lab*) plays the two ways side by side.
+
+| Question | Import lesson (temporary) | Publish to the gallery (permanent) |
+| --- | --- | --- |
+| How | **Import lesson** on any copy of the lab, including the GitHub Pages site | `npm run add-lesson -- my-lesson.lesson.json --category "Enterprise process"`, then commit and push |
+| Where it lives | That one browser's own storage on that device; nothing is uploaded | `gallery/items/<slug>/` in the repository, built into the site |
+| Who sees it | Whoever uses that browser. A colleague needs the file and their own Import | Everyone who opens the site, under **Get inspired** |
+| How long | Until that browser's site data is cleared, or another lesson replaces it | Until it is removed from the repository |
+| How fast | At once | After the test run and the deploy (most of an hour when a lesson changes) |
+| Checks | None beyond loading | `add-lesson` checks the spec, the libraries and the chart forms and verifies every version in Chromium; CI tests again before anything deploys, and a failing test publishes nothing |
+
+The lesson chip at the top says *imported, in this browser only* for an imported lesson.
+
+`add-lesson` options: `--category` (required: a subject from Get inspired), `--title`, `--slug`, `--after <slug>` (position; by default after the last lesson of the same subject), `--versions A,C` (which versions to publish, at least two), `--form B="line chart"` (set or correct a version's chart form; forms come from the table in the authoring guide), `--expect "<expression>"` (what the defaults must show, when the spec has no `expectAtDefaults`), `--replace` (overwrite a lesson of the same name) and `--no-verify` (skip the Chromium check; CI still runs it). It needs a clone of the repository with `npm ci` and `npm run mirror` done once. Gallery lessons are illustrative: check that the lesson's assumptions say so, and that it names no real customer or person.
+
 ## Putting a lesson in a course
 
 1. Pick the version that teaches best and click **Export for course** on it. The file is named `<title>.course.html` and carries the current Look and slider values as its starting state.
@@ -291,7 +309,7 @@ All libraries load at fixed versions: from `lib/` beside the page on a hosted co
 - **The editor loads the first time you open Edit code.** If it can't load, you get a plain text box that still supports Run, Undo and line jumps.
 
 **Previews and delivery**
-- **The gallery loads separately.** The lab page is small; the 35 lessons and their thumbnails load the first time you open Get inspired, so that tab takes a moment on first use.
+- **The gallery loads separately.** The lab page is small; the 36 lessons and their thumbnails load the first time you open Get inspired, so that tab takes a moment on first use.
 - **Libraries come from a library server.** On a hosted copy (GitHub Pages) the previews load them from the `lib/` folder beside the page; inside Claude, from jsDelivr. Either way they move on to the next server (jsDelivr, then unpkg) for the rest of the session if one can't be reached, and the console says so. If none can be reached, each version says *Couldn't load p5.js* (or whichever library) in plain words with a **Retry** button; nothing is wrong with the lesson, so Fix errors is not offered. Downloaded pages load from jsDelivr unless **Works offline** was ticked.
 - **3D needs WebGL.** On machines without a capable graphics card (some virtual desktops), 3D versions can be slow or blank. Keep a 2D version as a fallback.
 - **"Reduce motion" changes playback.** With the operating system's reduce-motion setting on, animations open at their final state instead of playing. Press Play to watch them.

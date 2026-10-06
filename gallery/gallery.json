@@ -1,6 +1,7 @@
 {
   "opener": "ea-spaghetti-hub",
   "order": [
+    "lesson-lifecycle",
     "key-terms",
     "vocab-network",
     "vocab-flashcards",

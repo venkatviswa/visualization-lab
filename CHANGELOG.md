@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.12.0 — publishing a lesson to the gallery
+
+- `npm run add-lesson -- <file>.lesson.json --category "<subject>"` turns a lesson exported from the lab into a gallery lesson: it checks the spec, the libraries, the chart forms and the subject, writes `gallery/items/<slug>/`, places it in `gallery/gallery.json` (after the last lesson of its subject, or where `--after` says), verifies every version in Chromium, and prints the commit and push that publish it. Options pick versions, correct forms, set the title and slug, and replace an existing lesson.
+- Gallery lessons can have up to six versions (A to F), like the lab.
+- New subject *Using the lab* and its first lesson, *From the lab to the gallery: import or publish?*: the two ways a lesson leaves the lab, with the way out of Export lesson, a failing test and who opens the site as controls; a plain SVG swimlane, a Chart.js Gantt timeline of the real minutes, and a React Flow decision diagram of who ends up seeing it. It was added to the gallery with `add-lesson` itself.
+- An imported lesson says so: the lesson chip reads *imported, in this browser only*, and the Export and Import buttons explain temporary versus permanent. README section *Temporary or permanent*.
+
 ## 0.11.0 — offline downloads and accessibility
 
 - **Works offline**: a tick box beside Download HTML and Export for course puts the libraries inside the downloaded file, so it runs with no internet (a workshop, a classroom, a locked-down network). Classic libraries become inline scripts and three.js modules become data: URLs in the import map, including the addons the code uses. Files grow by 0.1 MB (Chart.js) to 4.6 MB (Plotly) and end in `.offline.html`. The toolkit has the same as `build.mjs --offline [--libdir dir]`; tests open an offline page for every library family with the network switched off.

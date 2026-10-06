@@ -70,7 +70,7 @@ test('built page: the opener is the gallery lesson gallery.json names, inlined w
   assert.equal(out.OPENER.spec.title, spec.title);
   assert.equal(out.OPENER.spec.modelCode, spec.modelCode);
   assert.ok(!('expectAtDefaults' in out.OPENER.spec), 'toolkit-only fields stay out of the page');
-  const keys = ['a', 'b', 'c'].filter(k => meta[k]);
+  const keys = ['a', 'b', 'c', 'd', 'e', 'f'].filter(k => meta[k]);
   assert.equal(JSON.stringify(out.OPENER.versions.map(v => [v.id, v.lib, v.form])), JSON.stringify(keys.map(k => [k.toUpperCase(), meta[k].lib, meta[k].form])));   // stringified: vm arrays are from another realm
   for (const v of out.OPENER.versions) assert.equal(v.code, read(d + v.id.toLowerCase() + '.js'));
 });
