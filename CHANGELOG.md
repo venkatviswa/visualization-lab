@@ -2,6 +2,7 @@
 
 ## 0.12.1 — wording and the architecture note
 
+- CI: a failed run now says which tests failed, with their errors, on the run page (job summary from `scripts/ci_summary.mjs`), and uploads the test log and screenshots (the earlier upload silently skipped them: `.work/` is a hidden folder). The browser tests wait for the previews to settle (up to 30 s) instead of fixed sleeps, for slower runners.
 - The agentic pipeline example says what it means: the planner reads Salesforce metadata, and the deploy goes to a dev sandbox (`dev-sandbox`), never the production org. The placeholder names "Sourceprimary" and "deploytarget" are gone from the goal, the model, the check and both renderers, and a unit test keeps such placeholders out of the lessons.
 - `docs/ARCHITECTURE.md`: how the lab is built and run, with four diagrams (sources to the published lab, the page at run time, the preview frame protocol, a lesson's life from export to the gallery) and a table of every message between the page and a preview. A unit test fails when the harness gains a message the note does not describe.
 

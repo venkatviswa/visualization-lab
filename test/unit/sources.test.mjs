@@ -152,3 +152,15 @@ test('docs/ARCHITECTURE.md names every message of the preview frame protocol, an
   assert.ok(diagrams.length >= 3, 'diagrams');
   for (const d of diagrams) assert.ok(!d.includes(';'), 'a ; inside a Mermaid diagram ends the statement (GitHub shows a parse error)');
 });
+
+test('scripts/ci_summary.mjs reports each failing test with its error and location, not its parent or stack', async () => {
+  const { summarise } = await import('../../scripts/ci_summary.mjs');
+  const tap = ['# Subtest: group', '    # Subtest: inner fails', '    not ok 1 - inner fails', '      ---', '      duration_ms: 3.2', "      location: '/repo/test/e2e/lab.test.mjs:40:3'", '      failureType: \'testCodeFailure\'', '      error: |-', '        Expected values to be strictly deep-equal:', "      name: 'AssertionError'", '      stack: |-', '        TestContext.<anonymous> (file:///x.mjs:4:69)', '      ...', 'not ok 1 - group', '  ---', "  error: '1 subtest failed'", '  ...', 'ok 2 - passes', '# tests 3', '# pass 1', '# fail 2'].join('\n');
+  const md = summarise(tap);
+  assert.match(md, /1 of 3 passed, 2 failed/);
+  assert.match(md, /### ✗ inner fails/);
+  assert.match(md, /lab\.test\.mjs:40:3/);
+  assert.match(md, /strictly deep-equal/);
+  assert.doesNotMatch(md, /### ✗ group/);
+  assert.doesNotMatch(md, /TestContext/);
+});

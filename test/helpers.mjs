@@ -43,7 +43,14 @@ export async function launch() {
   return chromium.launch(Object.assign({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] }, exe ? { executablePath: exe } : {}));
 }
 
-export const statuses = page => page.$$eval('.pane', ns => ns.map(n => [n.dataset.vid, n.querySelector('[data-r=status]').innerText]));
+const readStatuses = page => page.$$eval('.pane', ns => ns.map(n => [n.dataset.vid, n.querySelector('[data-r=status]').innerText]));
+// Pane statuses once every version has settled: a slower machine (a CI runner) takes longer to load libraries and run
+// the check, so instead of trusting a fixed sleep this polls until no pane says Running or Generating (up to 30 s).
+export async function statuses(page, timeout = 30000) {
+  const t0 = Date.now(); let st = await readStatuses(page);
+  while (Date.now() - t0 < timeout && (!st.length || st.some(([, s]) => s === '' || s === 'Running' || s === 'Generating'))) { await new Promise(r => setTimeout(r, 300)); st = await readStatuses(page); }
+  return st;
+}
 export const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // Accessibility audit with axe-core (WCAG 2.1 A and AA plus best practices) of the page as it is now; the sandboxed preview

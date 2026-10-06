@@ -3,6 +3,8 @@
 #            built from, so it is rebuilt (25-30 minutes) only when a lesson, an example or the kit changes.
 #   gallery  every gallery lesson at its defaults, minimums and maximums, on main and pull requests, again only when
 #            the lessons, examples or kit changed since the last green run.
+# A failed run writes the failing tests and their errors to the run page (scripts/ci_summary.mjs) and keeps the log and
+# screenshots as an artifact. .work/ is a hidden folder, so the upload needs include-hidden-files.
 # Keep the `with:` blocks in block style: a one-line { ... } mapping cannot hold a ${{ }} expression (the braces end the
 # mapping), and a workflow file that does not parse starts no jobs at all.
 name: test
@@ -52,14 +54,25 @@ jobs:
         if: steps.gallery.outputs.cache-hit != 'true'
         run: npm run build:gallery
 
-      - run: npm test
+      - name: Tests (unit, toolkit, browser)
+        run: |
+          mkdir -p .work
+          set -o pipefail
+          npm test 2>&1 | tee .work/npm-test.log
 
-      - name: Keep the screenshots of a failed run
+      - name: Say which tests failed, on the run page
+        if: failure()
+        run: node scripts/ci_summary.mjs .work/npm-test.log >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the log and screenshots of a failed run
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: test-screenshots
-          path: .work/**/*.png
+          name: test-log-and-screenshots
+          path: |
+            .work/npm-test.log
+            .work/**/*.png
+          include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 7
 
@@ -104,7 +117,14 @@ jobs:
 
       - name: Test every lesson
         if: steps.tested.outputs.cache-hit != 'true'
-        run: npm run test:gallery
+        run: |
+          mkdir -p .work
+          set -o pipefail
+          npm run test:gallery 2>&1 | tee .work/gallery-test.log
+
+      - name: Say which lessons failed, on the run page
+        if: failure()
+        run: node scripts/ci_summary.mjs .work/gallery-test.log >> "$GITHUB_STEP_SUMMARY"
 
       - name: Remember that these lessons passed
         if: steps.tested.outputs.cache-hit != 'true'
@@ -114,7 +134,10 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: gallery-screenshots
-          path: .work/gallery-test/**/*.png
+          name: gallery-log-and-screenshots
+          path: |
+            .work/gallery-test.log
+            .work/gallery-test/**/*.png
+          include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 7
