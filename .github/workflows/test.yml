@@ -1,8 +1,8 @@
 # Tests on every push and pull request.
-#   test     build, unit and browser tests. The verified gallery (dist/gallery) is cached by a hash of everything it is
-#            built from, so it is rebuilt (25-30 minutes) only when a lesson, an example or the kit changes.
-#   gallery  every gallery lesson at its defaults, minimums and maximums, on main and pull requests, again only when
-#            the lessons, examples or kit changed since the last green run.
+#   test     build, unit and browser tests. The gallery build remembers every lesson that passed, by a fingerprint of its
+#            inputs, so it only builds and checks the lessons that changed, in parallel; a change to the kit checks them all.
+#   gallery  every gallery lesson at its defaults, minimums and maximums, on main and pull requests; lessons that already
+#            passed with the same inputs are skipped, the rest run in parallel.
 # A failed run writes the failing tests and their errors to the run page (scripts/ci_summary.mjs) and keeps the log and
 # screenshots as an artifact. .work/ is a hidden folder, so the upload needs include-hidden-files.
 # Keep the `with:` blocks in block style: a one-line { ... } mapping cannot hold a ${{ }} expression (the braces end the
@@ -43,16 +43,27 @@ jobs:
       - name: Mirror the pinned packages
         run: npm run mirror
 
-      - name: Restore the verified gallery
-        id: gallery
-        uses: actions/cache@v4
+      # Each lesson that passed is remembered by a fingerprint of its inputs (scripts/lesson_hash.mjs), so the build only
+      # checks lessons that changed. The latest saved set is restored even when some inputs differ (restore-keys).
+      - name: Restore the lessons checked so far
+        uses: actions/cache/restore@v4
         with:
-          path: dist/gallery
-          key: gallery-${{ hashFiles('gallery/**', 'examples/**', 'kit/**', 'scripts/build_gallery.mjs') }}
+          path: .work/gallery-cache
+          key: gallery-lessons-${{ hashFiles('gallery/**', 'examples/**', 'kit/**', 'scripts/build_gallery.mjs', 'scripts/lesson_hash.mjs') }}-${{ github.run_id }}
+          restore-keys: |
+            gallery-lessons-${{ hashFiles('gallery/**', 'examples/**', 'kit/**', 'scripts/build_gallery.mjs', 'scripts/lesson_hash.mjs') }}-
+            gallery-lessons-
 
-      - name: Build and verify the gallery (only when a lesson, an example or the kit changed)
-        if: steps.gallery.outputs.cache-hit != 'true'
+      - name: Build the gallery (only changed lessons are built and checked, in parallel)
         run: npm run build:gallery
+
+      # Saved straight away, pass or fail, so a failing test later does not throw away the gallery work
+      - name: Save the lessons checked so far
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .work/gallery-cache
+          key: gallery-lessons-${{ hashFiles('gallery/**', 'examples/**', 'kit/**', 'scripts/build_gallery.mjs', 'scripts/lesson_hash.mjs') }}-${{ github.run_id }}
 
       - name: Tests (unit, toolkit, browser)
         run: |
@@ -60,9 +71,12 @@ jobs:
           set -o pipefail
           npm test 2>&1 | tee .work/npm-test.log
 
+      # The job summary needs a sign-in to read on some views; annotations show on the public run page
       - name: Say which tests failed, on the run page
         if: failure()
-        run: node scripts/ci_summary.mjs .work/npm-test.log >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          node scripts/ci_summary.mjs .work/npm-test.log >> "$GITHUB_STEP_SUMMARY"
+          node scripts/ci_summary.mjs .work/npm-test.log --annotate
 
       - name: Keep the log and screenshots of a failed run
         if: failure()
@@ -85,38 +99,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Skip if these lessons already passed
-        id: tested
-        uses: actions/cache@v4
+      # Lessons that passed are remembered one by one (.work/gallery-passed), so only changed lessons are swept again
+      - name: Restore the lessons that already passed
+        uses: actions/cache/restore@v4
         with:
           path: .work/gallery-passed
-          key: gallery-passed-${{ hashFiles('gallery/**', 'examples/**', 'kit/**', 'test/gallery/**', 'test/helpers.mjs') }}
+          key: gallery-passed-${{ hashFiles('gallery/**', 'examples/**', 'kit/**', 'test/gallery/**', 'test/helpers.mjs', 'scripts/lesson_hash.mjs') }}-${{ github.run_id }}
+          restore-keys: |
+            gallery-passed-${{ hashFiles('gallery/**', 'examples/**', 'kit/**', 'test/gallery/**', 'test/helpers.mjs', 'scripts/lesson_hash.mjs') }}-
+            gallery-passed-
 
       - uses: actions/setup-node@v4
-        if: steps.tested.outputs.cache-hit != 'true'
         with:
           node-version: 22
           cache: npm
 
-      - if: steps.tested.outputs.cache-hit != 'true'
-        run: npm ci
+      - run: npm ci
 
-      - if: steps.tested.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium
 
       - name: Restore the package mirror
-        if: steps.tested.outputs.cache-hit != 'true'
         uses: actions/cache@v4
         with:
           path: .cdn
           key: cdn-${{ hashFiles('kit/libraries.json', 'scripts/mirror.mjs', 'scripts/libfiles.mjs') }}
 
       - name: Mirror the pinned packages
-        if: steps.tested.outputs.cache-hit != 'true'
         run: npm run mirror
 
-      - name: Test every lesson
-        if: steps.tested.outputs.cache-hit != 'true'
+      - name: Test every lesson (lessons that passed with the same inputs are skipped; the rest run in parallel)
         run: |
           mkdir -p .work
           set -o pipefail
@@ -124,11 +135,16 @@ jobs:
 
       - name: Say which lessons failed, on the run page
         if: failure()
-        run: node scripts/ci_summary.mjs .work/gallery-test.log >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          node scripts/ci_summary.mjs .work/gallery-test.log >> "$GITHUB_STEP_SUMMARY"
+          node scripts/ci_summary.mjs .work/gallery-test.log --annotate
 
-      - name: Remember that these lessons passed
-        if: steps.tested.outputs.cache-hit != 'true'
-        run: mkdir -p .work/gallery-passed && date -u > .work/gallery-passed/at.txt
+      - name: Save the lessons that passed
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .work/gallery-passed
+          key: gallery-passed-${{ hashFiles('gallery/**', 'examples/**', 'kit/**', 'test/gallery/**', 'test/helpers.mjs', 'scripts/lesson_hash.mjs') }}-${{ github.run_id }}
 
       - name: Keep the screenshots of a failed run
         if: failure()

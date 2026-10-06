@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.12.2 — faster CI
+
+- The gallery build and the gallery sweep remember every lesson that passed, by a fingerprint of its inputs (its files, the kit and the checking script; `scripts/lesson_hash.mjs`), and only build and check lessons that changed. A change to one lesson checks one lesson; a change to the kit checks them all. What has to be checked runs in parallel browsers (`--jobs`, `GALLERY_JOBS`; default the number of CPUs, at most 4).
+- CI restores the latest remembered set even when some inputs changed, and saves it right after the gallery step, pass or fail, so a later failing test no longer throws away half an hour of gallery work. The Pages build reuses the lessons the test run checked.
+- A failed run also puts each failing test and its error on the public run page as an annotation (`ci_summary.mjs --annotate`), readable without signing in.
+- Fixed a flaky browser test on GitHub's runners: tests that edit code waited a fixed 1.2 s for the code editor (CodeMirror loads on first use) and failed with `CM is not defined` when it took longer. They now wait for the editor itself (`openEditor()` in `test/e2e/lab.test.mjs`).
+
 ## 0.12.1 — wording and the architecture note
 
 - CI: a failed run now says which tests failed, with their errors, on the run page (job summary from `scripts/ci_summary.mjs`), and uploads the test log and screenshots (the earlier upload silently skipped them: `.work/` is a hidden folder). The browser tests wait for the previews to settle (up to 30 s) instead of fixed sleeps, for slower runners.

@@ -30,6 +30,7 @@ Open items, roughly in the order we plan to take them. Tick items here in the sa
 
 - [x] **GitHub Pages**: `.github/workflows/pages.yml` builds `dist/` after a green test run on main (reusing the cached gallery) and deploys it with `actions/deploy-pages`. The page runs in explore mode there: the chat and Claude-only buttons are hidden.
 - [x] **CI that fits**: cached verified gallery, gallery sweep only when its inputs change, timeouts that fit, screenshots kept on failure, workflow files guarded by a unit test.
+- [x] **Faster CI**: lessons remembered one by one by a fingerprint of their inputs, so only changed lessons are built and checked, in parallel; the remembered set is saved before the tests run.
 - [x] **Offline download**: **Works offline** on Download HTML and Export for course inlines the libraries (`kit/offline.js`, also `kit/build.mjs --offline`); a hosted copy ships the library files in `lib/` and its previews load them first.
 - [x] **Accessibility pass**: a Text tab per version and a text version in every downloaded page, built from the model (`kit/textview.js`); the current step announced while playing or stepping; labelled previews and figures; arrow-key tabs; a skip link; axe-core in the e2e tests over every state of the lab and over downloaded pages.
 - [ ] **Accessibility, next**: a screen-reader walkthrough with a real user (NVDA or VoiceOver), and per-lesson text that reads better than generic field names where a model's names are terse (projectile's "Vx", "T Flight").

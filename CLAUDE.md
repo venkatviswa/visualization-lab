@@ -31,9 +31,9 @@ Generated and never hand-edited: the prompt text inside the page, the `LIBS`/`RU
 
 ```
 npm run build           # dist/ from the sources (fast)
-npm run build:gallery   # dist/gallery (verifies all 86 versions, 25-30 min; needed once before e2e; run it in the background)
+npm run build:gallery   # dist/gallery; only lessons whose inputs changed are rebuilt and verified (all of them: 15-30 min, run it in the background)
 npm test                # build + unit + toolkit + e2e (~10 min)
-npm run test:gallery    # every gallery lesson at defaults, min, max (longer still; CI runs it)
+npm run test:gallery    # every gallery lesson at defaults, min, max; skips lessons that passed with the same inputs (GALLERY_FORCE=1: all)
 npm run serve           # http://localhost:8766/dist/vislab.html
 npm run mirror          # pinned packages into .cdn/ (tests never use the network)
 npm run add-lesson -- f.lesson.json --category "…"   # publish a lesson exported from the lab to the gallery
@@ -65,7 +65,7 @@ Do not add a feature without a test, and do not change a prompt rule without upd
 
 ## CI and hosting
 
-`.github/workflows/test.yml` (test job on every push, cached gallery; gallery job on main and PRs) and `pages.yml` (deploys `dist/` to GitHub Pages after a green run on main). Keep `with:` blocks in block style, never `{ ... }` with a `${{ }}` inside (unit test). Outside claude.ai the page runs in explore mode (`body.no-claude`): elements marked `data-claude` are hidden.
+`.github/workflows/test.yml` (test job on every push; gallery job on main and PRs; both remember passed lessons by fingerprint, `scripts/lesson_hash.mjs`, and only check changed ones) and `pages.yml` (deploys `dist/` to GitHub Pages after a green run on main). Keep `with:` blocks in block style, never `{ ... }` with a `${{ }}` inside (unit test). Outside claude.ai the page runs in explore mode (`body.no-claude`): elements marked `data-claude` are hidden.
 
 ## Publishing
 

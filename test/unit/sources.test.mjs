@@ -131,7 +131,7 @@ test('CI workflows: no ${{ }} inside a one-line { } mapping (the file would not 
     for (const [i, line] of src.split('\n').entries()) assert.ok(!/:\s*\{[^}]*\$\{\{/.test(line), `${f}:${i + 1} puts an expression inside a one-line mapping; use block style`);
   }
   const t = fs.readFileSync(path.join(dir, 'test.yml'), 'utf8');
-  assert.match(t, /key: gallery-\$\{\{ hashFiles\(/, 'the verified gallery is cached');
+  assert.match(t, /key: gallery-lessons-\$\{\{ hashFiles\(/, 'the checked lessons are cached'); assert.match(t, /actions\/cache\/save@/, 'saved before the tests');
   for (const m of t.matchAll(/timeout-minutes: (\d+)/g)) assert.ok(Number(m[1]) >= 60, 'a job timeout under an hour cannot fit a gallery build');
   assert.match(fs.readFileSync(path.join(dir, 'pages.yml'), 'utf8'), /actions\/deploy-pages@/);
 });
@@ -163,4 +163,7 @@ test('scripts/ci_summary.mjs reports each failing test with its error and locati
   assert.match(md, /strictly deep-equal/);
   assert.doesNotMatch(md, /### ✗ group/);
   assert.doesNotMatch(md, /TestContext/);
+  const { annotations } = await import('../../scripts/ci_summary.mjs');
+  const ann = annotations(tap);
+  assert.equal(ann.length, 1); assert.match(ann[0], /^::error title=inner fails::.*lab\.test\.mjs:40:3.*%0A/);
 });

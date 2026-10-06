@@ -39,15 +39,7 @@ jobs:
 
       - run: npm ci
 
-      - name: Restore the verified gallery (built by the test workflow)
-        id: gallery
-        uses: actions/cache@v4
-        with:
-          path: dist/gallery
-          key: gallery-${{ hashFiles('gallery/**', 'examples/**', 'kit/**', 'scripts/build_gallery.mjs') }}
-
-      - name: Install Chromium (only if the gallery has to be built here)
-        if: steps.gallery.outputs.cache-hit != 'true'
+      - name: Install Chromium (the gallery build takes thumbnails of any lesson it has to check)
         run: npx playwright install --with-deps chromium
 
       - name: Restore the package mirror
@@ -59,8 +51,16 @@ jobs:
       - name: Mirror the pinned packages (the site ships them in lib/, so previews and offline downloads need no CDN)
         run: npm run mirror
 
-      - name: Build and verify the gallery (only if it was not cached)
-        if: steps.gallery.outputs.cache-hit != 'true'
+      - name: Restore the lessons the test workflow checked
+        uses: actions/cache/restore@v4
+        with:
+          path: .work/gallery-cache
+          key: gallery-lessons-${{ hashFiles('gallery/**', 'examples/**', 'kit/**', 'scripts/build_gallery.mjs', 'scripts/lesson_hash.mjs') }}-${{ github.event.workflow_run.id || github.run_id }}
+          restore-keys: |
+            gallery-lessons-${{ hashFiles('gallery/**', 'examples/**', 'kit/**', 'scripts/build_gallery.mjs', 'scripts/lesson_hash.mjs') }}-
+            gallery-lessons-
+
+      - name: Build the gallery (from the checked lessons; anything not checked yet is built and checked here)
         run: npm run build:gallery
 
       - run: npm run build
