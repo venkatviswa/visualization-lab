@@ -19,6 +19,7 @@
     "ea-phi-flow",
     "data-model-alive",
     "which-option",
+    "oauth-sign-in",
     "regional-hires",
     "simpsons-paradox",
     "before-after",
@@ -36,7 +37,8 @@
     "pendulum-resonance",
     "orbits-escape",
     "collisions",
-    "regression-outlier"
+    "regression-outlier",
+    "fewest-hops"
   ],
   "refs": {
     "key-terms": {

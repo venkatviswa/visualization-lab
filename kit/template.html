@@ -23,6 +23,8 @@ addEventListener('unhandledrejection', e => __errors.push('Unhandled rejection: 
   body, main { display:flex; flex-direction:column; }
   main { flex:1; min-height:0; }
   #root { position:relative; flex:1; min-height:320px; overflow:hidden; background:{{ROOT_BG}}; }
+  /* Author display rules (.bar is flex) would otherwise override the hidden attribute and show a dead bar */
+  [hidden] { display:none !important; }
   .bar { display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; padding:8px 12px; background:var(--panel); border-top:1px solid var(--line); }
   .bar label { display:flex; gap:8px; align-items:center; white-space:nowrap; max-width:100%; min-width:0; }
   .bar output { color:var(--accent); font-family:ui-monospace, monospace; min-width:5ch; }
@@ -43,6 +45,20 @@ addEventListener('unhandledrejection', e => __errors.push('Unhandled rejection: 
   .bar button, .bar select { background:transparent; color:var(--ink); border:1px solid var(--line); border-radius:7px; padding:4px 10px; font:inherit; cursor:pointer; }
   .bar button.primary { background:var(--accent); color:#111; border-color:var(--accent); }
   #time { font-family:ui-monospace, monospace; color:var(--muted); font-size:12px; }
+  /* SPEC.ui.choiceButtons: a labelled on/off or choice param as a segmented toggle */
+  .seg { display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; vertical-align:middle; margin-left:4px; }
+  .seg button { border:0 !important; border-radius:0 !important; padding:5px 11px !important; }
+  .seg button + button { border-left:1px solid var(--line) !important; }
+  .seg button[aria-pressed="true"] { background:var(--accent) !important; color:#111; font-weight:700; }
+  /* SPEC.ui.stepChips: one button per marker, grouped by label prefix ("Step 1".."Step 4" -> Step 1 2 3 4) */
+  #chips { flex:1 1 auto; display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+  #chips .grp { display:inline-flex; flex-wrap:wrap; gap:4px; align-items:center; max-width:100%; }
+  #chips .grp b { font-size:13px; margin-right:2px; }
+  #chips button { min-width:30px; padding:3px 7px; border-radius:999px; font-size:13px; }
+  #chips button.on { background:var(--accent); color:#111; font-weight:700; border-color:var(--accent); }
+  #chips .hint { font-size:12px; color:var(--muted); margin-left:auto; }
+  /* On a phone the chips are the stepper: drop the hint, time and speed so the bar stays one short block */
+  @media (max-width:560px) { #chips .hint, body.chips #time, body.chips #speed, body.chips #scrub { display:none !important; } }
   /* Course wrapper (only when COURSE is set): title, predict card, the visual, the check line, explain card, notes */
   body.course { height:auto; min-height:100%; }
   body.course main { flex:none; }
@@ -89,6 +105,7 @@ addEventListener('unhandledrejection', e => __errors.push('Unhandled rejection: 
 <div id="textPanel" class="textpanel" role="region" aria-label="Text version" tabindex="-1" hidden><div class="tp-head"><strong>Text version</strong><button id="textClose" type="button">Back to the visual</button></div><div id="textView"></div></div>
 <div class="bar" id="params"></div>
 <div class="bar" id="transport" hidden>
+  <div id="chips" hidden></div>
   <button id="prev" type="button" aria-label="Previous step">&#9664;&#9664;</button>
   <button id="play" class="primary" type="button">Pause</button>
   <button id="next" type="button" aria-label="Next step">&#9654;&#9654;</button>
@@ -122,21 +139,32 @@ document.documentElement.dataset.look = window.LAB_THEME;
   $('textClose').onclick = () => { $('textPanel').hidden = true; $('textLink').focus(); };
   addEventListener('keydown', e => { if (e.key === 'Escape' && !$('textPanel').hidden) $('textClose').click(); });
   if (COURSE) buildCourse();
+  const UI = SPEC.ui || {};
   renderText();   // from the model alone, so the text version is there even when a library fails to load
   if (!window.lab || typeof lab.mount !== 'function') { __errors.push('window.lab.mount is missing'); return; }
   try { lab.mount(root, Object.assign({}, P)); } catch (e) { __errors.push('mount() failed: ' + e.message); return; }
   runCheck(); updateStatus(); renderText();
   // Learner controls come from the spec, never from the visual's own code
-  const inputs = {};
+  const changed = () => { try { lab.update(Object.assign({}, P)); runCheck(); updateStatus(); renderText(); restart(); } catch (e) { __errors.push('update() failed: ' + e.message); } };
+  const setters = {};
   for (const q of SPEC.params) {
+    if (UI.choiceButtons && q.labels) {
+      const grp = document.createElement('span'); grp.className = 'seg'; grp.setAttribute('role', 'group'); grp.setAttribute('aria-label', q.label);
+      q.labels.forEach((t, i) => { const v = q.min + i * q.step, b = Object.assign(document.createElement('button'), { type: 'button', textContent: t });
+        b.setAttribute('aria-pressed', String(v === q.value));
+        b.onclick = () => { P[q.id] = v; grp.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); changed(); };
+        grp.append(b); });
+      setters[q.id] = v => { const b = grp.querySelectorAll('button')[Math.round((v - q.min) / q.step)]; if (b) b.click(); };
+      const lab_ = document.createElement('label'); lab_.append(q.label, grp); $('params').append(lab_); continue;
+    }
     const out = document.createElement('output'), inp = Object.assign(document.createElement('input'), { type: 'range', min: q.min, max: q.max, step: q.step, value: q.value });
     out.textContent = text(q, q.value);
-    inp.oninput = () => { P[q.id] = Number(inp.value); out.textContent = text(q, P[q.id]); try { lab.update(Object.assign({}, P)); runCheck(); updateStatus(); renderText(); restart(); } catch (e) { __errors.push('update() failed: ' + e.message); } };
+    inp.oninput = () => { P[q.id] = Number(inp.value); out.textContent = text(q, P[q.id]); changed(); };
     const lab_ = document.createElement('label'); lab_.append(q.label + ' ', inp, out); $('params').append(lab_);
-    inputs[q.id] = inp;
+    setters[q.id] = v => { inp.value = v; inp.oninput(); };
   }
   // For verify.mjs and tests: set several params at once, as if the learner had moved the sliders
-  window.__setParams = vals => { for (const k in vals) if (inputs[k]) { inputs[k].value = vals[k]; inputs[k].oninput(); } };
+  window.__setParams = vals => { for (const k in vals) if (setters[k]) setters[k](vals[k]); };
   // Host-owned timeline: play, pause, step, scrub, speed
   const T = { frac: 0, playing: true, speed: 1, last: 0 };
   const has = () => typeof lab.seek === 'function';
@@ -146,12 +174,24 @@ document.documentElement.dataset.look = window.LAB_THEME;
   // Screen readers hear the step the lesson is on (debounced, so scrubbing does not queue announcements)
   let lastStep = -2, stepTimer = 0;
   const announce = () => { if (!window.labText || !window.__text) return; const i = labText.stepAt(window.__text, T.frac * dur()); if (i === lastStep || i < 0) return; lastStep = i; clearTimeout(stepTimer); stepTimer = setTimeout(() => { $('stepStatus').textContent = labText.say(window.__text, i); }, 350); };
-  const ui = () => { announce(); $('scrub').value = Math.round(T.frac * 1000); $('play').textContent = T.playing ? 'Pause' : (T.frac >= 1 ? 'Replay' : 'Play'); $('time').textContent = (T.frac * dur()).toFixed(1) + ' / ' + dur().toFixed(1) + ' s'; };
+  const ui = () => { announce(); $('scrub').value = Math.round(T.frac * 1000); $('play').textContent = T.playing ? 'Pause' : (T.frac >= 1 ? 'Replay' : 'Play'); $('time').textContent = (T.frac * dur()).toFixed(1) + ' / ' + dur().toFixed(1) + ' s'; markChip(); };
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  function restart() { if (!has()) return; T.frac = reduce ? 1 : 0; T.playing = !reduce; apply(); ui(); }
+  function restart() { if (!has()) return; T.frac = reduce && !UI.startPaused ? 1 : 0; T.playing = !reduce && !UI.startPaused; apply(); ui(); chips(); }
+  function chips() {
+    if (!UI.stepChips || !has()) return; const box = $('chips'), ms = marks(), d = dur(); box.hidden = false; document.body.classList.add('chips'); box.innerHTML = '';
+    let names = []; try { names = Array.isArray(lab.markerLabels) ? lab.markerLabels : []; } catch (e) {}
+    let grp = null, last = null;
+    ms.forEach((m, i) => { const name = String(names[i] ?? (i + 1)), g = name.replace(/\d+$/, ''), n = name.slice(g.length) || String(i + 1);
+      if (!grp || g !== last) { grp = document.createElement('span'); grp.className = 'grp'; if (g.trim()) grp.append(Object.assign(document.createElement('b'), { textContent: g.trim() })); box.append(grp); last = g; }
+      const b = Object.assign(document.createElement('button'), { type: 'button', textContent: n, title: name }); b.dataset.t = m;
+      b.onclick = () => window.__seekFrac((m + 0.01) / d); grp.append(b); });
+    box.append(Object.assign(document.createElement('span'), { className: 'hint', textContent: 'Click a step, or use ← → keys' }));
+  }
+  const markChip = () => { if (!UI.stepChips) return; const t = T.frac * dur(); let on = null; $('chips').querySelectorAll('button').forEach(b => { if (Number(b.dataset.t) <= t + 1e-6) on = b; b.classList.remove('on'); }); if (on) on.classList.add('on'); };
   window.__seekFrac = f => { T.frac = Math.max(0, Math.min(1, f)); T.playing = false; if (has()) apply(); ui(); };
   if (has()) {
     $('transport').hidden = false;
+    if (UI.hideScrub) ['scrub', 'time', 'speed'].forEach(id => { $(id).style.display = 'none'; });
     $('play').onclick = () => { if (T.frac >= 1) T.frac = 0; T.playing = !T.playing; ui(); };
     $('scrub').oninput = e => window.__seekFrac(e.target.value / 1000);
     $('speed').onchange = e => { T.speed = Number(e.target.value); };

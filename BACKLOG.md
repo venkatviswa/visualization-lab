@@ -13,6 +13,7 @@ Open items, roughly in the order we plan to take them. Tick items here in the sa
 
 ## Then
 
+- [ ] **Spec `ui` options in the lab's preview** (`choiceButtons`, `stepChips`, `startPaused`, `hideScrub`): downloaded and toolkit pages honour them (`kit/template.html`), but the preview harness in `src/vislab.html` still shows sliders and a plain play bar, so a lesson like *Fewest hops* looks different in the lab than in its download. Share the template's transport code with the harness, with an e2e test per option.
 - [ ] **User test of the generation flow** (facilitator script, task list, findings log and targets: the doc *Visualization Lab: user test of the generation flow*): three people run Draft spec and Generate on new goals; collect where the spec or code came back wrong; tighten the prompts (edit the `AUTHORING.md` blocks). Everything in the gallery was built through the toolkit, so the in-lab prompts have only been exercised on the examples.
 - [x] **Publish a lab lesson to the gallery**: Export lesson, then `npm run add-lesson` and a push; CI and the pages workflow do the rest. The lesson chip says when a lesson is only imported.
 - [ ] **Save to gallery from the page** (a shared team store, no git), so a team gallery grows without a repository step.

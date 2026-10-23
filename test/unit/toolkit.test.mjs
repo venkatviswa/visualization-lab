@@ -35,8 +35,10 @@ test('build + verify: one page per library family passes', async () => {
     assert.equal(r.status, 0, r.stderr);
     pages.push(out);
   }
-  // d3 via the gallery's regional-hires B, plain svg via regression-outlier A, plotly and d3sankey via the record-flow Sankeys
-  for (const [slug, v, lib] of [['regional-hires', 'b', 'd3'], ['regression-outlier', 'a', 'svg'], ['ea-record-flow', 'a', 'plotly'], ['ea-record-flow', 'b', 'd3sankey']]) {
+  // d3 via the gallery's regional-hires B, plain svg via regression-outlier A, plotly and d3sankey via the record-flow Sankeys,
+  // mermaid via the OAuth sequence diagram, cytoscape via fewest-hops A (whose spec shows its controls as choice buttons)
+  for (const [slug, v, lib] of [['regional-hires', 'b', 'd3'], ['regression-outlier', 'a', 'svg'], ['ea-record-flow', 'a', 'plotly'], ['ea-record-flow', 'b', 'd3sankey'],
+    ['oauth-sign-in', 'a', 'mermaid'], ['fewest-hops', 'a', 'cytoscape']]) {
     const out = path.join(work, `${slug}_${lib}.html`);
     const r = run('build.mjs', [path.join(root, 'gallery/items', slug, 'spec.json'), path.join(root, 'gallery/items', slug, v + '.js'), lib, 'studio', out, '--cdn', server.cdn]);
     assert.equal(r.status, 0, r.stderr); pages.push(out);
@@ -49,6 +51,11 @@ test('build + verify: one page per library family passes', async () => {
   for (const x of results) assert.ok(x.timeline, `${x.page} has no timeline`);
   for (const x of results) assert.ok(!x.overflow, `${x.page} overflows on a phone`);
   for (const x of results) assert.equal(x.embedClipped, false, `${x.page} scrolls inside the standard embed`);
+  for (const x of results) assert.deepEqual(Object.keys(x.embeds), ['embedPhone', 'embedColumn'], `${x.page}: verify reports each embed`);
+  // ui.choiceButtons: verify drives the button groups through __setParams, so the first and last button are real states
+  const hops = results.find(x => x.page === 'fewest-hops_cytoscape');
+  assert.deepEqual(hops.extremes.filter(e => e.param === 'algorithm').map(e => e.value), [0, 1]);
+  assert.notEqual(hops.extremes[0].status, hops.extremes[1].status, 'the two algorithm buttons give different states');
   for (const x of results) assert.ok(x.status.length > 10, `${x.page} has no text status line`);
   for (const x of results) assert.ok(x.extremes.length >= 4 && x.extremes.every(e => e.check), `${x.page}: check fails at a slider extreme ${JSON.stringify(x.extremes)}`);
   for (const x of results) assert.ok(x.shots.some(f => /x-\w+-min\.png$/.test(f)) && x.shots.some(f => /x-\w+-max\.png$/.test(f)), `${x.page} has no extreme screenshots`);
@@ -107,7 +114,8 @@ test('verify.mjs fails a page that scrolls inside the standard embed, and report
 test('build.mjs --offline: every library family runs with the network switched off', async () => {
   const cases = [['examples', 'rocket', 'a', 'p5'], ['examples', 'rocket', 'b', 'chartjs'], ['examples', 'projectile', 'b', 'three'], ['examples', 'pipeline', 'a', 'story'],
     ['examples', 'pipeline', 'b', 'reactflow'], ['examples', 'pipeline', 'c', 'story3d'], ['examples', 'terms', 'a', 'wordcloud'],
-    ['gallery', 'regional-hires', 'b', 'd3'], ['gallery', 'ea-record-flow', 'a', 'plotly'], ['gallery', 'ea-record-flow', 'b', 'd3sankey']];
+    ['gallery', 'regional-hires', 'b', 'd3'], ['gallery', 'ea-record-flow', 'a', 'plotly'], ['gallery', 'ea-record-flow', 'b', 'd3sankey'],
+    ['gallery', 'oauth-sign-in', 'a', 'mermaid'], ['gallery', 'fewest-hops', 'a', 'cytoscape']];
   const browser = await launch();
   try {
     for (const [where, ex, v, lib] of cases) {

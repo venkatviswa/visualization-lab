@@ -42,7 +42,8 @@
       let map; try { map = JSON.parse(m[1]); } catch (e) { continue; }
       const imports = map.imports || {}, add = {};
       const prefixes = Object.entries(imports).filter(([k, u]) => k.endsWith('/') && u.startsWith(cdn)).map(([k, u]) => [k, u.slice(cdn.length)]);
-      // a module's relative imports become specifiers under the same prefix, so the import map can resolve them
+      // a module's relative imports become specifiers under the same prefix, so the import map can resolve them;
+      // outside every prefix (three r160+ build/three.module.js imports ./three.core.js) the full CDN URL is the specifier
       const moduleText = async (spec, path) => {
         if (add[spec]) return;
         add[spec] = 'pending';
@@ -52,8 +53,7 @@
         const deps = [];
         t = t.replace(/((?:import|export)\s[^'"]*?from\s*|import\s*\(?\s*)(['"])(\.\.?\/[^'"]+)\2/g, (all, head, q, rel) => {
           const target = resolve(dirOf(path), rel);
-          if (!pre || !target.startsWith(pre[1])) return all;
-          const s = pre[0] + target.slice(pre[1].length); deps.push([s, target]);
+          const s = pre && target.startsWith(pre[1]) ? pre[0] + target.slice(pre[1].length) : cdn + target; deps.push([s, target]);
           return head + q + s + q;
         });
         for (const [s, p] of deps) await moduleText(s, p);
