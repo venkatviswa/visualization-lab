@@ -1,0 +1,59 @@
+{
+  "title": "OAuth sign-in with PKCE",
+  "objective": "Learners follow a mobile app sign-in message by message and see why the access token never passes through the browser, and why PKCE makes a stolen authorization code useless.",
+  "assumptions": [
+    "The app is a public client: a mobile app with no client secret",
+    "The attacker is a malicious app that registered the same myapp:// redirect scheme (the threat PKCE was designed for, RFC 7636 section 1)",
+    "Simplified: state, nonce, scopes and token expiry are left out",
+    "Endpoint paths and the myapp:// scheme are illustrative",
+    "Timings are playback seconds, not real durations"
+  ],
+  "units": [
+    "time: playback seconds, 2.5 per message"
+  ],
+  "params": [
+    {
+      "id": "pkce",
+      "label": "PKCE",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 1,
+      "unit": "",
+      "labels": [
+        "Off",
+        "On"
+      ]
+    },
+    {
+      "id": "stolenCode",
+      "label": "Malicious app",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 0,
+      "unit": "",
+      "labels": [
+        "Not installed",
+        "Steals the code"
+      ]
+    }
+  ],
+  "modelCode": "function model(p) {\n  // OAuth 2.0 authorization code flow for a mobile app (a public client with no secret), with and without PKCE.\n  // A malicious app can register the same redirect scheme and grab the code (RFC 7636, section 1).\n  const pkce = Math.round(p.pkce) === 1;\n  const stolen = Math.round(p.stolenCode) === 1;\n  const STEP = 2.5;\n  const participants = [\n    { id: 'U', label: 'You', actor: true },\n    { id: 'A', label: 'Mobile app' },\n    { id: 'B', label: 'System browser' },\n    { id: 'S', label: 'Auth server' },\n    { id: 'R', label: 'API' }\n  ];\n  if (stolen) participants.splice(3, 0, { id: 'X', label: 'Malicious app' });\n  const steps = [];\n  const add = (from, to, text, note, extra) => steps.push(Object.assign({ i: steps.length, from, to, text, note, reply: false }, extra || {}));\n  add('U', 'A', 'Tap \"Sign in\"', 'You ask the app to sign you in. The app has no password field and never sees your password.');\n  if (pkce) add('A', 'A', 'Make verifier + challenge', 'The app makes a random secret (code_verifier) and keeps it. It sends only its SHA-256 hash (code_challenge).', { carries: ['verifier'] });\n  add('A', 'B', pkce ? 'Open /authorize + challenge' : 'Open /authorize', pkce ? 'The app opens the browser at the auth server, passing the challenge, never the verifier.' : 'The app opens the browser at the auth server. Nothing ties this request to this app.', pkce ? { carries: ['challenge'] } : {});\n  add('B', 'S', 'GET /authorize', 'The browser asks the auth server for a sign-in page for this app.', pkce ? { carries: ['challenge'] } : {});\n  add('S', 'U', 'Sign-in and consent page', 'You sign in on the auth server\\'s own page, in the browser, not inside the app.', { reply: true });\n  add('U', 'S', 'Sign in, approve', 'You sign in and approve what the app asked to access.');\n  add('S', 'B', 'Redirect myapp://?code=…', 'The auth server sends a short-lived, one-time authorization code back through the browser. It is not a token.', { reply: true, carries: ['code'] });\n  let tokenTo = null, rejected = false;\n  if (stolen) {\n    add('B', 'X', 'myapp://?code=…', 'A malicious app registered the same myapp:// scheme, so the operating system hands it the code.', { carries: ['code'], attack: true });\n    add('X', 'S', 'POST /token (code)', 'The malicious app tries to trade the stolen code for a token. It never saw the verifier.', { carries: ['code'], attack: true });\n    if (pkce) { rejected = true; add('S', 'X', '400 invalid_grant', 'Rejected: no code_verifier matches the challenge, so the stolen code is worthless.', { reply: true, attack: true, blocked: true }); }\n    else { tokenTo = 'X'; add('S', 'X', 'Access token', 'Without PKCE nothing proves who started the sign-in, so the malicious app gets your access token.', { reply: true, carries: ['token'], attack: true }); }\n  } else {\n    add('B', 'A', 'myapp://?code=…', 'The operating system hands the code to the app that registered myapp://.', { carries: ['code'] });\n    add('A', 'S', pkce ? 'POST /token (code + verifier)' : 'POST /token (code)', pkce ? 'The app trades the code for a token and proves it started the sign-in by sending the verifier.' : 'The app trades the code for a token. A public client has no secret, so the code alone is enough.', { carries: pkce ? ['code', 'verifier'] : ['code'] });\n    if (pkce) add('S', 'S', 'SHA-256(verifier) = challenge?', 'The auth server hashes the verifier and checks it matches the challenge from the first request.');\n    tokenTo = 'A';\n    add('S', 'A', 'Access + refresh token', 'The tokens go straight to the app over a back-channel call, never through the browser.', { reply: true, carries: ['token'] });\n    add('A', 'R', 'GET /me (Bearer token)', 'The app calls the API with the access token.', { carries: ['token'] });\n    add('R', 'A', '200 your profile', 'The API checks the token and returns your data.', { reply: true });\n  }\n  const tokenViaBrowser = steps.some(s => (s.carries || []).includes('token') && (s.to === 'B' || s.from === 'B'));\n  const duration = steps.length * STEP;\n  const markers = steps.map(s => s.i * STEP);\n  const markerLabels = steps.map(s => 'Step ' + (s.i + 1));\n  const outcome = stolen ? (pkce ? 'The stolen code is rejected: the attacker has no verifier.' : 'The attacker swaps the stolen code for your access token.') : 'The app gets the token over a back channel; the browser only ever carries the code.';\n  const summary = (pkce ? 'With PKCE' : 'Without PKCE') + (stolen ? ', code stolen. ' : ', normal sign-in. ') + outcome;\n  return { participants, steps, STEP, duration, markers, markerLabels, pkce, stolen, tokenTo, rejected, tokenViaBrowser, summary };\n}",
+  "checkCode": "function check(p) {\n  const m = model(p);\n  const pkce = Math.round(p.pkce) === 1, stolen = Math.round(p.stolenCode) === 1;\n  const attackerGotToken = m.tokenTo === 'X';\n  const ch = m.steps.findIndex(s => (s.carries || []).includes('challenge'));\n  const sent = m.steps.filter(s => s.from !== s.to && (s.carries || []).includes('verifier'));\n  const verifierSafe = sent.every(s => s.from === 'A' && s.to === 'S' && s.i > ch);\n  const pass = attackerGotToken === (stolen && !pkce) && !m.tokenViaBrowser && verifierSafe;\n  return { pass, detail: (pkce ? 'PKCE on' : 'PKCE off') + ', ' + (stolen ? 'code stolen' : 'no theft') + ': the attacker ' + (attackerGotToken ? 'gets' : 'does not get') + ' a token, no token passes through the browser, and the verifier ' + (sent.length ? 'goes only from the app to the auth server, after the challenge' : 'is never sent') + ' (' + m.steps.length + ' steps).' };\n}",
+  "expectAtDefaults": "m.tokenTo === \"A\" && !m.tokenViaBrowser && m.pkce && m.steps.some(s => (s.carries || []).includes(\"verifier\") && s.to === \"S\")",
+  "learnerPrompts": {
+    "predict": "Turn on the malicious app and turn PKCE off. Who ends up holding your access token, and at which step could the auth server have stopped it?",
+    "explain": "The browser carries the authorization code but never the token or the verifier. Why does that make a stolen code worthless when PKCE is on?"
+  },
+  "ui": {
+    "stepChips": true,
+    "startPaused": true
+  },
+  "recommended": {
+    "library": "mermaid"
+  },
+  "alternative": {
+    "library": "story"
+  }
+}

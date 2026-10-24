@@ -4,7 +4,7 @@ Project context for Claude Code and other agents working in this repository. Kee
 
 ## What this is
 
-Visualization Lab: a single-page browser workbench where educators and L&D designers describe a teaching concept, let Claude draft a **spec** (objective, a pure `model(p)`, learner controls, a `check(p)`), then generate the same lesson with two to six different JavaScript libraries (versions A to F) and compare them side by side. A **Get inspired** gallery holds 36 finished lessons. A **toolkit** (`kit/`) builds and verifies standalone lesson pages, and a bake-off skill uses it from agents.
+Visualization Lab: a single-page browser workbench where educators and L&D designers describe a teaching concept, let Claude draft a **spec** (objective, a pure `model(p)`, learner controls, a `check(p)`), then generate the same lesson with two to six different JavaScript libraries (versions A to F) and compare them side by side. A **Get inspired** gallery holds 38 finished lessons. A **toolkit** (`kit/`) builds and verifies standalone lesson pages, and a bake-off skill uses it from agents.
 
 The one idea everything rests on: **one spec, many renderers**. The model owns every number; renderers only draw; the host page owns the controls and the playback clock. Comparing two versions compares libraries, not two AI interpretations.
 
@@ -13,7 +13,7 @@ The one idea everything rests on: **one spec, many renderers**. The model owns e
 | Path | Role | Edit? |
 | --- | --- | --- |
 | `src/vislab.html` | the page, with `/*@…@*/` and `@@…@@` build placeholders | yes |
-| `kit/libraries.json` | **single source** for libraries (versions, load order, generator notes) and default comparisons | yes |
+| `kit/libraries.json` | **single source** for libraries (versions, load order, generator notes), default comparisons and the bake-off skill's default trios | yes |
 | `AUTHORING.md` | lesson rules; the `<!-- lab:… -->` blocks become the generator prompts; also the human guide | yes |
 | `kit/` | `template.html`, `build.mjs`, `verify.mjs`, `check_spec.mjs`, `story3d_kit.js`, `look2d.js` (2D story looks), `reactflow.css`, `offline.js` (libraries inlined into a page), `textview.js` (a lesson's text version, from the model) | yes |
 | `examples/<name>/` | the 4 built-in lessons (`lesson.json`, `model.js`, `check.js`, `a.js`…) | yes |
@@ -25,7 +25,7 @@ The one idea everything rests on: **one spec, many renderers**. The model owns e
 | `dist/` | build output, published as the artifact | **never**: regenerate with `npm run build` |
 | `.cdn/`, `.work/` | package mirror and scratch | ignored |
 
-Generated and never hand-edited: the prompt text inside the page, the `LIBS`/`RUNTIME`/`PAIRS` constants, the library and comparison tables in `AUTHORING.md` and `README.md`, everything in `dist/`.
+Generated and never hand-edited: the prompt text inside the page, the `LIBS`/`RUNTIME`/`PAIRS` constants, the library and comparison tables in `AUTHORING.md` and `README.md`, the trio table in `docs/SKILL.lesson-visual-bakeoff.md`, everything in `dist/`.
 
 ## Commands
 

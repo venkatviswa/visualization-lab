@@ -1,0 +1,26 @@
+{
+  "slug": "fewest-hops",
+  "category": "Math",
+  "title": "Fewest hops",
+  "goal": "Teach why the route with the fewest hops is not always the fastest: a small network of cities joined by fibre links and one satellite relay, searched by breadth-first search and by Dijkstra step by step. Show each algorithm's frontier and settled nodes as it runs, and the final route's hops and latency against the other algorithm's. Let me switch between the two algorithms and take one link down to see Dijkstra reroute.",
+  "a": {
+    "lib": "cytoscape",
+    "form": "layered graph",
+    "explanation": "Cytoscape.js lays the network out in columns by hop count from the start city, so 'fewest hops' is literally the shortest column count and the satellite shortcut is visibly a one-column jump. Each step restyles the graph without moving it: the node being settled, the frontier with its current distance, and at the end the chosen route in colour, with the link that is down drawn dashed. A caption under the graph says what the algorithm just did. The automatic layout makes the algorithm's view of the graph clear; the cost is that the picture no longer looks like a map.",
+    "caveats": [
+      "The layout arranges by hop count, so cities are not where they are on a map",
+      "Node and edge labels are drawn on a canvas; the caption carries the text a screen reader needs",
+      "Two edge labels can touch where long links cross; they are slid along their edges to avoid it"
+    ]
+  },
+  "b": {
+    "lib": "reactflow",
+    "form": "network map",
+    "explanation": "React Flow with the cities hand-placed like a map, London in the west and Mumbai in the east, links drawn centre to centre with their latencies. The same steps light the settled cities, the frontier and the final route; click a city to see its links and how the algorithm reached it. The map makes the satellite relay's detour feel as long as it is, which the layered view hides; what it loses is the hop count as a shape, so the learner has to count hops along the route.",
+    "caveats": [
+      "Positions are hand-placed for this network; a new city needs a new position",
+      "On a phone the map shrinks to fit and latencies get small; the details strip carries the numbers",
+      "A clicked city's details stay in the strip until you click it again or change a control"
+    ]
+  }
+}

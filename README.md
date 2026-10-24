@@ -74,7 +74,7 @@ Start from: *Agentic delivery pipeline* for the method overview, *Watch an agent
 
 ## Get inspired
 
-Switch to **Get inspired** (top right) to browse 36 finished lessons:
+Switch to **Get inspired** (top right) to browse 38 finished lessons:
 
 | Subject | Lessons | Chart forms |
 | --- | --- | --- |
@@ -148,6 +148,9 @@ Right after drafting, the lab runs the model and the check:
 | Business chart | Chart.js | D3 | Standard configuration versus custom control. |
 | Process walkthrough | React Flow | Plain SVG | Convenience versus flexibility. |
 | Vocabulary or key terms | Word cloud (D3 + d3-cloud) | Chart.js | Visual impact versus accurate comparison: can learners tell which term matters most? |
+| Messages between systems | Mermaid | Story (SVG + GSAP + icons) | Precise notation versus a narrated story: can learners say who sent what to whom, and in what order? |
+| Flows, funnels, budgets | Sankey (D3 + d3-sankey) | Chart.js | Flow versus totals: stacked bars give exact stage totals, but only the Sankey shows which part went where. |
+| Graph algorithm on a network | Cytoscape.js | React Flow | Automatic layout versus a hand-placed map: does arranging nodes by hop count make the algorithm's choice easier to see than placing them where they are? |
 <!-- /lab -->
 
 When the suggested library starts one of these pairs, the comparison is set automatically.
@@ -272,13 +275,15 @@ All libraries load at fixed versions: from `lib/` beside the page on a hosted co
 | Library | View | Best for |
 | --- | --- | --- |
 | p5.js 1.9.4 | 2D | Educational animations, simulations with forces, algorithm steps |
-| three.js r169 | 3D | Custom 3D scenes where depth matters |
-| Chart.js 4.4.1 | 2D | Standard charts from configuration |
+| three.js r186 | 3D | Custom 3D scenes where depth matters |
+| Chart.js 4.6.1 | 2D | Standard charts from configuration |
 | D3 7.9.0 | 2D | Custom data graphics with full control over scales and marks |
-| Word cloud (D3 + d3-cloud 1.2.7) | 2D | Vocabulary and key terms, sized by importance and coloured by theme |
+| Word cloud (D3 + d3-cloud 1.2.9) | 2D | Vocabulary and key terms, sized by importance and coloured by theme |
 | Sankey (D3 + d3-sankey 0.12.3) | 2D | Flows between stages with width as volume: records through a platform, tokens through a context window |
 | Plotly.js 2.35.2 | 2D / 3D | Scientific plots and 3D surfaces |
 | React Flow 12 (React 18.3) | 2D | Interactive process, workflow and architecture diagrams |
+| Cytoscape.js 3.34 | 2D | Network graphs laid out automatically (routing, dependencies), with algorithm state on nodes and edges |
+| Mermaid 12.2 | 2D | Sequence diagrams of messages between people and systems, one message at a time |
 | Story (SVG + GSAP 3.15 + Lucide icons) | 2D | Animated explainers with people, agents, code windows and documents |
 | 3D story (Story3D kit on three.js) | 3D | The same kind of story told in a 3D scene with props, camera moves and themes |
 | Plain SVG | 2D | Hand-built drawings with no library |
@@ -309,7 +314,7 @@ All libraries load at fixed versions: from `lib/` beside the page on a hosted co
 - **The editor loads the first time you open Edit code.** If it can't load, you get a plain text box that still supports Run, Undo and line jumps.
 
 **Previews and delivery**
-- **The gallery loads separately.** The lab page is small; the 36 lessons and their thumbnails load the first time you open Get inspired, so that tab takes a moment on first use.
+- **The gallery loads separately.** The lab page is small; the 38 lessons and their thumbnails load the first time you open Get inspired, so that tab takes a moment on first use.
 - **Libraries come from a library server.** On a hosted copy (GitHub Pages) the previews load them from the `lib/` folder beside the page; inside Claude, from jsDelivr. Either way they move on to the next server (jsDelivr, then unpkg) for the rest of the session if one can't be reached, and the console says so. If none can be reached, each version says *Couldn't load p5.js* (or whichever library) in plain words with a **Retry** button; nothing is wrong with the lesson, so Fix errors is not offered. Downloaded pages load from jsDelivr unless **Works offline** was ticked.
 - **3D needs WebGL.** On machines without a capable graphics card (some virtual desktops), 3D versions can be slow or blank. Keep a 2D version as a fallback.
 - **"Reduce motion" changes playback.** With the operating system's reduce-motion setting on, animations open at their final state instead of playing. Press Play to watch them.

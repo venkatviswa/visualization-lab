@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Assemble dist/vislab.html from src/, kit/, examples/ and the docs, and regenerate the generated doc tables.
-// Single sources: AUTHORING.md (rules in <!-- lab:* --> blocks), kit/libraries.json (libraries + comparisons),
+// Single sources: AUTHORING.md (rules in <!-- lab:* --> blocks), kit/libraries.json (libraries, comparisons, trios),
 // examples/*/ (built-in lessons), kit/story3d_kit.js, kit/reactflow.css, src/starters.json.
 import fs from 'fs';
 import path from 'path';
@@ -37,6 +37,12 @@ doc = setBlock(setBlock(doc, 'libraries', libTable), 'comparisons', compTable);
 readme = setBlock(readme, 'comparisons', compTable);
 fs.writeFileSync(path.join(root, 'AUTHORING.md'), doc);
 fs.writeFileSync(path.join(root, 'README.md'), readme);
+// The bake-off skill's default contenders (libraries.json "trios"), in docs/SKILL.lesson-visual-bakeoff.md section 2
+const pick = p => p.alt.map(a => { if (!names[a.id]) throw new Error('libraries.json trios: unknown library ' + a.id); return '`' + a.id + '`' + (a.as ? ' (' + a.as + ')' : ''); }).join(' or ');
+const trioTable = ['| Concept | Default trio |', '| --- | --- |', ...libj.trios.map(t => `| ${cell(t.concept)} | ${cell(t.picks.map(pick).join(', '))} |`)].join('\n');
+const skillDoc = read('docs/SKILL.lesson-visual-bakeoff.md');
+if (!skillDoc.includes('<!-- lab:trios -->')) throw new Error('docs/SKILL.lesson-visual-bakeoff.md is missing the <!-- lab:trios --> block');
+fs.writeFileSync(path.join(root, 'docs/SKILL.lesson-visual-bakeoff.md'), setBlock(skillDoc, 'trios', trioTable));
 
 // ---- page pieces
 const plain = libs.filter(l => l.id !== 'story3d');

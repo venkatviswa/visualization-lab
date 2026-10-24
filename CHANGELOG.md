@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.13.0 — the bake-off skill's kit, back in step
+
+The kit and the bake-off skill had drifted apart; this brings over what the skill (the `lesson-visual-bakeoff` skill in the masterclass plugin) added, and the skill takes the lab's text version, offline builds and accessibility in return.
+
+- Library pins move to the latest release within each major version: three.js r186 (was r169), Chart.js 4.6.1, d3-cloud 1.2.9, Lucide 1.61.0, React Flow (`@xyflow/react`) 12.12.0 with its stylesheet in `kit/reactflow.css`. `scripts/libfiles.mjs` reads the three.js version from `libraries.json` instead of a hard-coded r169, and lists `three.core.js`, which `three.module.js` imports from r160 on.
+- `build.mjs --offline` resolves a relative import that sits outside every import-map prefix against the CDN (three r186's `./three.core.js` was left unresolvable).
+- Spec `ui` options for downloaded and toolkit pages: `choiceButtons` (labelled controls as segmented buttons), `stepChips` (one named button per step, from the renderer's `markerLabels`), `startPaused` and `hideScrub`. The guide has the matching spec and renderer rules for step-based lessons. The lab's preview does not show them yet (BACKLOG).
+- verify adds `embeds` (which embed, phone or slide column, scrolled; `embedClipped` stays one true or false), `deadBar` (a play bar showing on a page with no `seek`), screenshots of both embeds, and drives choice buttons through `__setParams` for the min and max shots. The template has `[hidden]{display:none !important}`, so author CSS cannot show a hidden play bar.
+- Two gallery lessons, so every library in the kit has one: *OAuth sign-in* (Enterprise architecture; a Mermaid sequence diagram against a story with a "who holds what" panel) and *Fewest hops* (Math; breadth-first search against Dijkstra, a Cytoscape.js graph laid out by hop count against a hand-placed React Flow map). New chart forms: sequence diagram, layered graph, network map.
+- The bake-off skill's contender table (`docs/SKILL.lesson-visual-bakeoff.md` section 2) is generated from `libraries.json` "trios" by `npm run build`, and the skill text is the skill's current version: Mermaid and Cytoscape.js contenders and notes, the d3sankey pick, step-based lessons, the ResizeObserver and phone rules, and the full disqualification list.
+
 ## 0.12.3 — a second attempt for lessons that time out on CI
 
 - A lesson that fails while several browsers share the CI runner is checked again on its own before the job fails (gallery build and gallery sweep). On the first full run five 3D lessons timed out taking a screenshot with four software-rendering browsers on four CPUs; the 31 that passed were kept, so the retry only checks the failures. A lesson that fails alone too still fails the run.

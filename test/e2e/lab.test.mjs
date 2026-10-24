@@ -114,7 +114,8 @@ test('view/library mismatch is flagged in step 2 and for version A, with one-cli
 test('comparison lines follow the libraries actually chosen, and the default pairs table is present', async () => {
   const { ctx, page } = await fresh();
   await loadExample(page, '#btnTerms'); await sleep(1500);
-  assert.equal(await page.$$eval('table.pairs tr', r => r.length - 1), 4);
+  const comparisons = JSON.parse(fs.readFileSync(path.join(root, 'kit/libraries.json'), 'utf8')).comparisons.length;
+  assert.equal(await page.$$eval('table.pairs tr', r => r.length - 1), comparisons, 'one row per libraries.json comparison');
   await page.selectOption('#libA', 'p5'); await page.selectOption('#libB', 'three'); await sleep(200);
   assert.match(await page.$eval('#lessonLines', n => n.innerText), /A vs B: Whether depth adds useful information/);
   await page.selectOption('#libA', 'chartjs'); await page.selectOption('#libB', 'd3'); await sleep(200);
@@ -135,7 +136,7 @@ test('code editor: edit, run, error with line jump, undo, discard', async () => 
   });
   assert.match(await page.$eval(`${A} [data-tab="source"]`, n => n.textContent), /•/, 'unsaved marker');
   assert.equal(await page.$eval(`${A} [data-r=discard]`, n => n.hidden), false);
-  await page.click(`${A} .cm-content`); await page.keyboard.press('Control+Enter'); await sleep(3000);
+  await page.click(`${A} .cm-content`); await page.keyboard.press('ControlOrMeta+Enter'); await sleep(3000);
   assert.equal(await page.$eval(`${A} [aria-selected=true]`, n => n.textContent), 'Preview', 'run returns to the preview');
   const problems = await page.$eval(`${A} [data-r=problems]`, n => n.innerText);
   assert.match(problems, /notDefinedYet/); assert.match(problems, /Line \d+/);
@@ -402,7 +403,7 @@ test('scoring rubric: score versions 1-5, weighted totals and the winner, stale 
   const A = '.pane[data-vid="A"]';
   await openEditor(page, 'A');
   await page.evaluate(() => { const ed = CM.EditorView.findFromDOM(document.querySelector('.pane[data-vid="A"] .cm-editor')); ed.dispatch({ changes: { from: 0, insert: '// reviewed\n' } }); });
-  await page.click(`${A} .cm-content`); await page.keyboard.press('Control+Enter'); await sleep(3000);
+  await page.click(`${A} .cm-content`); await page.keyboard.press('ControlOrMeta+Enter'); await sleep(3000);
   assert.deepEqual(await page.$$eval('[data-total]', n => n.map(x => x.textContent)), ['–', '90 ✓']);
   await page.click('#btnNew'); await sleep(200); await page.click('#btnNew'); await sleep(300);
   await page.click('#btnImport'); await page.setInputFiles('#importFile', file); await sleep(7000);

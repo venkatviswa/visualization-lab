@@ -24,7 +24,7 @@ dist/                  build output (ignored by git); publish from here
 | Change | Edit | Then |
 | --- | --- | --- |
 | A rule the generator follows (spec, model, check, renderer, look, phone) | the matching `<!-- lab:… -->` block in `AUTHORING.md` | `npm run build` |
-| A library (version, load order, notes, purpose) or a default comparison | `kit/libraries.json` | `npm run build` (also regenerates the doc tables) |
+| A library (version, load order, notes, purpose), a default comparison or the bake-off skill's default trios | `kit/libraries.json` | `npm run build` (also regenerates the doc tables, including the trio table in `docs/SKILL.lesson-visual-bakeoff.md`) |
 | The page itself (UI, behaviour, styles) | `src/vislab.html` | `npm run build` |
 | A built-in lesson | `examples/<name>/` | `npm run build` |
 | A gallery lesson | `gallery/items/<slug>/` (+ `gallery/gallery.json` for a new one) | `npm run build:gallery` |

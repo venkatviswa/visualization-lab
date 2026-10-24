@@ -13,7 +13,7 @@
   --xy-attribution-background-color-default: rgba(255, 255, 255, 0.5);
 
   --xy-minimap-background-color-default: #fff;
-  --xy-minimap-mask-background-color-default: rgb(240, 240, 240, 0.6);
+  --xy-minimap-mask-background-color-default: rgba(240, 240, 240, 0.6);
   --xy-minimap-mask-stroke-color-default: transparent;
   --xy-minimap-mask-stroke-width-default: 1;
   --xy-minimap-node-background-color-default: #e2e2e2;
@@ -61,7 +61,7 @@
   --xy-attribution-background-color-default: rgba(150, 150, 150, 0.25);
 
   --xy-minimap-background-color-default: #141414;
-  --xy-minimap-mask-background-color-default: rgb(60, 60, 60, 0.6);
+  --xy-minimap-mask-background-color-default: rgba(60, 60, 60, 0.6);
   --xy-minimap-mask-stroke-color-default: transparent;
   --xy-minimap-mask-stroke-width-default: 1;
   --xy-minimap-node-background-color-default: #2b2b2b;
@@ -69,9 +69,9 @@
   --xy-minimap-node-stroke-width-default: 2;
 
   --xy-background-color-default: #141414;
-  --xy-background-pattern-dots-color-default: #777;
-  --xy-background-pattern-lines-color-default: #777;
-  --xy-background-pattern-cross-color-default: #777;
+  --xy-background-pattern-dots-color-default: #555;
+  --xy-background-pattern-lines-color-default: #333;
+  --xy-background-pattern-cross-color-default: #333;
   --xy-node-color-default: #f8f8f8;
   --xy-node-border-default: 1px solid #3c3c3c;
   --xy-node-background-color-default: #1e1e1e;
@@ -96,7 +96,7 @@
   --xy-edge-label-color-default: #f8f8f8;
 }
 .react-flow__background {
-  background-color: var(--xy-background-color, var(--xy-background-color-props, var(--xy-background-color-default)));
+  background-color: var(--xy-background-color-props, var(--xy-background-color, var(--xy-background-color-default)));
   pointer-events: none;
   z-index: -1;
 }
@@ -109,6 +109,7 @@
 }
 .react-flow__pane {
   z-index: 1;
+  touch-action: none;
 }
 .react-flow__pane.draggable {
     cursor: grab;
@@ -188,6 +189,13 @@
        -moz-user-select: none;
             user-select: none;
   }
+/* Arrowhead marker styles - use CSS custom properties as default */
+.react-flow__arrowhead polyline {
+  stroke: var(--xy-edge-stroke, var(--xy-edge-stroke-default));
+}
+.react-flow__arrowhead polyline.arrowclosed {
+  fill: var(--xy-edge-stroke, var(--xy-edge-stroke-default));
+}
 .react-flow__connection {
   pointer-events: none;
 }
@@ -277,6 +285,9 @@ svg.react-flow__connectionline {
   cursor: move;
   pointer-events: all;
 }
+.react-flow__pane.selection .react-flow__panel {
+  pointer-events: none;
+}
 .react-flow__panel {
   position: absolute;
   z-index: 5;
@@ -288,16 +299,20 @@ svg.react-flow__connectionline {
 .react-flow__panel.bottom {
     bottom: 0;
   }
+.react-flow__panel.top.center, .react-flow__panel.bottom.center {
+      left: 50%;
+      transform: translateX(-15px) translateX(-50%);
+    }
 .react-flow__panel.left {
     left: 0;
   }
 .react-flow__panel.right {
     right: 0;
   }
-.react-flow__panel.center {
-    left: 50%;
-    transform: translateX(-50%);
-  }
+.react-flow__panel.left.center, .react-flow__panel.right.center {
+      top: 50%;
+      transform: translateY(-15px) translateY(-50%);
+    }
 .react-flow__attribution {
   font-size: 10px;
   background: var(--xy-attribution-background-color, var(--xy-attribution-background-color-default));
@@ -499,6 +514,17 @@ svg.react-flow__connectionline {
 .react-flow__controls-button:last-child {
     border-bottom: none;
   }
+.react-flow__controls.horizontal .react-flow__controls-button {
+    border-bottom: none;
+    border-right: 1px solid
+      var(
+        --xy-controls-button-border-color-props,
+        var(--xy-controls-button-border-color, var(--xy-controls-button-border-color-default))
+      );
+  }
+.react-flow__controls.horizontal .react-flow__controls-button:last-child {
+    border-right: none;
+  }
 .react-flow__resize-control {
   position: absolute;
 }
@@ -520,12 +546,12 @@ svg.react-flow__connectionline {
 }
 /* handle styles */
 .react-flow__resize-control.handle {
-  width: 4px;
-  height: 4px;
+  width: 5px;
+  height: 5px;
   border: 1px solid #fff;
   border-radius: 1px;
   background-color: var(--xy-resize-background-color, var(--xy-resize-background-color-default));
-  transform: translate(-50%, -50%);
+  translate: -50% -50%;
 }
 .react-flow__resize-control.handle.left {
   left: 0;

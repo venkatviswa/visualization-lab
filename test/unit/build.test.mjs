@@ -105,6 +105,9 @@ test('docs: generated tables match libraries.json', () => {
     const t = read(f).match(/<!-- lab:comparisons -->\n([\s\S]*?)<!-- \/lab -->/)[1];
     for (const c of libj.comparisons) assert.ok(t.includes(c.kind), `${f} comparisons table lacks ${c.kind}`);
   }
+  const trios = read('docs/SKILL.lesson-visual-bakeoff.md').match(/<!-- lab:trios -->\n([\s\S]*?)<!-- \/lab -->/)[1];
+  assert.equal(trios.split('\n').filter(l => l.startsWith('| ') && !l.startsWith('| Concept') && !l.startsWith('| ---')).length, libj.trios.length, 'one trio row per libraries.json trio');
+  for (const t of libj.trios) assert.ok(trios.includes('| ' + t.concept + ' |'), 'trio table lacks ' + t.concept);
 });
 
 test('dist: toolkit and examples are published next to the page', () => {

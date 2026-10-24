@@ -1,0 +1,65 @@
+{
+  "title": "Fewest hops is not the fastest route",
+  "objective": "Learners step through breadth-first search and Dijkstra on the same network and see that the route with the fewest hops (through a satellite relay) is five times slower than a longer chain of fibre links, and how Dijkstra reroutes when a link goes down.",
+  "view": "2D",
+  "recommended": {
+    "library": "cytoscape",
+    "why": "A graph library lays out the network and draws distances, the settled set and the final route straight from the model."
+  },
+  "alternative": {
+    "library": "reactflow",
+    "why": "A hand-placed, clickable diagram of the same network tests whether a map-like layout reads better than an automatic one."
+  },
+  "assumptions": [
+    "Latencies are illustrative one-way milliseconds per link, not measurements",
+    "Links are symmetric: the same latency in both directions",
+    "The satellite relay stands for a geostationary hop of about 260 ms each way",
+    "Ties are broken by the order nodes are listed",
+    "Timings are playback seconds, 2.5 per step"
+  ],
+  "units": [
+    "latency: milliseconds (illustrative)",
+    "hops: links on the route",
+    "time: playback seconds, 2.5 per step"
+  ],
+  "params": [
+    {
+      "id": "algorithm",
+      "label": "Algorithm",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 1,
+      "unit": "",
+      "labels": [
+        "BFS: fewest hops",
+        "Dijkstra: lowest latency"
+      ]
+    },
+    {
+      "id": "linkDown",
+      "label": "Cairo–Marseille link",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 0,
+      "unit": "",
+      "labels": [
+        "Up",
+        "Down"
+      ]
+    }
+  ],
+  "modelCode": "function model(p) {\n  // Route a request from Mumbai to London over an illustrative network of fibre links and one satellite relay.\n  // BFS finds the route with the fewest hops; Dijkstra finds the route with the lowest total latency.\n  const dijkstra = Math.round(p.algorithm) === 1;\n  const linkDown = Math.round(p.linkDown) === 1;\n  const STEP = 2.5, SRC = 'MUM', DST = 'LON';\n  // x, y: illustrative map positions of each node's centre (west on the left), for renderers that place nodes by hand.\n  const nodes = [\n    { id: 'LON', label: 'London', x: 40, y: 160 },\n    { id: 'FRA', label: 'Frankfurt', x: 250, y: 130 },\n    { id: 'MRS', label: 'Marseille', x: 210, y: 290 },\n    { id: 'SAT', label: 'Satellite relay', x: 520, y: -10 },\n    { id: 'IST', label: 'Istanbul', x: 450, y: 180 },\n    { id: 'CAI', label: 'Cairo', x: 430, y: 320 },\n    { id: 'NBO', label: 'Nairobi', x: 620, y: 400 },\n    { id: 'DXB', label: 'Dubai', x: 680, y: 250 },\n    { id: 'MUM', label: 'Mumbai', x: 880, y: 290 }\n  ];\n  const DOWN = 'CAI-MRS';\n  const edges = [\n    ['MUM', 'SAT', 260], ['SAT', 'LON', 260], ['MUM', 'DXB', 25], ['MUM', 'NBO', 45], ['DXB', 'CAI', 30], ['DXB', 'IST', 35],\n    ['NBO', 'CAI', 50], ['CAI', 'MRS', 30], ['CAI', 'FRA', 40], ['IST', 'FRA', 30], ['MRS', 'FRA', 12], ['MRS', 'LON', 12], ['FRA', 'LON', 10]\n  ].map(([a, b, ms]) => ({ id: a + '-' + b, a, b, ms, down: linkDown && a + '-' + b === DOWN }));\n  const name = id => nodes.find(n => n.id === id).label;\n  const adj = {};\n  for (const n of nodes) adj[n.id] = [];\n  for (const e of edges) if (!e.down) { adj[e.a].push({ to: e.b, e }); adj[e.b].push({ to: e.a, e }); }\n  // dist: hops for BFS, milliseconds for Dijkstra. prev: the edge that reached each node.\n  const dist = {}, prev = {}, settled = [], steps = [];\n  for (const n of nodes) dist[n.id] = null;\n  dist[SRC] = 0;\n  const viaNow = () => Object.fromEntries(Object.keys(prev).map(k => [k, prev[k].id]));\n  // Empty lists are left out, so read them as (s.updated || []) and (s.frontier || []).\n  const snap = (node, updated, note) => {\n    const frontier = nodes.map(n => n.id).filter(id => dist[id] !== null && !settled.includes(id));\n    steps.push(Object.assign({ i: steps.length, kind: 'settle', node, note, settled: settled.slice(), dist: Object.assign({}, dist), via: viaNow() },\n      updated.length ? { updated } : {}, frontier.length ? { frontier } : {}));\n  };\n  const fmt = d => dijkstra ? d + ' ms' : d + (d === 1 ? ' hop' : ' hops');\n  let queue = [SRC];\n  while (true) {\n    let cur;\n    if (dijkstra) {\n      const open = nodes.map(n => n.id).filter(id => dist[id] !== null && !settled.includes(id));\n      if (!open.length) break;\n      cur = open.reduce((b, id) => dist[id] < dist[b] ? id : b);\n    } else {\n      if (!queue.length) break;\n      cur = queue.shift();\n    }\n    settled.push(cur);\n    const updated = [];\n    if (cur !== DST) for (const { to, e } of adj[cur]) {\n      if (settled.includes(to)) continue;\n      const nd = dist[cur] + (dijkstra ? e.ms : 1);\n      if (dist[to] === null || (dijkstra && nd < dist[to])) {\n        if (dist[to] === null && !dijkstra) queue.push(to);\n        updated.push({ id: to, was: dist[to], now: nd });\n        dist[to] = nd; prev[to] = e;\n      }\n    }\n    const why = dijkstra ? 'it has the lowest latency so far (' + fmt(dist[cur]) + ')' : 'it is next in the queue (' + fmt(dist[cur]) + ' away)';\n    const note = cur === DST ? name(cur) + ' is settled at ' + fmt(dist[cur]) + ': the route is final.'\n      : 'Settle ' + name(cur) + ': ' + why + '. ' + (updated.length ? (dijkstra ? 'Update ' : 'Discover ') + updated.map(u => name(u.id) + (u.was === null ? '' : ' (' + u.was + ' → ' + u.now + ' ms)')).join(', ') + '.' : 'Nothing new to update.');\n    snap(cur, updated.map(u => u.id), note);\n    if (cur === DST) break;\n  }\n  const path = [DST], pathEdges = [];\n  while (path[0] !== SRC) { const e = prev[path[0]]; pathEdges.unshift(e.id); path.unshift(e.a === path[0] ? e.b : e.a); }\n  const cost = pathEdges.reduce((s, id) => s + edges.find(e => e.id === id).ms, 0), hops = pathEdges.length;\n  const algo = dijkstra ? 'dijkstra' : 'bfs';\n  steps.push({ i: steps.length, kind: 'path', node: DST, settled: settled.slice(), dist: Object.assign({}, dist), via: viaNow(),\n    note: 'Trace back from London: ' + path.map(name).join(' → ') + '. ' + hops + ' hops, ' + cost + ' ms.' });\n  const duration = steps.length * STEP;\n  const markers = steps.map(s => s.i * STEP);\n  const markerLabels = steps.map(s => s.kind === 'path' ? 'Route' : 'Step ' + (s.i + 1));\n  const summary = (dijkstra ? 'Dijkstra (lowest latency)' : 'BFS (fewest hops)') + ': ' + hops + ' hops, ' + cost + ' ms' + (linkDown ? ', with Cairo–Marseille down.' : '.');\n  // The other algorithm's result on the same network, for comparison on screen.\n  const other = p.inner ? undefined : (r => ({ algo: r.algo, hops: r.hops, cost: r.cost, path: r.path }))(model(Object.assign({}, p, { algorithm: dijkstra ? 0 : 1, inner: 1 })));\n  return { other, algo, linkDown, SRC, DST, nodes, edges, steps, path, pathEdges, cost, hops, STEP, duration, markers, markerLabels, summary, unit: dijkstra ? 'ms' : 'hops' };\n}\n",
+  "checkCode": "function check(p) {\n  // Check both algorithms against a brute-force search over every simple route.\n  const run = a => model(Object.assign({}, p, { algorithm: a }));\n  const bfs = run(0), dj = run(1), m = Math.round(p.algorithm) === 1 ? dj : bfs;\n  const up = m.edges.filter(e => !e.down);\n  const valid = r => r.path[0] === r.SRC && r.path[r.path.length - 1] === r.DST && r.pathEdges.length === r.path.length - 1 &&\n    r.pathEdges.every((id, k) => { const e = up.find(x => x.id === id); return e && [e.a, e.b].sort().join() === [r.path[k], r.path[k + 1]].sort().join(); }) &&\n    r.cost === r.pathEdges.reduce((s, id) => s + up.find(e => e.id === id).ms, 0);\n  let minMs = Infinity, minHops = Infinity;\n  (function walk(at, seen, ms, hops) {\n    if (at === m.DST) { minMs = Math.min(minMs, ms); minHops = Math.min(minHops, hops); return; }\n    for (const e of up) { const to = e.a === at ? e.b : e.b === at ? e.a : null; if (to && !seen.has(to)) walk(to, new Set([...seen, to]), ms + e.ms, hops + 1); }\n  })(m.SRC, new Set([m.SRC]), 0, 0);\n  const pass = valid(bfs) && valid(dj) && dj.cost === minMs && bfs.hops === minHops && dj.cost <= bfs.cost && bfs.hops <= dj.hops;\n  return { pass, detail: (m.linkDown ? 'Cairo–Marseille down' : 'all links up') + ': BFS ' + bfs.hops + ' hops / ' + bfs.cost + ' ms, Dijkstra ' + dj.hops + ' hops / ' + dj.cost + ' ms; brute force agrees (fewest hops ' + minHops + ', lowest latency ' + minMs + ' ms); both routes use only working links.' };\n}\n",
+  "expectAtDefaults": "m.algo === \"dijkstra\" && m.hops > m.other.hops && m.cost < m.other.cost",
+  "learnerPrompts": {
+    "predict": "Switch to BFS. It finds a route with fewer hops. Will that route be faster or slower than Dijkstra's, and by roughly how much?",
+    "explain": "Take down the Cairo–Marseille link. Why does Dijkstra's route change while BFS's does not, and why is Frankfurt's distance updated twice?"
+  },
+  "ui": {
+    "choiceButtons": true,
+    "stepChips": true,
+    "startPaused": true
+  }
+}

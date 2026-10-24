@@ -1,0 +1,26 @@
+{
+  "slug": "oauth-sign-in",
+  "category": "Enterprise architecture",
+  "title": "OAuth sign-in",
+  "goal": "Walk through a mobile app signing in with OAuth and PKCE, one message at a time: the app, the browser, the auth server and the API. Show who holds what after each step, so the audience sees that the browser carries the authorization code but never the token or the verifier. Let me install a malicious app that steals the code and switch PKCE off, so they see the one step where the auth server stops the attack.",
+  "a": {
+    "lib": "mermaid",
+    "form": "sequence diagram",
+    "explanation": "A Mermaid sequence diagram built from the model: one lifeline per participant and one numbered arrow per message, with replies dashed and a rejected call ending in a cross. The host clock lights one message at a time and dims the ones still to come, and a caption under the diagram says what the current message does. It is the notation engineers already read in API docs, so the learner practises the real diagram; the order of messages is the whole picture. What it does not show is who holds what: the verifier and the token are words in the arrow labels, not things you can see move.",
+    "caveats": [
+      "Mermaid lays the diagram out itself, so a long message label widens the whole diagram rather than wrapping",
+      "The library is about 5.5 MB, so the page takes a moment longer to open, and a downloaded offline page is large",
+      "On a phone the participant names shorten and the diagram shrinks to the width, so message text gets small; the caption carries the current step"
+    ]
+  },
+  "b": {
+    "lib": "story",
+    "form": "step-by-step story",
+    "explanation": "The same messages told as a story: four lanes with icons, a packet that travels between them carrying icons for the code, verifier or token, and a 'Who holds what' panel under the lanes that fills in as each message arrives. With the malicious app installed, the attacker's lane lights up and either holds the token (PKCE off) or is stopped with a shield at the token request (PKCE on). It makes the lesson's point, that the browser never holds the token, something you can see at a glance; it is less like the diagrams engineers draw.",
+    "caveats": [
+      "The lanes are fixed positions, so a fifth participant would crowd the phone layout",
+      "The packet shows the items a message carries, not the full request; endpoint names are in the caption only",
+      "The panel shows holdings after a message arrives, so mid-flight the packet and the panel briefly disagree"
+    ]
+  }
+}
